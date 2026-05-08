@@ -23,6 +23,19 @@ Status: planning and approved skeleton setup. Application code may start with th
 - Infrastructure sample data service created.
 - First clickable read-only Templates screen created.
 - Infrastructure test coverage added for sample catalog hierarchy.
+- Test suite revisions are optional in the model.
+- Sample data includes a suite where revision is not required.
+- CustomFieldDefinition and CustomFieldValue domain entities created.
+- Attachment domain entity created.
+- EntityLink domain entity created.
+- EntityReferenceType introduced for tags, links, attachments, and future references.
+- Domain test coverage expanded for dynamic fields, attachments, and links.
+- EF Core SQLite package connected to Infrastructure.
+- SQLite DbContext and persistence records created.
+- Local database initializer created.
+- Database seed flow created from sample catalog data.
+- Templates screen now reads through a SQLite-backed catalog service.
+- Infrastructure test coverage expanded for database creation, seeding, and SQLite-backed reads.
 
 ## Product Goal
 
@@ -45,12 +58,17 @@ The application must replace the current Excel-based workflow where each applica
 - Audit tracking should use the Windows user name in the first version.
 - Roles should exist in the data model even if authentication is simple at first.
 - Tests and bugs must support dynamic fields.
+- Each team must be able to define which fields are required and which fields are optional.
+- Test suite revision must be optional because many checks are based on windows, controls, firmware workflows, or UI areas without formal revisions.
 - Test templates are required. New manual test sessions should be created from previous templates or previous sessions.
 - Test structure must support user-defined test suites, revisions such as Revision A and Revision B, sections such as Normal and Abnormal, test cases, test steps, dates, versions, tags, and attachments.
 - Reports must include information per test suite, revision, section, application tab/window, sub-tab, button, table, graph, date field, model, firmware, status, comments, images, and other details.
 - PDF report generation is mandatory.
 - PDF reports should start from the current Excel report idea but become cleaner and easier to read.
 - Attachments and photos are mandatory.
+- Templates, manual sessions, bugs, comments, and results must support attachments/photos.
+- Copying templates or previous sessions for the next version is mandatory.
+- Tags and links between related items are mandatory.
 - Sorting, filtering, and tags are mandatory.
 - Users must be able to filter by failed tests, unfinished bugs, version, revision, section, category, tags, status, owner, and date.
 - Developers should be able to add comments, change bug status such as Fixed, and edit bug-related information.
@@ -150,6 +168,7 @@ tests/
 - A test session is a manual QA report/snapshot used for one specific tested version or build. It does not mean the app runs automated tests.
 - A test suite is a user-defined group of tests. It can represent a standard, window, product area, feature group, or any other test base.
 - A revision is a version of a test suite or template, for example Revision A or Revision B.
+- Revision is optional. Some test suites need revisions, and some do not.
 - A section is a logical group inside a revision, for example Normal or Abnormal.
 - A bug report is a tracked problem found during testing.
 - An attachment is a photo, screenshot, log file, or document connected to a test or bug.
@@ -194,6 +213,7 @@ Dynamic fields:
 
 - CustomFieldDefinition defines the field name, type, target entity, requirement flag, and options.
 - CustomFieldValue stores the value for a specific test, bug, product version, test suite revision, section, or device.
+- Requirement rules are user-defined, so one team can make firmware required while another team can leave it optional.
 - Field types should include text, long text, number, date, date/time, checkbox, single select, multi select, and attachment reference.
 
 Stable fields:
@@ -204,6 +224,7 @@ Stable fields:
 Tags and filtering:
 
 - Tags can be attached to tests, bugs, templates, revisions, and sections.
+- Links can connect related tests, bugs, sessions, attachments, and future entities.
 - Filters must support status, version, revision, section, category, tag, owner, date, failed tests, and unfinished bugs.
 
 Attachments:
@@ -211,6 +232,7 @@ Attachments:
 - Store files outside the database.
 - Store metadata in the database.
 - Use a shared attachment folder in production.
+- Attachments must support screenshots, photos, logs, documents, and future file types.
 
 History:
 
@@ -237,7 +259,7 @@ History:
 - Add dependency injection. Done.
 - Add basic navigation shell. Done.
 - Add local configuration.
-- Add database setup placeholder.
+- Add database setup placeholder. Done.
 
 ### Milestone 2 - Core Data and Audit
 
@@ -246,15 +268,18 @@ History:
 - Add users/roles model.
 - Add Windows user name tracking.
 - Add audit log.
-- Add attachment metadata.
+- Add attachment metadata. Started at Domain level.
 - Add tags and basic filtering contracts. Started.
+- Add linking contracts between related entities. Started at Domain level.
 
 ### Milestone 3 - Templates and Dynamic Fields
 
 - Create test template management. Started with read-only sample browser.
-- Add dynamic field definitions.
+- Add dynamic field definitions. Started at Domain level.
 - Add template revisions, sections, cases, and steps. Started at Domain level.
 - Add copy-from-template workflow.
+- Add copy-from-previous-session workflow.
+- Replace in-memory sample catalog with database-backed reads. Done.
 
 ### Milestone 4 - Test Execution
 
@@ -304,10 +329,10 @@ Milestone 1 created the WPF/MVVM skeleton and basic navigation.
 
 Milestone 2 has started with the first Domain entities.
 
-Milestone 3 has started with a read-only Templates screen using sample in-memory data.
+Milestone 3 has started with a read-only Templates screen using database-backed seeded data.
 
-Database storage and editing workflows are not implemented yet.
+Database storage has started. Editing workflows are not implemented yet.
 
 ## Next Step
 
-Create the first persistence layer for templates and sample data, then replace the in-memory sample catalog with database-backed reads.
+Create the first template editing workflow: add a test suite, optional revision, section, test case, and step.

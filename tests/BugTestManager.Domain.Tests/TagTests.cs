@@ -17,10 +17,10 @@ public sealed class TagTests
         var tag = new Tag("Critical", "#DC2626");
         var entityId = Guid.NewGuid();
 
-        var entityTag = new EntityTag(tag.Id, TaggedEntityType.BugReport, entityId);
+        var entityTag = new EntityTag(tag.Id, EntityReferenceType.BugReport, entityId);
 
         Assert.Equal(tag.Id, entityTag.TagId);
-        Assert.Equal(TaggedEntityType.BugReport, entityTag.EntityType);
+        Assert.Equal(EntityReferenceType.BugReport, entityTag.EntityType);
         Assert.Equal(entityId, entityTag.EntityId);
     }
 }

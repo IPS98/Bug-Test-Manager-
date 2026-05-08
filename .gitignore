@@ -264,6 +264,9 @@ ClientBin/
 ~$*
 *~
 *.dbmdl
+*.db
+*.sqlite
+*.sqlite3
 *.dbproj.schemaview
 *.jfm
 *.pfx

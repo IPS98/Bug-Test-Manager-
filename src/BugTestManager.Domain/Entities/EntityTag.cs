@@ -5,7 +5,7 @@ namespace BugTestManager.Domain.Entities;
 
 public sealed class EntityTag
 {
-    public EntityTag(Guid tagId, TaggedEntityType entityType, Guid entityId)
+    public EntityTag(Guid tagId, EntityReferenceType entityType, Guid entityId)
     {
         Id = Guid.NewGuid();
         TagId = Guard.Required(tagId, nameof(tagId), "Tag id");
@@ -17,7 +17,7 @@ public sealed class EntityTag
 
     public Guid TagId { get; }
 
-    public TaggedEntityType EntityType { get; }
+    public EntityReferenceType EntityType { get; }
 
     public Guid EntityId { get; }
 }

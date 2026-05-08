@@ -21,4 +21,14 @@ public sealed class SampleTestSuiteCatalogServiceTests
         Assert.NotEmpty(firstSection.TestCases);
         Assert.NotEmpty(firstTestCase.Steps);
     }
+
+    [Fact]
+    public void GetCatalog_IncludesTestSuiteWithOptionalRevision()
+    {
+        var service = new SampleTestSuiteCatalogService();
+
+        var catalog = service.GetCatalog();
+
+        Assert.Contains(catalog, testSuite => !testSuite.RevisionIsRequired);
+    }
 }

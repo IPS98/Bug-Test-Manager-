@@ -34,7 +34,7 @@ src/     Application source code.
 tests/   Automated tests.
 ```
 
-The initial application skeleton has been created. It includes the WPF app, layered projects, MahApps.Metro setup, MVVM starter structure, first Domain entities, a clickable read-only template browser with sample data, and test projects.
+The initial application skeleton has been created. It includes the WPF app, layered projects, MahApps.Metro setup, MVVM starter structure, first Domain entities, a clickable read-only template browser, SQLite persistence, seed data, and test projects.
 
 ## Documentation
 
@@ -54,7 +54,17 @@ dotnet build BugTestManager.sln
 dotnet test BugTestManager.sln
 ```
 
-Current tests cover product versions, test suites, revisions, template hierarchy, tags, sample catalog data, and basic validation rules.
+Current tests cover product versions, test suites, optional revisions, template hierarchy, tags, dynamic fields, attachments, links, sample catalog data, SQLite database creation, seeding, database-backed reads, and basic validation rules.
+
+## Local Data
+
+The demo app creates a local SQLite database here:
+
+```text
+%LOCALAPPDATA%\BugTestManager\BugTestManager.db
+```
+
+Local database files are ignored by Git.
 
 ## Development Rules
 

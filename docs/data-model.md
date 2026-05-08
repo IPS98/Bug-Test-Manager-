@@ -2,7 +2,7 @@
 
 This document describes the planned data model direction.
 
-The model should support reusable templates, user-defined test suites, revisions, manual test sessions, dynamic fields, tags, filtering, bug tracking, attachments, and audit history.
+The model should support reusable templates, user-defined test suites, optional revisions, manual test sessions, dynamic fields, tags, links, filtering, bug tracking, attachments, and audit history.
 
 ## Core Entities
 
@@ -41,10 +41,11 @@ Possible fields:
 - Name
 - Description
 - IsActive
+- RevisionIsRequired
 
 ### TestSuiteRevision
 
-Represents a revision of a test suite, for example Revision A or Revision B.
+Represents a revision of a test suite, for example Revision A or Revision B. Not every test suite requires revisions.
 
 Possible fields:
 
@@ -57,13 +58,13 @@ Possible fields:
 
 ### TestTemplate
 
-Reusable test structure. A template may belong to a test suite and revision.
+Reusable test structure. A template belongs to a test suite and may optionally belong to a test suite revision.
 
 Possible fields:
 
 - Id
 - TestSuiteId
-- TestSuiteRevisionId
+- TestSuiteRevisionId, optional
 - Name
 - Description
 - IsActive
@@ -262,6 +263,21 @@ Possible fields:
 - EntityType
 - EntityId
 
+### EntityLink
+
+Connects related items, for example a bug to a test case, a session to a previous session, or a report to a source template.
+
+Possible fields:
+
+- Id
+- SourceEntityType
+- SourceEntityId
+- TargetEntityType
+- TargetEntityId
+- LinkType
+- CreatedBy
+- CreatedAt
+
 ### AuditLog
 
 History record for important actions.
@@ -294,6 +310,8 @@ Possible fields:
 - SortOrder
 - OptionsJson
 - IsActive
+
+Each team can decide which fields are required. For example, firmware can be required for one template and optional for another.
 
 ### CustomFieldValue
 

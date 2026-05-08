@@ -2,7 +2,8 @@ using System.Windows;
 using BugTestManager.App.ViewModels;
 using BugTestManager.App.Views;
 using BugTestManager.Application.Abstractions;
-using BugTestManager.Infrastructure.SampleData;
+using BugTestManager.Infrastructure;
+using BugTestManager.Infrastructure.Data;
 using BugTestManager.Infrastructure.UserContext;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -18,6 +19,7 @@ public partial class App : System.Windows.Application
         ConfigureServices(services);
 
         serviceProvider = services.BuildServiceProvider();
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
         serviceProvider.GetRequiredService<MainWindow>().Show();
 
         base.OnStartup(e);
@@ -32,7 +34,7 @@ public partial class App : System.Windows.Application
     private static void ConfigureServices(IServiceCollection services)
     {
         services.AddSingleton<IUserContext, WindowsUserContext>();
-        services.AddSingleton<ITestSuiteCatalogService, SampleTestSuiteCatalogService>();
+        services.AddInfrastructure();
         services.AddSingleton<TestSuitesViewModel>();
         services.AddSingleton<MainWindowViewModel>();
         services.AddSingleton<MainWindow>();

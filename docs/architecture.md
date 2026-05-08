@@ -119,7 +119,7 @@ Power Supply App
             Overload Test
 ```
 
-This allows the app to store any user-defined test suite, revisions such as A/B, sections such as Normal/Abnormal, detailed tests, steps, dates, statuses, attachments, and dynamic data.
+This allows the app to store any user-defined test suite, optional revisions such as A/B, sections such as Normal/Abnormal, detailed tests, steps, dates, statuses, attachments, and dynamic data.
 
 ## User Tracking
 
@@ -158,6 +158,22 @@ The app should support:
 - Values connected to specific records.
 
 Common stable data should still be normal database columns. Dynamic fields should be used for company-specific and changing details.
+
+Required fields must be configurable per target/template. One team may require firmware and model, while another team may require only date, status, and screenshot.
+
+## Attachments and Links
+
+Attachments are a core feature. Tests, sessions, bugs, comments, and results should support screenshots, photos, logs, documents, and future file types.
+
+The model should also support links between related items:
+
+- Bug to test case.
+- Bug to test step.
+- Session to source template.
+- Session to previous session.
+- Report to generated source data.
+
+This keeps the system flexible without hardcoding every possible relationship.
 
 ## Sorting, Filtering, and Tags
 

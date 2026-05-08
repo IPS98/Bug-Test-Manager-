@@ -4,6 +4,7 @@ public sealed record TestSuiteCatalogItem(
     Guid Id,
     string Name,
     string Description,
+    bool RevisionIsRequired,
     IReadOnlyList<TestSuiteRevisionCatalogItem> Revisions);
 
 public sealed record TestSuiteRevisionCatalogItem(

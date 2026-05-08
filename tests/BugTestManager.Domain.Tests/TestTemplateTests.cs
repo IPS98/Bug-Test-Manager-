@@ -17,6 +17,18 @@ public sealed class TestTemplateTests
     }
 
     [Fact]
+    public void Constructor_AllowsTemplateWithoutTestSuiteRevision()
+    {
+        var product = new Product("Power Supply Manager");
+        var testSuite = product.AddTestSuite("Application UI Regression");
+
+        var template = new TestTemplate(testSuite.Id, null, "UI Regression Template");
+
+        Assert.Equal(testSuite.Id, template.TestSuiteId);
+        Assert.Null(template.TestSuiteRevisionId);
+    }
+
+    [Fact]
     public void AddRevision_DoesNotAllowDuplicateRevisionNames()
     {
         var template = CreateTemplate();

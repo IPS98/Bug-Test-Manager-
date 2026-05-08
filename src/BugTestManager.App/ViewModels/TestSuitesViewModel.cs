@@ -49,6 +49,7 @@ public sealed partial class TestSuitesViewModel : ObservableObject
         return new TestSuiteItemViewModel(
             testSuite.Name,
             testSuite.Description,
+            testSuite.RevisionIsRequired,
             testSuite.Revisions.Select(MapRevision));
     }
 

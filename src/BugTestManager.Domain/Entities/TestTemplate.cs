@@ -6,11 +6,11 @@ public sealed class TestTemplate
 {
     private readonly List<TemplateRevision> revisions = [];
 
-    public TestTemplate(Guid testSuiteId, Guid testSuiteRevisionId, string name, string? description = null)
+    public TestTemplate(Guid testSuiteId, Guid? testSuiteRevisionId, string name, string? description = null)
     {
         Id = Guid.NewGuid();
         TestSuiteId = Guard.Required(testSuiteId, nameof(testSuiteId), "Test suite id");
-        TestSuiteRevisionId = Guard.Required(testSuiteRevisionId, nameof(testSuiteRevisionId), "Test suite revision id");
+        TestSuiteRevisionId = testSuiteRevisionId;
         Name = Guard.Required(name, nameof(name), "Template name");
         Description = description?.Trim() ?? string.Empty;
         IsActive = true;
@@ -20,7 +20,7 @@ public sealed class TestTemplate
 
     public Guid TestSuiteId { get; }
 
-    public Guid TestSuiteRevisionId { get; }
+    public Guid? TestSuiteRevisionId { get; }
 
     public string Name { get; }
 
