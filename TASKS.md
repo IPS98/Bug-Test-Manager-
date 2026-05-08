@@ -1,6 +1,6 @@
 # Bug & Test Manager - Tasks
 
-Status: planning and approved skeleton setup. Application code may start with the project skeleton only.
+Status: implementation in progress after approved architecture and skeleton setup.
 
 ## Current Progress
 
@@ -36,6 +36,11 @@ Status: planning and approved skeleton setup. Application code may start with th
 - Database seed flow created from sample catalog data.
 - Templates screen now reads through a SQLite-backed catalog service.
 - Infrastructure test coverage expanded for database creation, seeding, and SQLite-backed reads.
+- Application write contracts created for test suite and section management.
+- SQLite-backed test suite management service created.
+- Templates screen can create a test suite with optional revision support.
+- Templates screen can create a section for the selected test suite/revision.
+- Infrastructure test coverage expanded for test suite creation, optional revision sections, and validation.
 
 ## Product Goal
 
@@ -274,12 +279,13 @@ History:
 
 ### Milestone 3 - Templates and Dynamic Fields
 
-- Create test template management. Started with read-only sample browser.
+- Create test template management. Started with catalog browsing and first create workflow.
 - Add dynamic field definitions. Started at Domain level.
 - Add template revisions, sections, cases, and steps. Started at Domain level.
 - Add copy-from-template workflow.
 - Add copy-from-previous-session workflow.
 - Replace in-memory sample catalog with database-backed reads. Done.
+- Add first test suite and section creation workflow. Done.
 
 ### Milestone 4 - Test Execution
 
@@ -329,10 +335,10 @@ Milestone 1 created the WPF/MVVM skeleton and basic navigation.
 
 Milestone 2 has started with the first Domain entities.
 
-Milestone 3 has started with a read-only Templates screen using database-backed seeded data.
+Milestone 3 has started with a Templates screen using database-backed seeded data.
 
-Database storage has started. Editing workflows are not implemented yet.
+Database storage has started. The first editing workflow can create test suites and sections.
 
 ## Next Step
 
-Create the first template editing workflow: add a test suite, optional revision, section, test case, and step.
+Extend the template editing workflow with test case and test step creation.

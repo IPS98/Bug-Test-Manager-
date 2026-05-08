@@ -5,16 +5,20 @@ namespace BugTestManager.App.ViewModels;
 public sealed class TestSuiteItemViewModel
 {
     public TestSuiteItemViewModel(
+        Guid id,
         string name,
         string description,
         bool revisionIsRequired,
         IEnumerable<TestSuiteRevisionItemViewModel> revisions)
     {
+        Id = id;
         Name = name;
         Description = description;
         RevisionIsRequired = revisionIsRequired;
         Revisions = new ObservableCollection<TestSuiteRevisionItemViewModel>(revisions);
     }
+
+    public Guid Id { get; }
 
     public string Name { get; }
 

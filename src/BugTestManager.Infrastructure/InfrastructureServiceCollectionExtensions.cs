@@ -22,6 +22,7 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddSingleton<IDatabaseInitializer, SqliteDatabaseInitializer>();
         services.AddSingleton<ITestSuiteCatalogService, SqliteTestSuiteCatalogService>();
+        services.AddSingleton<ITestSuiteManagementService, SqliteTestSuiteManagementService>();
 
         return services;
     }
