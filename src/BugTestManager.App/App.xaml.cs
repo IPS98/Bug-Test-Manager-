@@ -2,6 +2,7 @@ using System.Windows;
 using BugTestManager.App.ViewModels;
 using BugTestManager.App.Views;
 using BugTestManager.Application.Abstractions;
+using BugTestManager.Infrastructure.SampleData;
 using BugTestManager.Infrastructure.UserContext;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -31,6 +32,8 @@ public partial class App : System.Windows.Application
     private static void ConfigureServices(IServiceCollection services)
     {
         services.AddSingleton<IUserContext, WindowsUserContext>();
+        services.AddSingleton<ITestSuiteCatalogService, SampleTestSuiteCatalogService>();
+        services.AddSingleton<TestSuitesViewModel>();
         services.AddSingleton<MainWindowViewModel>();
         services.AddSingleton<MainWindow>();
     }

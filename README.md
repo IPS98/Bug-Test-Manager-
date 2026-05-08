@@ -34,7 +34,7 @@ src/     Application source code.
 tests/   Automated tests.
 ```
 
-The initial application skeleton has been created. It includes the WPF app, layered projects, MahApps.Metro setup, MVVM starter structure, first Domain entities, and a first Domain test project.
+The initial application skeleton has been created. It includes the WPF app, layered projects, MahApps.Metro setup, MVVM starter structure, first Domain entities, a clickable read-only template browser with sample data, and test projects.
 
 ## Documentation
 
@@ -54,7 +54,7 @@ dotnet build BugTestManager.sln
 dotnet test BugTestManager.sln
 ```
 
-Current Domain tests cover product versions, test suites, revisions, template hierarchy, tags, and basic validation rules.
+Current tests cover product versions, test suites, revisions, template hierarchy, tags, sample catalog data, and basic validation rules.
 
 ## Development Rules
 

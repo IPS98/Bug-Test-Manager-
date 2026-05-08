@@ -19,6 +19,10 @@ Status: planning and approved skeleton setup. Application code may start with th
 - TestTemplate, TemplateRevision, TemplateSection, TestCaseTemplate, and TestStepTemplate created.
 - Tag and EntityTag domain entities created.
 - Domain test coverage expanded to product/version, test suite/revision, template hierarchy, and tags.
+- Application read models and test suite catalog interface created.
+- Infrastructure sample data service created.
+- First clickable read-only Templates screen created.
+- Infrastructure test coverage added for sample catalog hierarchy.
 
 ## Product Goal
 
@@ -231,7 +235,7 @@ History:
 - Add MahApps.Metro. Done.
 - Add MVVM structure. Done.
 - Add dependency injection. Done.
-- Add basic navigation shell. Started.
+- Add basic navigation shell. Done.
 - Add local configuration.
 - Add database setup placeholder.
 
@@ -247,7 +251,7 @@ History:
 
 ### Milestone 3 - Templates and Dynamic Fields
 
-- Create test template management. Started at Domain level.
+- Create test template management. Started with read-only sample browser.
 - Add dynamic field definitions.
 - Add template revisions, sections, cases, and steps. Started at Domain level.
 - Add copy-from-template workflow.
@@ -294,12 +298,16 @@ History:
 
 ## Current Stage
 
-The project is between Milestone 1 and Milestone 2.
+The project is between Milestone 2 and Milestone 3.
 
-Milestone 1 created the WPF/MVVM skeleton.
+Milestone 1 created the WPF/MVVM skeleton and basic navigation.
 
-Milestone 2 has started with the first Domain entities, but database storage, real screens, and editing workflows are not implemented yet.
+Milestone 2 has started with the first Domain entities.
+
+Milestone 3 has started with a read-only Templates screen using sample in-memory data.
+
+Database storage and editing workflows are not implemented yet.
 
 ## Next Step
 
-Create the first clickable read-only UI flow for browsing test suites, revisions, sections, cases, and steps using sample in-memory data. After that, add persistence.
+Create the first persistence layer for templates and sample data, then replace the in-memory sample catalog with database-backed reads.
