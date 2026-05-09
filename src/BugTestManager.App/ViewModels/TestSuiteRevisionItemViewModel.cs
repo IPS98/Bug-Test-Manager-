@@ -22,7 +22,7 @@ public sealed class TestSuiteRevisionItemViewModel
 
     public DateOnly? EffectiveDate { get; }
 
-    public string EffectiveDateDisplay => EffectiveDate?.ToString("yyyy-MM-dd") ?? "No date";
+    public string EffectiveDateDisplay => EffectiveDate?.ToString("yyyy-MM-dd") ?? string.Empty;
 
     public ObservableCollection<TemplateSectionItemViewModel> Sections { get; }
 }

@@ -106,6 +106,68 @@ public sealed class SqliteTestSuiteManagementService(IDbContextFactory<BugTestMa
         return sectionId;
     }
 
+    public Guid CreateTestCase(CreateTestCaseTemplateRequest request)
+    {
+        var title = Require(request.Title, "Test case title");
+        var expectedResult = request.ExpectedResult.Trim();
+
+        using var dbContext = dbContextFactory.CreateDbContext();
+        var section = dbContext.TemplateSections
+            .Include(templateSection => templateSection.TestCases)
+            .SingleOrDefault(templateSection => templateSection.Id == request.TemplateSectionId)
+            ?? throw new InvalidOperationException("Selected section was not found.");
+
+        var nextSortOrder = section.TestCases
+            .Select(testCase => testCase.SortOrder)
+            .DefaultIfEmpty(0)
+            .Max() + 1;
+
+        var testCaseId = Guid.NewGuid();
+        dbContext.TestCaseTemplates.Add(new TestCaseTemplateRecord
+        {
+            Id = testCaseId,
+            TemplateSectionId = section.Id,
+            Title = title,
+            ExpectedResult = expectedResult,
+            SortOrder = nextSortOrder
+        });
+
+        dbContext.SaveChanges();
+
+        return testCaseId;
+    }
+
+    public Guid CreateTestStep(CreateTestStepTemplateRequest request)
+    {
+        var stepText = Require(request.StepText, "Step text");
+        var expectedResult = request.ExpectedResult.Trim();
+
+        using var dbContext = dbContextFactory.CreateDbContext();
+        var testCase = dbContext.TestCaseTemplates
+            .Include(template => template.Steps)
+            .SingleOrDefault(template => template.Id == request.TestCaseTemplateId)
+            ?? throw new InvalidOperationException("Selected test case was not found.");
+
+        var nextSortOrder = testCase.Steps
+            .Select(step => step.SortOrder)
+            .DefaultIfEmpty(0)
+            .Max() + 1;
+
+        var testStepId = Guid.NewGuid();
+        dbContext.TestStepTemplates.Add(new TestStepTemplateRecord
+        {
+            Id = testStepId,
+            TestCaseTemplateId = testCase.Id,
+            StepText = stepText,
+            ExpectedResult = expectedResult,
+            SortOrder = nextSortOrder
+        });
+
+        dbContext.SaveChanges();
+
+        return testStepId;
+    }
+
     private static string Require(string value, string displayName)
     {
         if (string.IsNullOrWhiteSpace(value))

@@ -8,4 +8,8 @@ public interface ITestSuiteManagementService
     CreateTestSuiteResult CreateTestSuite(CreateTestSuiteRequest request);
 
     Guid CreateSection(CreateTemplateSectionRequest request);
+
+    Guid CreateTestCase(CreateTestCaseTemplateRequest request);
+
+    Guid CreateTestStep(CreateTestStepTemplateRequest request);
 }

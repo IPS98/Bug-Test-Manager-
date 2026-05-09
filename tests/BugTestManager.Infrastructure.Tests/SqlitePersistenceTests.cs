@@ -94,6 +94,48 @@ public sealed class SqlitePersistenceTests
     }
 
     [Fact]
+    public void ManagementService_CreatesTestCaseAndStepInsideSection()
+    {
+        var databasePath = CreateTempDatabasePath();
+        using var serviceProvider = CreateServiceProvider(databasePath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var managementService = serviceProvider.GetRequiredService<ITestSuiteManagementService>();
+        var testSuite = managementService.CreateTestSuite(new CreateTestSuiteRequest(
+            "Release Smoke Test",
+            "Small release acceptance set.",
+            RevisionIsRequired: false,
+            InitialRevisionName: null));
+        var sectionId = managementService.CreateSection(new CreateTemplateSectionRequest(
+            testSuite.TestSuiteId,
+            TestSuiteRevisionId: null,
+            "Main Window",
+            "UI"));
+
+        var testCaseId = managementService.CreateTestCase(new CreateTestCaseTemplateRequest(
+            sectionId,
+            "Open main window",
+            "Main window opens without errors."));
+        var stepId = managementService.CreateTestStep(new CreateTestStepTemplateRequest(
+            testCaseId,
+            "Click the application shortcut.",
+            "The application shell is visible."));
+
+        var catalog = serviceProvider.GetRequiredService<ITestSuiteCatalogService>().GetCatalog();
+        var createdSection = catalog
+            .Single(suite => suite.Id == testSuite.TestSuiteId)
+            .Revisions.Single()
+            .Sections.Single(section => section.Id == sectionId);
+        var createdTestCase = createdSection.TestCases.Single(testCase => testCase.Id == testCaseId);
+        var createdStep = createdTestCase.Steps.Single(step => step.Id == stepId);
+
+        Assert.Equal("Open main window", createdTestCase.Title);
+        Assert.Equal("Main window opens without errors.", createdTestCase.ExpectedResult);
+        Assert.Equal("Click the application shortcut.", createdStep.StepText);
+        Assert.Equal("The application shell is visible.", createdStep.ExpectedResult);
+    }
+
+    [Fact]
     public void ManagementService_RequiresInitialRevisionNameWhenRevisionIsRequired()
     {
         var databasePath = CreateTempDatabasePath();

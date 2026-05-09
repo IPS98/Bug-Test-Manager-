@@ -41,6 +41,11 @@ Status: implementation in progress after approved architecture and skeleton setu
 - Templates screen can create a test suite with optional revision support.
 - Templates screen can create a section for the selected test suite/revision.
 - Infrastructure test coverage expanded for test suite creation, optional revision sections, and validation.
+- Templates screen can create a test case for the selected section.
+- Templates screen can create a step for the selected test case.
+- Infrastructure test coverage expanded for full section, case, and step creation.
+- Templates screen now opens add forms in a popup dialog instead of permanent inline forms.
+- Revision column is hidden when the selected test suite does not require revisions.
 
 ## Product Goal
 
@@ -286,6 +291,7 @@ History:
 - Add copy-from-previous-session workflow.
 - Replace in-memory sample catalog with database-backed reads. Done.
 - Add first test suite and section creation workflow. Done.
+- Add first test case and step creation workflow. Done.
 
 ### Milestone 4 - Test Execution
 
@@ -337,8 +343,8 @@ Milestone 2 has started with the first Domain entities.
 
 Milestone 3 has started with a Templates screen using database-backed seeded data.
 
-Database storage has started. The first editing workflow can create test suites and sections.
+Database storage has started. The first editing workflow can create test suites, sections, test cases, and steps.
 
 ## Next Step
 
-Extend the template editing workflow with test case and test step creation.
+Add editing and deletion safeguards for template items, then start planning dynamic field management UI.
