@@ -4,7 +4,12 @@ public enum TemplateDialogKind
 {
     None,
     TestSuite,
+    EditTestSuite,
     Section,
+    EditSection,
     TestCase,
-    Step
+    EditTestCase,
+    Step,
+    EditStep,
+    DeleteConfirmation
 }

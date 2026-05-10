@@ -17,6 +17,12 @@
         <DataTemplate DataType="{x:Type viewModels:TestSuitesViewModel}">
             <views:TestSuitesView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type viewModels:FieldDefinitionsViewModel}">
+            <views:FieldDefinitionsView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewModels:TestSessionsViewModel}">
+            <views:TestSessionsView />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type viewModels:PlaceholderPageViewModel}">
             <views:PlaceholderPageView />
         </DataTemplate>

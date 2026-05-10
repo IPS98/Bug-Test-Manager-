@@ -8,15 +8,24 @@ namespace BugTestManager.App.ViewModels;
 public sealed partial class MainWindowViewModel : ObservableObject
 {
     private readonly TestSuitesViewModel testSuitesViewModel;
+    private readonly FieldDefinitionsViewModel fieldDefinitionsViewModel;
+    private readonly TestSessionsViewModel testSessionsViewModel;
 
-    public MainWindowViewModel(IUserContext userContext, TestSuitesViewModel testSuitesViewModel)
+    public MainWindowViewModel(
+        IUserContext userContext,
+        TestSuitesViewModel testSuitesViewModel,
+        FieldDefinitionsViewModel fieldDefinitionsViewModel,
+        TestSessionsViewModel testSessionsViewModel)
     {
         this.testSuitesViewModel = testSuitesViewModel;
+        this.fieldDefinitionsViewModel = fieldDefinitionsViewModel;
+        this.testSessionsViewModel = testSessionsViewModel;
         CurrentUserDisplay = $"Signed in as {userContext.UserName} ({userContext.Role})";
 
         Modules =
         [
-            new NavigationItemViewModel(AppPageKey.Templates, "Templates", "Reusable test suites, revisions, sections, cases, and steps."),
+            new NavigationItemViewModel(AppPageKey.Templates, "Templates", "Reusable test suites, revisions, sections, cases, and checks."),
+            new NavigationItemViewModel(AppPageKey.Fields, "Fields", "User-defined fields for tests, bugs, sessions, and reports."),
             new NavigationItemViewModel(AppPageKey.TestSessions, "Test Sessions", "Manual test reports, statuses, photos, comments, and dates."),
             new NavigationItemViewModel(AppPageKey.Bugs, "Bugs", "Bug reports, developer comments, status changes, and retesting."),
             new NavigationItemViewModel(AppPageKey.Reports, "Reports", "Readable PDF reports for versions, revisions, tests, and bugs.")
@@ -50,8 +59,24 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
         CurrentPageTitle = module.Name;
         CurrentPageDescription = module.Description;
-        CurrentPage = module.PageKey == AppPageKey.Templates
-            ? testSuitesViewModel
-            : new PlaceholderPageViewModel(module.Name, "This page will be implemented after the template browser is stable.");
+        CurrentPage = module.PageKey switch
+        {
+            AppPageKey.Templates => testSuitesViewModel,
+            AppPageKey.Fields => GetFieldDefinitionsViewModel(),
+            AppPageKey.TestSessions => GetTestSessionsViewModel(),
+            _ => new PlaceholderPageViewModel(module.Name, "This page will be implemented after the template browser is stable.")
+        };
+    }
+
+    private FieldDefinitionsViewModel GetFieldDefinitionsViewModel()
+    {
+        fieldDefinitionsViewModel.Refresh();
+        return fieldDefinitionsViewModel;
+    }
+
+    private TestSessionsViewModel GetTestSessionsViewModel()
+    {
+        testSessionsViewModel.Refresh();
+        return testSessionsViewModel;
     }
 }

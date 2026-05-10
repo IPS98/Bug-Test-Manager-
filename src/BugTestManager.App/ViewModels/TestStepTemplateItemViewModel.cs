@@ -4,4 +4,7 @@ public sealed record TestStepTemplateItemViewModel(
     Guid Id,
     string StepText,
     string ExpectedResult,
-    int SortOrder);
+    int SortOrder)
+{
+    public string CheckText => StepText;
+}

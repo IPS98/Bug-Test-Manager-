@@ -1,4 +1,5 @@
 using System.Windows;
+using BugTestManager.App.Services;
 using BugTestManager.App.ViewModels;
 using BugTestManager.App.Views;
 using BugTestManager.Application.Abstractions;
@@ -34,8 +35,11 @@ public partial class App : System.Windows.Application
     private static void ConfigureServices(IServiceCollection services)
     {
         services.AddSingleton<IUserContext, WindowsUserContext>();
+        services.AddSingleton<IFilePickerService, WindowsFilePickerService>();
         services.AddInfrastructure();
         services.AddSingleton<TestSuitesViewModel>();
+        services.AddSingleton<FieldDefinitionsViewModel>();
+        services.AddSingleton<TestSessionsViewModel>();
         services.AddSingleton<MainWindowViewModel>();
         services.AddSingleton<MainWindow>();
     }

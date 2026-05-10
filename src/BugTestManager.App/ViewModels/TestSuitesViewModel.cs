@@ -39,6 +39,9 @@ public sealed partial class TestSuitesViewModel : ObservableObject
     private TestCaseTemplateItemViewModel? selectedTestCase;
 
     [ObservableProperty]
+    private TestStepTemplateItemViewModel? selectedStep;
+
+    [ObservableProperty]
     private GridLength revisionColumnWidth = new(0);
 
     [ObservableProperty]
@@ -52,6 +55,18 @@ public sealed partial class TestSuitesViewModel : ObservableObject
 
     [ObservableProperty]
     private Visibility dialogOverlayVisibility = Visibility.Collapsed;
+
+    [ObservableProperty]
+    private TemplateDeleteTarget pendingDeleteTarget;
+
+    [ObservableProperty]
+    private Guid pendingDeleteId;
+
+    [ObservableProperty]
+    private Guid editingItemId;
+
+    [ObservableProperty]
+    private string deleteConfirmationMessage = string.Empty;
 
     [ObservableProperty]
     private string newTestSuiteName = string.Empty;
@@ -90,6 +105,7 @@ public sealed partial class TestSuitesViewModel : ObservableObject
     {
         SelectedRevision = value?.Revisions.FirstOrDefault();
         UpdateRevisionColumn(value);
+        ShowDeleteTestSuiteDialogCommand.NotifyCanExecuteChanged();
         ShowCreateSectionDialogCommand.NotifyCanExecuteChanged();
         CreateSectionCommand.NotifyCanExecuteChanged();
     }
@@ -97,6 +113,7 @@ public sealed partial class TestSuitesViewModel : ObservableObject
     partial void OnSelectedRevisionChanged(TestSuiteRevisionItemViewModel? value)
     {
         SelectedSection = value?.Sections.FirstOrDefault();
+        ShowDeleteSectionDialogCommand.NotifyCanExecuteChanged();
         ShowCreateSectionDialogCommand.NotifyCanExecuteChanged();
         CreateSectionCommand.NotifyCanExecuteChanged();
     }
@@ -104,14 +121,24 @@ public sealed partial class TestSuitesViewModel : ObservableObject
     partial void OnSelectedSectionChanged(TemplateSectionItemViewModel? value)
     {
         SelectedTestCase = value?.TestCases.FirstOrDefault();
+        ShowDeleteSectionDialogCommand.NotifyCanExecuteChanged();
         ShowCreateTestCaseDialogCommand.NotifyCanExecuteChanged();
+        ShowDeleteTestCaseDialogCommand.NotifyCanExecuteChanged();
         CreateTestCaseCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnSelectedTestCaseChanged(TestCaseTemplateItemViewModel? value)
     {
+        SelectedStep = value?.Steps.FirstOrDefault();
+        ShowDeleteTestCaseDialogCommand.NotifyCanExecuteChanged();
         ShowCreateTestStepDialogCommand.NotifyCanExecuteChanged();
+        ShowDeleteTestStepDialogCommand.NotifyCanExecuteChanged();
         CreateTestStepCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnSelectedStepChanged(TestStepTemplateItemViewModel? value)
+    {
+        ShowDeleteTestStepDialogCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnActiveDialogChanged(TemplateDialogKind value)
@@ -123,16 +150,39 @@ public sealed partial class TestSuitesViewModel : ObservableObject
         DialogTitle = value switch
         {
             TemplateDialogKind.TestSuite => "Add Test Suite",
+            TemplateDialogKind.EditTestSuite => "Edit Test Suite",
             TemplateDialogKind.Section => "Add Section",
+            TemplateDialogKind.EditSection => "Edit Section",
             TemplateDialogKind.TestCase => "Add Test Case",
-            TemplateDialogKind.Step => "Add Step",
+            TemplateDialogKind.EditTestCase => "Edit Test Case",
+            TemplateDialogKind.Step => "Add Check",
+            TemplateDialogKind.EditStep => "Edit Check",
+            TemplateDialogKind.DeleteConfirmation => "Confirm Delete",
             _ => string.Empty
         };
+
+        SaveEditCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnEditingItemIdChanged(Guid value)
+    {
+        SaveEditCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnPendingDeleteTargetChanged(TemplateDeleteTarget value)
+    {
+        ConfirmDeleteCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnPendingDeleteIdChanged(Guid value)
+    {
+        ConfirmDeleteCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnNewTestSuiteNameChanged(string value)
     {
         CreateTestSuiteCommand.NotifyCanExecuteChanged();
+        SaveEditCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnNewTestSuiteRevisionIsRequiredChanged(bool value)
@@ -148,16 +198,19 @@ public sealed partial class TestSuitesViewModel : ObservableObject
     partial void OnNewSectionNameChanged(string value)
     {
         CreateSectionCommand.NotifyCanExecuteChanged();
+        SaveEditCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnNewTestCaseTitleChanged(string value)
     {
         CreateTestCaseCommand.NotifyCanExecuteChanged();
+        SaveEditCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnNewStepTextChanged(string value)
     {
         CreateTestStepCommand.NotifyCanExecuteChanged();
+        SaveEditCommand.NotifyCanExecuteChanged();
     }
 
     [RelayCommand]
@@ -202,6 +255,134 @@ public sealed partial class TestSuitesViewModel : ObservableObject
     private void CloseDialog()
     {
         ActiveDialog = TemplateDialogKind.None;
+        ClearPendingDelete();
+        ClearEditing();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanShowEditTestSuiteDialog))]
+    private void ShowEditTestSuiteDialog(TestSuiteItemViewModel? testSuite)
+    {
+        if (testSuite is null)
+        {
+            return;
+        }
+
+        SelectedTestSuite = testSuite;
+        EditingItemId = testSuite.Id;
+        NewTestSuiteName = testSuite.Name;
+        NewTestSuiteDescription = testSuite.Description;
+        NewTestSuiteRevisionIsRequired = testSuite.RevisionIsRequired;
+        NewTestSuiteInitialRevisionName = string.Empty;
+        StatusMessage = "Ready";
+        ActiveDialog = TemplateDialogKind.EditTestSuite;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanShowEditSectionDialog))]
+    private void ShowEditSectionDialog(TemplateSectionItemViewModel? section)
+    {
+        if (section is null)
+        {
+            return;
+        }
+
+        SelectedSection = section;
+        EditingItemId = section.Id;
+        NewSectionName = section.Name;
+        NewSectionCategory = section.Category;
+        StatusMessage = "Ready";
+        ActiveDialog = TemplateDialogKind.EditSection;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanShowEditTestCaseDialog))]
+    private void ShowEditTestCaseDialog(TestCaseTemplateItemViewModel? testCase)
+    {
+        if (testCase is null)
+        {
+            return;
+        }
+
+        SelectedTestCase = testCase;
+        EditingItemId = testCase.Id;
+        NewTestCaseTitle = testCase.Title;
+        NewTestCaseExpectedResult = testCase.ExpectedResult;
+        StatusMessage = "Ready";
+        ActiveDialog = TemplateDialogKind.EditTestCase;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanShowEditTestStepDialog))]
+    private void ShowEditTestStepDialog(TestStepTemplateItemViewModel? step)
+    {
+        if (step is null)
+        {
+            return;
+        }
+
+        SelectedStep = step;
+        EditingItemId = step.Id;
+        NewStepText = step.StepText;
+        NewStepExpectedResult = step.ExpectedResult;
+        StatusMessage = "Ready";
+        ActiveDialog = TemplateDialogKind.EditStep;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanShowDeleteTestSuiteDialog))]
+    private void ShowDeleteTestSuiteDialog(TestSuiteItemViewModel? testSuite)
+    {
+        if (testSuite is null)
+        {
+            return;
+        }
+
+        SelectedTestSuite = testSuite;
+        ShowDeleteConfirmation(
+            TemplateDeleteTarget.TestSuite,
+            testSuite.Id,
+            $"Delete all of test suite \"{testSuite.Name}\"? This will also delete its revisions, sections, test cases, and checks.");
+    }
+
+    [RelayCommand(CanExecute = nameof(CanShowDeleteSectionDialog))]
+    private void ShowDeleteSectionDialog(TemplateSectionItemViewModel? section)
+    {
+        if (section is null)
+        {
+            return;
+        }
+
+        SelectedSection = section;
+        ShowDeleteConfirmation(
+            TemplateDeleteTarget.Section,
+            section.Id,
+            $"Delete section \"{section.Name}\"? This will also delete its test cases and checks.");
+    }
+
+    [RelayCommand(CanExecute = nameof(CanShowDeleteTestCaseDialog))]
+    private void ShowDeleteTestCaseDialog(TestCaseTemplateItemViewModel? testCase)
+    {
+        if (testCase is null)
+        {
+            return;
+        }
+
+        SelectedTestCase = testCase;
+        ShowDeleteConfirmation(
+            TemplateDeleteTarget.TestCase,
+            testCase.Id,
+            $"Delete test case \"{testCase.Title}\"? This will also delete its checks.");
+    }
+
+    [RelayCommand(CanExecute = nameof(CanShowDeleteTestStepDialog))]
+    private void ShowDeleteTestStepDialog(TestStepTemplateItemViewModel? step)
+    {
+        if (step is null)
+        {
+            return;
+        }
+
+        SelectedStep = step;
+        ShowDeleteConfirmation(
+            TemplateDeleteTarget.Step,
+            step.Id,
+            $"Delete check {step.SortOrder}: \"{step.StepText}\"?");
     }
 
     [RelayCommand(CanExecute = nameof(CanCreateTestSuite))]
@@ -314,8 +495,113 @@ public sealed partial class TestSuitesViewModel : ObservableObject
             NewStepExpectedResult = string.Empty;
 
             LoadCatalog(SelectedTestSuite.Id, selectedRevisionId, SelectedSection.Id, SelectedTestCase.Id);
-            StatusMessage = "Step created.";
+            StatusMessage = "Check created.";
             ActiveDialog = TemplateDialogKind.None;
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = ex.Message;
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanConfirmDelete))]
+    private void ConfirmDelete()
+    {
+        var testSuiteId = SelectedTestSuite?.Id;
+        var revisionId = GetSelectedRevisionIdForSave();
+        var sectionId = SelectedSection?.Id;
+        var testCaseId = SelectedTestCase?.Id;
+        var target = PendingDeleteTarget;
+        var id = PendingDeleteId;
+
+        try
+        {
+            switch (target)
+            {
+                case TemplateDeleteTarget.TestSuite:
+                    testSuiteManagementService.DeleteTestSuite(id);
+                    LoadCatalog();
+                    StatusMessage = "Test suite deleted.";
+                    break;
+                case TemplateDeleteTarget.Section:
+                    testSuiteManagementService.DeleteSection(id);
+                    LoadCatalog(testSuiteId, revisionId);
+                    StatusMessage = "Section deleted.";
+                    break;
+                case TemplateDeleteTarget.TestCase:
+                    testSuiteManagementService.DeleteTestCase(id);
+                    LoadCatalog(testSuiteId, revisionId, sectionId);
+                    StatusMessage = "Test case deleted.";
+                    break;
+                case TemplateDeleteTarget.Step:
+                    testSuiteManagementService.DeleteTestStep(id);
+                    LoadCatalog(testSuiteId, revisionId, sectionId, testCaseId);
+                    StatusMessage = "Check deleted.";
+                    break;
+                default:
+                    return;
+            }
+
+            ActiveDialog = TemplateDialogKind.None;
+            ClearPendingDelete();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = ex.Message;
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanSaveEdit))]
+    private void SaveEdit()
+    {
+        var testSuiteId = SelectedTestSuite?.Id;
+        var revisionId = GetSelectedRevisionIdForSave();
+        var sectionId = SelectedSection?.Id;
+        var testCaseId = SelectedTestCase?.Id;
+        var stepId = SelectedStep?.Id;
+
+        try
+        {
+            switch (ActiveDialog)
+            {
+                case TemplateDialogKind.EditTestSuite:
+                    testSuiteManagementService.UpdateTestSuite(new UpdateTestSuiteRequest(
+                        EditingItemId,
+                        NewTestSuiteName,
+                        NewTestSuiteDescription));
+                    LoadCatalog(EditingItemId, revisionId);
+                    StatusMessage = "Test suite updated.";
+                    break;
+                case TemplateDialogKind.EditSection:
+                    testSuiteManagementService.UpdateSection(new UpdateTemplateSectionRequest(
+                        EditingItemId,
+                        NewSectionName,
+                        NewSectionCategory));
+                    LoadCatalog(testSuiteId, revisionId, EditingItemId);
+                    StatusMessage = "Section updated.";
+                    break;
+                case TemplateDialogKind.EditTestCase:
+                    testSuiteManagementService.UpdateTestCase(new UpdateTestCaseTemplateRequest(
+                        EditingItemId,
+                        NewTestCaseTitle,
+                        NewTestCaseExpectedResult));
+                    LoadCatalog(testSuiteId, revisionId, sectionId, EditingItemId);
+                    StatusMessage = "Test case updated.";
+                    break;
+                case TemplateDialogKind.EditStep:
+                    testSuiteManagementService.UpdateTestStep(new UpdateTestStepTemplateRequest(
+                        EditingItemId,
+                        NewStepText,
+                        NewStepExpectedResult));
+                    LoadCatalog(testSuiteId, revisionId, sectionId, testCaseId, stepId);
+                    StatusMessage = "Check updated.";
+                    break;
+                default:
+                    return;
+            }
+
+            ActiveDialog = TemplateDialogKind.None;
+            ClearEditing();
         }
         catch (Exception ex)
         {
@@ -371,12 +657,95 @@ public sealed partial class TestSuitesViewModel : ObservableObject
         return SelectedTestCase is not null;
     }
 
+    private bool CanShowEditTestSuiteDialog(TestSuiteItemViewModel? testSuite)
+    {
+        return testSuite is not null;
+    }
+
+    private bool CanShowEditSectionDialog(TemplateSectionItemViewModel? section)
+    {
+        return section is not null;
+    }
+
+    private bool CanShowEditTestCaseDialog(TestCaseTemplateItemViewModel? testCase)
+    {
+        return testCase is not null;
+    }
+
+    private bool CanShowEditTestStepDialog(TestStepTemplateItemViewModel? step)
+    {
+        return step is not null;
+    }
+
+    private bool CanShowDeleteTestSuiteDialog(TestSuiteItemViewModel? testSuite)
+    {
+        return testSuite is not null;
+    }
+
+    private bool CanShowDeleteSectionDialog(TemplateSectionItemViewModel? section)
+    {
+        return section is not null;
+    }
+
+    private bool CanShowDeleteTestCaseDialog(TestCaseTemplateItemViewModel? testCase)
+    {
+        return testCase is not null;
+    }
+
+    private bool CanShowDeleteTestStepDialog(TestStepTemplateItemViewModel? step)
+    {
+        return step is not null;
+    }
+
+    private bool CanConfirmDelete()
+    {
+        return PendingDeleteTarget != TemplateDeleteTarget.None && PendingDeleteId != Guid.Empty;
+    }
+
+    private bool CanSaveEdit()
+    {
+        if (EditingItemId == Guid.Empty)
+        {
+            return false;
+        }
+
+        return ActiveDialog switch
+        {
+            TemplateDialogKind.EditTestSuite => !string.IsNullOrWhiteSpace(NewTestSuiteName),
+            TemplateDialogKind.EditSection => !string.IsNullOrWhiteSpace(NewSectionName),
+            TemplateDialogKind.EditTestCase => !string.IsNullOrWhiteSpace(NewTestCaseTitle),
+            TemplateDialogKind.EditStep => !string.IsNullOrWhiteSpace(NewStepText),
+            _ => false
+        };
+    }
+
+    private void ShowDeleteConfirmation(TemplateDeleteTarget target, Guid id, string message)
+    {
+        PendingDeleteTarget = target;
+        PendingDeleteId = id;
+        DeleteConfirmationMessage = message;
+        StatusMessage = "This action cannot be undone.";
+        ActiveDialog = TemplateDialogKind.DeleteConfirmation;
+    }
+
+    private void ClearPendingDelete()
+    {
+        PendingDeleteTarget = TemplateDeleteTarget.None;
+        PendingDeleteId = Guid.Empty;
+        DeleteConfirmationMessage = string.Empty;
+    }
+
+    private void ClearEditing()
+    {
+        EditingItemId = Guid.Empty;
+    }
+
     private void UpdateRevisionColumn(TestSuiteItemViewModel? selectedSuite)
     {
         var shouldShowRevisionColumn = selectedSuite?.RevisionIsRequired == true;
 
         RevisionColumnWidth = shouldShowRevisionColumn
-            ? new GridLength(240)
+            ? new GridLength(280)
             : new GridLength(0);
         RevisionColumnVisibility = shouldShowRevisionColumn
             ? Visibility.Visible
@@ -394,7 +763,8 @@ public sealed partial class TestSuitesViewModel : ObservableObject
         Guid? selectedTestSuiteId = null,
         Guid? selectedRevisionId = null,
         Guid? selectedSectionId = null,
-        Guid? selectedTestCaseId = null)
+        Guid? selectedTestCaseId = null,
+        Guid? selectedStepId = null)
     {
         var testSuites = catalogService.GetCatalog()
             .Select(MapTestSuite)
@@ -424,6 +794,11 @@ public sealed partial class TestSuitesViewModel : ObservableObject
             ? SelectedSection?.TestCases.FirstOrDefault()
             : SelectedSection?.TestCases.FirstOrDefault(testCase => testCase.Id == selectedTestCaseId)
                 ?? SelectedSection?.TestCases.FirstOrDefault();
+
+        SelectedStep = selectedStepId is null
+            ? SelectedTestCase?.Steps.FirstOrDefault()
+            : SelectedTestCase?.Steps.FirstOrDefault(step => step.Id == selectedStepId)
+                ?? SelectedTestCase?.Steps.FirstOrDefault();
     }
 
     private static TestSuiteItemViewModel MapTestSuite(TestSuiteCatalogItem testSuite)

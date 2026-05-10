@@ -19,7 +19,7 @@ The project is intended to replace an Excel-based QA workflow where testers manu
 
 - Create reusable test templates.
 - Create manual test sessions from templates or previous sessions.
-- Track test results per application version, tab, feature, case, and step.
+- Track test results per application version, tab, feature, case, and check.
 - Track bugs in the same application.
 - Store screenshots and other attachments.
 - Keep audit history of user changes.
@@ -34,13 +34,15 @@ src/     Application source code.
 tests/   Automated tests.
 ```
 
-The initial application skeleton has been created. It includes the WPF app, layered projects, MahApps.Metro setup, MVVM starter structure, first Domain entities, a clickable template browser, first template hierarchy creation workflow, SQLite persistence, seed data, and test projects.
+The initial application skeleton has been created. It includes the WPF app, layered projects, MahApps.Metro setup, MVVM starter structure, first Domain entities, a clickable template browser, first template hierarchy create/edit/delete workflow, first scoped dynamic field definition screen, first manual test session creation, case/check result editing, first attachment evidence workflow, SQLite persistence, seed data, and test projects.
 
 ## Documentation
 
 - [Tasks](TASKS.md)
 - [Architecture](docs/architecture.md)
 - [Data Model](docs/data-model.md)
+- [Demo Script](docs/demo-script.md)
+- [Release Checklist](docs/release-checklist.md)
 
 ## Build
 
@@ -54,7 +56,7 @@ dotnet build BugTestManager.sln
 dotnet test BugTestManager.sln
 ```
 
-Current tests cover product versions, test suites, optional revisions, template hierarchy, tags, dynamic fields, attachments, links, sample catalog data, SQLite database creation, seeding, database-backed reads, first SQLite-backed template hierarchy create workflows, and basic validation rules.
+Current tests cover product versions, test suites, optional revisions, template hierarchy, tags, dynamic fields, attachments, links, sample catalog data, SQLite database creation, seeding, database-backed reads, first SQLite-backed template hierarchy create/edit/delete workflows, dynamic field definition create/archive/scope workflows, first test session creation and case/check result update workflows, first attachment evidence workflow, and basic validation rules.
 
 ## Local Data
 

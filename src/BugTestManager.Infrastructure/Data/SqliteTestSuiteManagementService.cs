@@ -168,6 +168,107 @@ public sealed class SqliteTestSuiteManagementService(IDbContextFactory<BugTestMa
         return testStepId;
     }
 
+    public void UpdateTestSuite(UpdateTestSuiteRequest request)
+    {
+        var name = Require(request.Name, "Test suite name");
+        var description = request.Description.Trim();
+
+        using var dbContext = dbContextFactory.CreateDbContext();
+        var testSuite = dbContext.TestSuites.SingleOrDefault(suite => suite.Id == request.TestSuiteId)
+            ?? throw new InvalidOperationException("Selected test suite was not found.");
+
+        if (dbContext.TestSuites.Any(suite => suite.Id != request.TestSuiteId && suite.Name.ToUpper() == name.ToUpper()))
+        {
+            throw new InvalidOperationException($"Test suite '{name}' already exists.");
+        }
+
+        testSuite.Name = name;
+        testSuite.Description = description;
+        dbContext.SaveChanges();
+    }
+
+    public void UpdateSection(UpdateTemplateSectionRequest request)
+    {
+        var name = Require(request.Name, "Section name");
+        var category = request.Category.Trim();
+
+        using var dbContext = dbContextFactory.CreateDbContext();
+        var section = dbContext.TemplateSections.SingleOrDefault(templateSection => templateSection.Id == request.SectionId)
+            ?? throw new InvalidOperationException("Selected section was not found.");
+
+        section.Name = name;
+        section.Category = category;
+        dbContext.SaveChanges();
+    }
+
+    public void UpdateTestCase(UpdateTestCaseTemplateRequest request)
+    {
+        var title = Require(request.Title, "Test case title");
+        var expectedResult = request.ExpectedResult.Trim();
+
+        using var dbContext = dbContextFactory.CreateDbContext();
+        var testCase = dbContext.TestCaseTemplates.SingleOrDefault(template => template.Id == request.TestCaseId)
+            ?? throw new InvalidOperationException("Selected test case was not found.");
+
+        testCase.Title = title;
+        testCase.ExpectedResult = expectedResult;
+        dbContext.SaveChanges();
+    }
+
+    public void UpdateTestStep(UpdateTestStepTemplateRequest request)
+    {
+        var stepText = Require(request.StepText, "Step text");
+        var expectedResult = request.ExpectedResult.Trim();
+
+        using var dbContext = dbContextFactory.CreateDbContext();
+        var step = dbContext.TestStepTemplates.SingleOrDefault(templateStep => templateStep.Id == request.TestStepId)
+            ?? throw new InvalidOperationException("Selected step was not found.");
+
+        step.StepText = stepText;
+        step.ExpectedResult = expectedResult;
+        dbContext.SaveChanges();
+    }
+
+    public void DeleteTestSuite(Guid testSuiteId)
+    {
+        using var dbContext = dbContextFactory.CreateDbContext();
+        var testSuite = dbContext.TestSuites.SingleOrDefault(suite => suite.Id == testSuiteId)
+            ?? throw new InvalidOperationException("Selected test suite was not found.");
+
+        dbContext.TestSuites.Remove(testSuite);
+        dbContext.SaveChanges();
+    }
+
+    public void DeleteSection(Guid sectionId)
+    {
+        using var dbContext = dbContextFactory.CreateDbContext();
+        var section = dbContext.TemplateSections.SingleOrDefault(templateSection => templateSection.Id == sectionId)
+            ?? throw new InvalidOperationException("Selected section was not found.");
+
+        dbContext.TemplateSections.Remove(section);
+        dbContext.SaveChanges();
+    }
+
+    public void DeleteTestCase(Guid testCaseId)
+    {
+        using var dbContext = dbContextFactory.CreateDbContext();
+        var testCase = dbContext.TestCaseTemplates.SingleOrDefault(template => template.Id == testCaseId)
+            ?? throw new InvalidOperationException("Selected test case was not found.");
+
+        dbContext.TestCaseTemplates.Remove(testCase);
+        dbContext.SaveChanges();
+    }
+
+    public void DeleteTestStep(Guid testStepId)
+    {
+        using var dbContext = dbContextFactory.CreateDbContext();
+        var step = dbContext.TestStepTemplates.SingleOrDefault(templateStep => templateStep.Id == testStepId)
+            ?? throw new InvalidOperationException("Selected step was not found.");
+
+        dbContext.TestStepTemplates.Remove(step);
+        dbContext.SaveChanges();
+    }
+
     private static string Require(string value, string displayName)
     {
         if (string.IsNullOrWhiteSpace(value))

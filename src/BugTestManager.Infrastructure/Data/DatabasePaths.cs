@@ -9,4 +9,11 @@ public static class DatabasePaths
 
         return Path.Combine(directory, "BugTestManager.db");
     }
+
+    public static string GetDefaultAttachmentRootPath()
+    {
+        var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+
+        return Path.Combine(appData, "BugTestManager", "Attachments");
+    }
 }

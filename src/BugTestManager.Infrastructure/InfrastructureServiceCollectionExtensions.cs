@@ -7,7 +7,10 @@ namespace BugTestManager.Infrastructure;
 
 public static class InfrastructureServiceCollectionExtensions
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, string? databasePath = null)
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services,
+        string? databasePath = null,
+        string? attachmentRootPath = null)
     {
         var resolvedDatabasePath = databasePath ?? DatabasePaths.GetDefaultDatabasePath();
         var databaseDirectory = Path.GetDirectoryName(resolvedDatabasePath);
@@ -23,6 +26,12 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<IDatabaseInitializer, SqliteDatabaseInitializer>();
         services.AddSingleton<ITestSuiteCatalogService, SqliteTestSuiteCatalogService>();
         services.AddSingleton<ITestSuiteManagementService, SqliteTestSuiteManagementService>();
+        services.AddSingleton<ICustomFieldDefinitionService, SqliteCustomFieldDefinitionService>();
+        services.AddSingleton<ITestSessionService, SqliteTestSessionService>();
+        services.AddSingleton<IAttachmentService>(_ =>
+            new SqliteAttachmentService(
+                _.GetRequiredService<IDbContextFactory<BugTestManagerDbContext>>(),
+                attachmentRootPath));
 
         return services;
     }

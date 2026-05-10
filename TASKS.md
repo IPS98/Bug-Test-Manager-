@@ -42,10 +42,41 @@ Status: implementation in progress after approved architecture and skeleton setu
 - Templates screen can create a section for the selected test suite/revision.
 - Infrastructure test coverage expanded for test suite creation, optional revision sections, and validation.
 - Templates screen can create a test case for the selected section.
-- Templates screen can create a step for the selected test case.
-- Infrastructure test coverage expanded for full section, case, and step creation.
+- Templates screen can create a check for the selected test case.
+- Infrastructure test coverage expanded for full section, case, and check creation.
 - Templates screen now opens add forms in a popup dialog instead of permanent inline forms.
 - Revision column is hidden when the selected test suite does not require revisions.
+- Templates screen can delete selected test suites, sections, test cases, and checks after confirmation.
+- Infrastructure test coverage expanded for check deletion and section cascade deletion.
+- Templates screen can edit existing test suites, sections, test cases, and checks.
+- Row-level Edit and Delete actions appear on hover for the item being changed.
+- Test suite deletion is labeled as Delete all because it removes the suite hierarchy.
+- Infrastructure test coverage expanded for template hierarchy updates.
+- Template list rows now stretch to the visible width and disable horizontal scrolling.
+- Fields page added for user-defined dynamic field definitions.
+- Dynamic fields can be created for templates, sessions, results, and bug reports.
+- Dynamic fields can be scoped globally or to a selected test suite, section, or test case.
+- Dynamic field definitions can be archived.
+- SQLite persistence added for custom field definitions.
+- Infrastructure test coverage expanded for dynamic field definition create/archive/scope workflows.
+- Test Sessions page added.
+- Manual test sessions can be created from an existing test suite/revision.
+- Creating a session copies sections, test cases, and checks into result records.
+- New copied test case and check results start as Not Tested.
+- Test Sessions page can show selected session details with copied sections, cases, and checks.
+- Test Sessions page shows checks inside their parent test case.
+- Testers can update test case and check statuses.
+- Testers can save result comments for test cases and checks.
+- Updating a failed check automatically marks the parent test case as failed.
+- Testers can add attachment evidence files to test case and check results.
+- Test Sessions page shows a selected session status summary.
+- Test Sessions page can filter visible test cases by result status.
+- SQLite persistence added for test sessions, section results, case results, and check results.
+- SQLite persistence added for attachment metadata.
+- Local file storage added for attachment evidence files.
+- Infrastructure test coverage expanded for test session creation, result updates, attachment evidence, and revision validation.
+- Demo script documentation added for work presentation.
+- Release checklist documentation added for build/test/publish steps.
 
 ## Product Goal
 
@@ -71,7 +102,7 @@ The application must replace the current Excel-based workflow where each applica
 - Each team must be able to define which fields are required and which fields are optional.
 - Test suite revision must be optional because many checks are based on windows, controls, firmware workflows, or UI areas without formal revisions.
 - Test templates are required. New manual test sessions should be created from previous templates or previous sessions.
-- Test structure must support user-defined test suites, revisions such as Revision A and Revision B, sections such as Normal and Abnormal, test cases, test steps, dates, versions, tags, and attachments.
+- Test structure must support user-defined test suites, revisions such as Revision A and Revision B, sections such as Normal and Abnormal, test cases, checks, dates, versions, tags, and attachments.
 - Reports must include information per test suite, revision, section, application tab/window, sub-tab, button, table, graph, date field, model, firmware, status, comments, images, and other details.
 - PDF report generation is mandatory.
 - PDF reports should start from the current Excel report idea but become cleaner and easier to read.
@@ -91,11 +122,17 @@ The application must replace the current Excel-based workflow where each applica
 These are still important, but they do not block the first skeleton:
 
 1. Should the first demo database be local SQLite or SQL Server LocalDB?
-2. Should bugs be linkable to a specific test step, only to a test case, or both?
+2. Should bugs be linkable to a specific check, only to a test case, or both?
 3. What exact roles are needed at first: Admin, Tester, Developer, Viewer?
 4. Should reports include a signature/approval section?
 5. Should attachments be stored in a shared folder on the server in production?
 6. Should the app support English only, or should the architecture leave room for more languages later?
+
+## Must Not Forget
+
+- Internally rename the technical Step/TestStep naming to Check/TestCheck after the workflow is stable. The UI already uses Check, but the C# model still contains old Step names to avoid a risky rename while behavior is changing quickly.
+- Keep the storage layer ready for a future shared database/server deployment. Local SQLite is only the first demo storage, and production should be able to move to a shared SQL database and shared attachment folder without rewriting the UI.
+- Keep each feature modular so test templates, sessions, bugs, attachments, reports, and audit history can be changed independently.
 
 ## Proposed Technology
 
@@ -286,16 +323,19 @@ History:
 
 - Create test template management. Started with catalog browsing and first create workflow.
 - Add dynamic field definitions. Started at Domain level.
+- Add dynamic field definition management screen. Started.
 - Add template revisions, sections, cases, and steps. Started at Domain level.
 - Add copy-from-template workflow.
 - Add copy-from-previous-session workflow.
 - Replace in-memory sample catalog with database-backed reads. Done.
 - Add first test suite and section creation workflow. Done.
-- Add first test case and step creation workflow. Done.
+- Add first test case and check creation workflow. Done.
+- Add delete confirmation workflow for template hierarchy items. Done.
+- Add edit workflow for existing template hierarchy items. Done.
 
 ### Milestone 4 - Test Execution
 
-- Create manual test sessions from templates.
+- Create manual test sessions from templates. Started.
 - Add statuses: Not Tested, Pass, Fail, Blocked, Not Applicable.
 - Add comments, dates, model, firmware, and custom fields.
 - Add photo/file attachments.
@@ -306,7 +346,7 @@ History:
 - Create bug report management.
 - Add bug workflow.
 - Add severity and priority.
-- Link bugs to test cases and test steps.
+- Link bugs to test cases and checks.
 - Add bug comments, attachments, and history.
 - Add filtering by status, priority, severity, owner, tags, version, and date.
 
@@ -343,8 +383,8 @@ Milestone 2 has started with the first Domain entities.
 
 Milestone 3 has started with a Templates screen using database-backed seeded data.
 
-Database storage has started. The first editing workflow can create test suites, sections, test cases, and steps.
+Database storage has started. The first editing workflow can create, edit, and delete test suites, sections, test cases, and checks. Dynamic field definition management has started. Manual test session creation has started. Test execution has started with status and comment editing for copied test case and check results.
 
 ## Next Step
 
-Add editing and deletion safeguards for template items, then start planning dynamic field management UI.
+Continue the attachment/photo workflow with preview/open/delete support, then begin the bug tracker slice.
