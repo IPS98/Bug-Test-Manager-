@@ -10,16 +10,19 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private readonly TestSuitesViewModel testSuitesViewModel;
     private readonly FieldDefinitionsViewModel fieldDefinitionsViewModel;
     private readonly TestSessionsViewModel testSessionsViewModel;
+    private readonly BugReportsViewModel bugReportsViewModel;
 
     public MainWindowViewModel(
         IUserContext userContext,
         TestSuitesViewModel testSuitesViewModel,
         FieldDefinitionsViewModel fieldDefinitionsViewModel,
-        TestSessionsViewModel testSessionsViewModel)
+        TestSessionsViewModel testSessionsViewModel,
+        BugReportsViewModel bugReportsViewModel)
     {
         this.testSuitesViewModel = testSuitesViewModel;
         this.fieldDefinitionsViewModel = fieldDefinitionsViewModel;
         this.testSessionsViewModel = testSessionsViewModel;
+        this.bugReportsViewModel = bugReportsViewModel;
         CurrentUserDisplay = $"Signed in as {userContext.UserName} ({userContext.Role})";
 
         Modules =
@@ -64,6 +67,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
             AppPageKey.Templates => testSuitesViewModel,
             AppPageKey.Fields => GetFieldDefinitionsViewModel(),
             AppPageKey.TestSessions => GetTestSessionsViewModel(),
+            AppPageKey.Bugs => GetBugReportsViewModel(),
             _ => new PlaceholderPageViewModel(module.Name, "This page will be implemented after the template browser is stable.")
         };
     }
@@ -78,5 +82,11 @@ public sealed partial class MainWindowViewModel : ObservableObject
     {
         testSessionsViewModel.Refresh();
         return testSessionsViewModel;
+    }
+
+    private BugReportsViewModel GetBugReportsViewModel()
+    {
+        bugReportsViewModel.Refresh();
+        return bugReportsViewModel;
     }
 }

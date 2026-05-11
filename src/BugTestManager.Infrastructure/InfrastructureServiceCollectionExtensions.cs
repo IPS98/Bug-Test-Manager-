@@ -28,6 +28,8 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<ITestSuiteManagementService, SqliteTestSuiteManagementService>();
         services.AddSingleton<ICustomFieldDefinitionService, SqliteCustomFieldDefinitionService>();
         services.AddSingleton<ITestSessionService, SqliteTestSessionService>();
+        services.AddSingleton<IBugReportService, SqliteBugReportService>();
+        services.AddSingleton<IDiscussionService, SqliteDiscussionService>();
         services.AddSingleton<IAttachmentService>(_ =>
             new SqliteAttachmentService(
                 _.GetRequiredService<IDbContextFactory<BugTestManagerDbContext>>(),

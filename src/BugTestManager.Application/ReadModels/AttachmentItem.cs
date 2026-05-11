@@ -9,6 +9,7 @@ public sealed record AttachmentItem(
     string OriginalFileName,
     string StoredFileName,
     string RelativePath,
+    string AbsolutePath,
     string ContentType,
     long SizeBytes,
     string UploadedBy,

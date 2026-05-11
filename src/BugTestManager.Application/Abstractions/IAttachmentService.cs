@@ -9,4 +9,6 @@ public interface IAttachmentService
     IReadOnlyList<AttachmentItem> GetAttachments(EntityReferenceType entityType, Guid entityId);
 
     Guid AddAttachment(AddAttachmentRequest request);
+
+    void DeleteAttachment(Guid attachmentId);
 }

@@ -13,6 +13,8 @@ public sealed class SqliteDatabaseInitializer(IDbContextFactory<BugTestManagerDb
         EnsureCustomFieldDefinitionTable(dbContext);
         EnsureTestSessionTables(dbContext);
         EnsureAttachmentTable(dbContext);
+        EnsureBugReportTable(dbContext);
+        EnsureDiscussionCommentTable(dbContext);
 
         if (dbContext.TestSuites.Any())
         {
@@ -247,6 +249,73 @@ public sealed class SqliteDatabaseInitializer(IDbContextFactory<BugTestManagerDb
             """
             CREATE INDEX IF NOT EXISTS "IX_Attachments_EntityType_EntityId_UploadedAt"
             ON "Attachments" ("EntityType", "EntityId", "UploadedAt");
+            """);
+    }
+
+    private static void EnsureBugReportTable(BugTestManagerDbContext dbContext)
+    {
+        dbContext.Database.ExecuteSqlRaw(
+            """
+            CREATE TABLE IF NOT EXISTS "BugReports" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_BugReports" PRIMARY KEY,
+                "Title" TEXT NOT NULL,
+                "Description" TEXT NOT NULL,
+                "Status" INTEGER NOT NULL,
+                "Severity" TEXT NOT NULL,
+                "Priority" TEXT NOT NULL,
+                "FoundInVersion" TEXT NOT NULL,
+                "BuildNumber" TEXT NOT NULL,
+                "CreatedBy" TEXT NOT NULL,
+                "CreatedAt" TEXT NOT NULL,
+                "UpdatedBy" TEXT NOT NULL,
+                "UpdatedAt" TEXT NOT NULL,
+                "LinkedEntityType" INTEGER NULL,
+                "LinkedEntityId" TEXT NULL,
+                "LinkedEntityDisplayName" TEXT NOT NULL DEFAULT ''
+            );
+            """);
+
+        EnsureColumn(dbContext, "BugReports", "LinkedEntityType", "\"LinkedEntityType\" INTEGER NULL");
+        EnsureColumn(dbContext, "BugReports", "LinkedEntityId", "\"LinkedEntityId\" TEXT NULL");
+        EnsureColumn(
+            dbContext,
+            "BugReports",
+            "LinkedEntityDisplayName",
+            "\"LinkedEntityDisplayName\" TEXT NOT NULL DEFAULT ''");
+
+        dbContext.Database.ExecuteSqlRaw(
+            """
+            CREATE INDEX IF NOT EXISTS "IX_BugReports_Status_UpdatedAt"
+            ON "BugReports" ("Status", "UpdatedAt");
+            """);
+
+        dbContext.Database.ExecuteSqlRaw(
+            """
+            CREATE INDEX IF NOT EXISTS "IX_BugReports_LinkedEntityType_LinkedEntityId"
+            ON "BugReports" ("LinkedEntityType", "LinkedEntityId");
+            """);
+    }
+
+    private static void EnsureDiscussionCommentTable(BugTestManagerDbContext dbContext)
+    {
+        dbContext.Database.ExecuteSqlRaw(
+            """
+            CREATE TABLE IF NOT EXISTS "DiscussionComments" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_DiscussionComments" PRIMARY KEY,
+                "EntityType" INTEGER NOT NULL,
+                "EntityId" TEXT NOT NULL,
+                "Message" TEXT NOT NULL,
+                "CreatedBy" TEXT NOT NULL,
+                "CreatedAt" TEXT NOT NULL,
+                "UpdatedBy" TEXT NOT NULL,
+                "UpdatedAt" TEXT NULL
+            );
+            """);
+
+        dbContext.Database.ExecuteSqlRaw(
+            """
+            CREATE INDEX IF NOT EXISTS "IX_DiscussionComments_EntityType_EntityId_CreatedAt"
+            ON "DiscussionComments" ("EntityType", "EntityId", "CreatedAt");
             """);
     }
 

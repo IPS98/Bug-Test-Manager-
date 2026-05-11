@@ -27,6 +27,10 @@ public sealed class BugTestManagerDbContext(DbContextOptions<BugTestManagerDbCon
 
     public DbSet<AttachmentRecord> Attachments => Set<AttachmentRecord>();
 
+    public DbSet<BugReportRecord> BugReports => Set<BugReportRecord>();
+
+    public DbSet<DiscussionCommentRecord> DiscussionComments => Set<DiscussionCommentRecord>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<TestSuiteRecord>(entity =>
@@ -161,6 +165,33 @@ public sealed class BugTestManagerDbContext(DbContextOptions<BugTestManagerDbCon
             entity.Property(attachment => attachment.ContentType).HasMaxLength(200).IsRequired();
             entity.Property(attachment => attachment.UploadedBy).HasMaxLength(200).IsRequired();
             entity.HasIndex(attachment => new { attachment.EntityType, attachment.EntityId, attachment.UploadedAt });
+        });
+
+        modelBuilder.Entity<BugReportRecord>(entity =>
+        {
+            entity.ToTable("BugReports");
+            entity.HasKey(bug => bug.Id);
+            entity.Property(bug => bug.Title).HasMaxLength(300).IsRequired();
+            entity.Property(bug => bug.Description).HasMaxLength(4000).IsRequired();
+            entity.Property(bug => bug.Severity).HasMaxLength(100).IsRequired();
+            entity.Property(bug => bug.Priority).HasMaxLength(100).IsRequired();
+            entity.Property(bug => bug.FoundInVersion).HasMaxLength(100).IsRequired();
+            entity.Property(bug => bug.BuildNumber).HasMaxLength(100).IsRequired();
+            entity.Property(bug => bug.CreatedBy).HasMaxLength(200).IsRequired();
+            entity.Property(bug => bug.UpdatedBy).HasMaxLength(200).IsRequired();
+            entity.Property(bug => bug.LinkedEntityDisplayName).HasMaxLength(500).IsRequired();
+            entity.HasIndex(bug => new { bug.Status, bug.UpdatedAt });
+            entity.HasIndex(bug => new { bug.LinkedEntityType, bug.LinkedEntityId });
+        });
+
+        modelBuilder.Entity<DiscussionCommentRecord>(entity =>
+        {
+            entity.ToTable("DiscussionComments");
+            entity.HasKey(comment => comment.Id);
+            entity.Property(comment => comment.Message).HasMaxLength(4000).IsRequired();
+            entity.Property(comment => comment.CreatedBy).HasMaxLength(200).IsRequired();
+            entity.Property(comment => comment.UpdatedBy).HasMaxLength(200).IsRequired();
+            entity.HasIndex(comment => new { comment.EntityType, comment.EntityId, comment.CreatedAt });
         });
     }
 }

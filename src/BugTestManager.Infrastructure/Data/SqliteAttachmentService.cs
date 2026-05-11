@@ -80,7 +80,23 @@ public sealed class SqliteAttachmentService(
         return attachmentId;
     }
 
-    private static AttachmentItem MapAttachment(AttachmentRecord attachment)
+    public void DeleteAttachment(Guid attachmentId)
+    {
+        using var dbContext = dbContextFactory.CreateDbContext();
+        var attachment = dbContext.Attachments.SingleOrDefault(item => item.Id == attachmentId)
+            ?? throw new InvalidOperationException("Selected attachment was not found.");
+
+        var absolutePath = GetAbsolutePath(attachment.RelativePath);
+        if (File.Exists(absolutePath))
+        {
+            File.Delete(absolutePath);
+        }
+
+        dbContext.Attachments.Remove(attachment);
+        dbContext.SaveChanges();
+    }
+
+    private AttachmentItem MapAttachment(AttachmentRecord attachment)
     {
         return new AttachmentItem(
             attachment.Id,
@@ -89,10 +105,16 @@ public sealed class SqliteAttachmentService(
             attachment.OriginalFileName,
             attachment.StoredFileName,
             attachment.RelativePath,
+            GetAbsolutePath(attachment.RelativePath),
             attachment.ContentType,
             attachment.SizeBytes,
             attachment.UploadedBy,
             attachment.UploadedAt);
+    }
+
+    private string GetAbsolutePath(string relativePath)
+    {
+        return Path.Combine(attachmentRootPath, relativePath);
     }
 
     private static string GetContentType(string extension)
@@ -103,8 +125,18 @@ public sealed class SqliteAttachmentService(
             ".jpg" or ".jpeg" => "image/jpeg",
             ".bmp" => "image/bmp",
             ".gif" => "image/gif",
+            ".mp4" => "video/mp4",
+            ".mov" => "video/quicktime",
+            ".avi" => "video/x-msvideo",
+            ".mkv" => "video/x-matroska",
+            ".webm" => "video/webm",
             ".pdf" => "application/pdf",
             ".txt" or ".log" => "text/plain",
+            ".ps1" => "text/x-powershell",
+            ".bat" or ".cmd" => "application/x-bat",
+            ".cs" => "text/x-csharp",
+            ".json" => "application/json",
+            ".xml" => "application/xml",
             ".csv" => "text/csv",
             ".xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",

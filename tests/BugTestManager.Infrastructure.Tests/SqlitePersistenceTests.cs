@@ -1,4 +1,5 @@
 using BugTestManager.Application.Abstractions;
+using BugTestManager.Application.Exceptions;
 using BugTestManager.Application.Requests;
 using BugTestManager.Domain.Enums;
 using BugTestManager.Infrastructure;
@@ -531,7 +532,218 @@ public sealed class SqlitePersistenceTests
         Assert.Equal("evidence.txt", attachment.OriginalFileName);
         Assert.Equal("text/plain", attachment.ContentType);
         Assert.Equal("tester", attachment.UploadedBy);
+        Assert.Equal(Path.Combine(attachmentRootPath, attachment.RelativePath), attachment.AbsolutePath);
         Assert.True(File.Exists(Path.Combine(attachmentRootPath, attachment.RelativePath)));
+    }
+
+    [Fact]
+    public void AttachmentService_DeletesAttachmentMetadataAndFile()
+    {
+        var databasePath = CreateTempDatabasePath();
+        var attachmentRootPath = CreateTempDirectoryPath();
+        using var serviceProvider = CreateServiceProvider(databasePath, attachmentRootPath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var sourceDirectory = CreateTempDirectoryPath();
+        var sourceFilePath = Path.Combine(sourceDirectory, "delete-me.log");
+        File.WriteAllText(sourceFilePath, "temporary evidence");
+
+        var attachmentService = serviceProvider.GetRequiredService<IAttachmentService>();
+        var entityId = Guid.NewGuid();
+        var attachmentId = attachmentService.AddAttachment(new AddAttachmentRequest(
+            EntityReferenceType.TestStepResult,
+            entityId,
+            sourceFilePath,
+            "tester"));
+        var attachment = attachmentService
+            .GetAttachments(EntityReferenceType.TestStepResult, entityId)
+            .Single(item => item.Id == attachmentId);
+
+        attachmentService.DeleteAttachment(attachmentId);
+
+        Assert.Empty(attachmentService.GetAttachments(EntityReferenceType.TestStepResult, entityId));
+        Assert.False(File.Exists(attachment.AbsolutePath));
+    }
+
+    [Fact]
+    public void BugReportService_CreatesAndUpdatesBugStatus()
+    {
+        var databasePath = CreateTempDatabasePath();
+        using var serviceProvider = CreateServiceProvider(databasePath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var bugService = serviceProvider.GetRequiredService<IBugReportService>();
+        var bugId = bugService.CreateBug(new CreateBugReportRequest(
+            "Tooltip is missing",
+            "The On/Off button does not show the expected tooltip.",
+            "High",
+            "Medium",
+            "1.2.5",
+            "790",
+            "tester",
+            EntityReferenceType.TestStepResult,
+            Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            "Check 3: Tooltip"));
+
+        bugService.UpdateStatus(new UpdateBugStatusRequest(
+            bugId,
+            BugStatus.Fixed,
+            "developer"));
+
+        var bug = bugService.GetBugs().Single(item => item.Id == bugId);
+
+        Assert.Equal("Tooltip is missing", bug.Title);
+        Assert.Equal(BugStatus.Fixed, bug.Status);
+        Assert.Equal("High", bug.Severity);
+        Assert.Equal("Medium", bug.Priority);
+        Assert.Equal("tester", bug.CreatedBy);
+        Assert.Equal("developer", bug.UpdatedBy);
+        Assert.Equal(EntityReferenceType.TestStepResult, bug.LinkedEntityType);
+        Assert.Equal(Guid.Parse("11111111-1111-1111-1111-111111111111"), bug.LinkedEntityId);
+        Assert.Equal("Check 3: Tooltip", bug.LinkedEntityDisplayName);
+    }
+
+    [Fact]
+    public void BugReportService_RejectsDuplicateBugTitle()
+    {
+        var databasePath = CreateTempDatabasePath();
+        using var serviceProvider = CreateServiceProvider(databasePath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var bugService = serviceProvider.GetRequiredService<IBugReportService>();
+        bugService.CreateBug(new CreateBugReportRequest(
+            "Tooltip is missing",
+            "The On/Off button does not show the expected tooltip.",
+            "High",
+            "Medium",
+            "1.2.5",
+            "790",
+            "tester"));
+
+        Assert.Throws<DuplicateBugTitleException>(() => bugService.CreateBug(new CreateBugReportRequest(
+            " tooltip IS missing ",
+            "Duplicate title should not be accepted.",
+            "Low",
+            "Low",
+            "1.2.6",
+            "791",
+            "tester")));
+    }
+
+    [Fact]
+    public void BugReportService_UpdatesBugDetails()
+    {
+        var databasePath = CreateTempDatabasePath();
+        using var serviceProvider = CreateServiceProvider(databasePath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var bugService = serviceProvider.GetRequiredService<IBugReportService>();
+        var bugId = bugService.CreateBug(new CreateBugReportRequest(
+            "Output voltage is unstable",
+            "Voltage graph jumps during startup.",
+            "High",
+            "High",
+            "1.2.6",
+            "792",
+            "tester"));
+
+        bugService.UpdateBug(new UpdateBugReportRequest(
+            bugId,
+            "Output voltage is unstable after startup",
+            "Voltage graph jumps during startup and load change.",
+            BugStatus.InProgress,
+            "Medium",
+            "High",
+            "1.2.7",
+            "800",
+            "developer"));
+
+        var bug = bugService.GetBugs().Single(item => item.Id == bugId);
+
+        Assert.Equal("Output voltage is unstable after startup", bug.Title);
+        Assert.Equal("Voltage graph jumps during startup and load change.", bug.Description);
+        Assert.Equal(BugStatus.InProgress, bug.Status);
+        Assert.Equal("developer", bug.UpdatedBy);
+    }
+
+    [Fact]
+    public void DiscussionService_AddsUpdatesAndDeletesComments()
+    {
+        var databasePath = CreateTempDatabasePath();
+        using var serviceProvider = CreateServiceProvider(databasePath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var bugService = serviceProvider.GetRequiredService<IBugReportService>();
+        var bugId = bugService.CreateBug(new CreateBugReportRequest(
+            "Output voltage is unstable",
+            "Voltage graph jumps during startup.",
+            "High",
+            "High",
+            "1.2.6",
+            "792",
+            "tester"));
+
+        var discussionService = serviceProvider.GetRequiredService<IDiscussionService>();
+        var commentId = discussionService.AddComment(new AddDiscussionCommentRequest(
+            EntityReferenceType.BugReport,
+            bugId,
+            "Developer note: checking startup initialization.",
+            "developer"));
+
+        discussionService.UpdateComment(new UpdateDiscussionCommentRequest(
+            commentId,
+            "Developer note: startup initialization is under review.",
+            "developer"));
+
+        var comment = discussionService
+            .GetComments(EntityReferenceType.BugReport, bugId)
+            .Single(item => item.Id == commentId);
+
+        Assert.Equal("Developer note: startup initialization is under review.", comment.Message);
+        Assert.Equal("developer", comment.CreatedBy);
+        Assert.Equal("developer", comment.UpdatedBy);
+        Assert.NotNull(comment.UpdatedAt);
+
+        discussionService.DeleteComment(commentId);
+
+        Assert.Empty(discussionService.GetComments(EntityReferenceType.BugReport, bugId));
+    }
+
+    [Fact]
+    public void AttachmentService_AddsVideoAttachmentForBugReport()
+    {
+        var databasePath = CreateTempDatabasePath();
+        var attachmentRootPath = CreateTempDirectoryPath();
+        using var serviceProvider = CreateServiceProvider(databasePath, attachmentRootPath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var bugService = serviceProvider.GetRequiredService<IBugReportService>();
+        var bugId = bugService.CreateBug(new CreateBugReportRequest(
+            "Graph freezes",
+            "The graph stops updating after changing current limit.",
+            "Medium",
+            "High",
+            "1.2.6",
+            "793",
+            "tester"));
+        var sourceDirectory = CreateTempDirectoryPath();
+        var sourceFilePath = Path.Combine(sourceDirectory, "freeze-capture.mp4");
+        File.WriteAllBytes(sourceFilePath, [0x00, 0x01, 0x02]);
+
+        var attachmentService = serviceProvider.GetRequiredService<IAttachmentService>();
+        var attachmentId = attachmentService.AddAttachment(new AddAttachmentRequest(
+            EntityReferenceType.BugReport,
+            bugId,
+            sourceFilePath,
+            "tester"));
+
+        var attachment = attachmentService
+            .GetAttachments(EntityReferenceType.BugReport, bugId)
+            .Single(item => item.Id == attachmentId);
+
+        Assert.Equal("freeze-capture.mp4", attachment.OriginalFileName);
+        Assert.Equal("video/mp4", attachment.ContentType);
+        Assert.True(File.Exists(attachment.AbsolutePath));
     }
 
     private static ServiceProvider CreateServiceProvider(string databasePath, string? attachmentRootPath = null)

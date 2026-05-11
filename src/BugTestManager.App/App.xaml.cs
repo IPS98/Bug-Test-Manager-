@@ -36,10 +36,13 @@ public partial class App : System.Windows.Application
     {
         services.AddSingleton<IUserContext, WindowsUserContext>();
         services.AddSingleton<IFilePickerService, WindowsFilePickerService>();
+        services.AddSingleton<IFileLauncherService, WindowsFileLauncherService>();
+        services.AddSingleton<IErrorDialogService, MetroErrorDialogService>();
         services.AddInfrastructure();
         services.AddSingleton<TestSuitesViewModel>();
         services.AddSingleton<FieldDefinitionsViewModel>();
         services.AddSingleton<TestSessionsViewModel>();
+        services.AddSingleton<BugReportsViewModel>();
         services.AddSingleton<MainWindowViewModel>();
         services.AddSingleton<MainWindow>();
     }

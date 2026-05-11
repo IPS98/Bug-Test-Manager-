@@ -5,6 +5,7 @@ public sealed class AttachmentItemViewModel
     public AttachmentItemViewModel(
         Guid id,
         string originalFileName,
+        string absolutePath,
         string contentType,
         long sizeBytes,
         string uploadedBy,
@@ -12,6 +13,7 @@ public sealed class AttachmentItemViewModel
     {
         Id = id;
         OriginalFileName = originalFileName;
+        AbsolutePath = absolutePath;
         ContentType = contentType;
         SizeBytes = sizeBytes;
         UploadedBy = uploadedBy;
@@ -21,6 +23,8 @@ public sealed class AttachmentItemViewModel
     public Guid Id { get; }
 
     public string OriginalFileName { get; }
+
+    public string AbsolutePath { get; }
 
     public string ContentType { get; }
 
@@ -37,4 +41,6 @@ public sealed class AttachmentItemViewModel
     public string UploadedAtDisplay => UploadedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
 
     public string DetailsDisplay => $"{ContentType}, {SizeDisplay}, {UploadedBy}, {UploadedAtDisplay}";
+
+    public bool IsImage => ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
 }

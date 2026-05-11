@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using BugTestManager.App.Services;
 using BugTestManager.Application.Abstractions;
+using BugTestManager.Application.Exceptions;
 using BugTestManager.Application.ReadModels;
 using BugTestManager.Application.Requests;
 using BugTestManager.Domain.Enums;
@@ -15,20 +16,32 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     private readonly ITestSessionService testSessionService;
     private readonly ITestSuiteCatalogService testSuiteCatalogService;
     private readonly IAttachmentService attachmentService;
+    private readonly IDiscussionService discussionService;
+    private readonly IBugReportService bugReportService;
     private readonly IFilePickerService filePickerService;
+    private readonly IFileLauncherService fileLauncherService;
+    private readonly IErrorDialogService errorDialogService;
     private readonly IUserContext userContext;
 
     public TestSessionsViewModel(
         ITestSessionService testSessionService,
         ITestSuiteCatalogService testSuiteCatalogService,
         IAttachmentService attachmentService,
+        IDiscussionService discussionService,
+        IBugReportService bugReportService,
         IFilePickerService filePickerService,
+        IFileLauncherService fileLauncherService,
+        IErrorDialogService errorDialogService,
         IUserContext userContext)
     {
         this.testSessionService = testSessionService;
         this.testSuiteCatalogService = testSuiteCatalogService;
         this.attachmentService = attachmentService;
+        this.discussionService = discussionService;
+        this.bugReportService = bugReportService;
         this.filePickerService = filePickerService;
+        this.fileLauncherService = fileLauncherService;
+        this.errorDialogService = errorDialogService;
         this.userContext = userContext;
         TestSuites = [];
         Revisions = [];
@@ -36,6 +49,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         Sections = [];
         FilteredTestCases = [];
         ResultAttachments = [];
+        DiscussionComments = [];
         ResultStatuses = Enum.GetValues<TestResultStatus>()
             .Select(status => new SelectionOption<TestResultStatus>(
                 status,
@@ -65,6 +79,8 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     public ObservableCollection<TestCaseResultViewModel> FilteredTestCases { get; }
 
     public ObservableCollection<AttachmentItemViewModel> ResultAttachments { get; }
+
+    public ObservableCollection<DiscussionCommentItemViewModel> DiscussionComments { get; }
 
     public IReadOnlyList<SelectionOption<TestResultStatus>> ResultStatuses { get; }
 
@@ -127,6 +143,37 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     [ObservableProperty]
     private string resultComment = string.Empty;
 
+    [ObservableProperty]
+    private string linkedBugTitle = string.Empty;
+
+    [ObservableProperty]
+    private string linkedBugDescription = string.Empty;
+
+    [ObservableProperty]
+    private string linkedBugTargetDisplay = string.Empty;
+
+    [ObservableProperty]
+    private Visibility discussionDrawerVisibility = Visibility.Collapsed;
+
+    [ObservableProperty]
+    private string discussionTitle = "Discussion";
+
+    [ObservableProperty]
+    private string discussionMessage = string.Empty;
+
+    [ObservableProperty]
+    private DiscussionCommentItemViewModel? editingDiscussionComment;
+
+    [ObservableProperty]
+    private string discussionEditorTitle = "New message";
+
+    [ObservableProperty]
+    private string discussionSaveButtonText = "Add Message";
+
+    private EntityReferenceType discussionEntityType;
+
+    private Guid discussionEntityId;
+
     partial void OnSelectedTestSuiteChanged(TestSessionSuiteOption? value)
     {
         Revisions.Clear();
@@ -162,11 +209,13 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     {
         SelectedStep = value?.Steps.FirstOrDefault();
         ShowEditTestCaseResultCommand.NotifyCanExecuteChanged();
+        ShowTestCaseDiscussionCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnSelectedStepChanged(TestStepResultViewModel? value)
     {
         ShowEditTestStepResultCommand.NotifyCanExecuteChanged();
+        ShowTestStepDiscussionCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnNewSessionNameChanged(string value)
@@ -182,17 +231,31 @@ public sealed partial class TestSessionsViewModel : ObservableObject
 
         SaveResultCommand.NotifyCanExecuteChanged();
         AddAttachmentCommand.NotifyCanExecuteChanged();
+        CreateLinkedBugCommand.NotifyCanExecuteChanged();
+        ShowCurrentResultDiscussionCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnEditingResultIdChanged(Guid value)
     {
         SaveResultCommand.NotifyCanExecuteChanged();
         AddAttachmentCommand.NotifyCanExecuteChanged();
+        CreateLinkedBugCommand.NotifyCanExecuteChanged();
+        ShowCurrentResultDiscussionCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnSelectedResultStatusChanged(SelectionOption<TestResultStatus>? value)
     {
         SaveResultCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnLinkedBugTitleChanged(string value)
+    {
+        CreateLinkedBugCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnDiscussionMessageChanged(string value)
+    {
+        SaveDiscussionMessageCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnSelectedResultStatusFilterChanged(SelectionOption<TestResultStatus?>? value)
@@ -251,6 +314,9 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         EditingResultId = testCase.Id;
         SelectedResultStatus = ResultStatuses.Single(option => option.Value == testCase.Status);
         ResultComment = testCase.Comment;
+        LinkedBugTitle = testCase.Title;
+        LinkedBugDescription = BuildDefaultBugDescription(testCase.ExpectedResult, testCase.Comment);
+        LinkedBugTargetDisplay = $"Test case: {testCase.Title}";
         ResultDialogTitle = $"Update Test Case: {testCase.Title}";
         StatusMessage = "Ready";
         EditingResultTarget = TestSessionResultTargetKind.TestCase;
@@ -269,6 +335,9 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         EditingResultId = step.Id;
         SelectedResultStatus = ResultStatuses.Single(option => option.Value == step.Status);
         ResultComment = step.Comment;
+        LinkedBugTitle = step.CheckText;
+        LinkedBugDescription = BuildDefaultBugDescription(step.ExpectedResult, step.Comment);
+        LinkedBugTargetDisplay = $"Check {step.SortOrder}: {step.CheckText}";
         ResultDialogTitle = $"Update Check {step.SortOrder}";
         StatusMessage = "Ready";
         EditingResultTarget = TestSessionResultTargetKind.Step;
@@ -282,6 +351,9 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         EditingResultId = Guid.Empty;
         ResultDialogTitle = string.Empty;
         ResultComment = string.Empty;
+        LinkedBugTitle = string.Empty;
+        LinkedBugDescription = string.Empty;
+        LinkedBugTargetDisplay = string.Empty;
         SelectedResultStatus = ResultStatuses.FirstOrDefault();
         ResultAttachments.Clear();
     }
@@ -308,6 +380,207 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            StatusMessage = ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private void OpenAttachment(AttachmentItemViewModel? attachment)
+    {
+        if (attachment is null)
+        {
+            return;
+        }
+
+        try
+        {
+            fileLauncherService.OpenFile(attachment.AbsolutePath);
+            StatusMessage = "Attachment opened.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private void DeleteAttachment(AttachmentItemViewModel? attachment)
+    {
+        if (attachment is null)
+        {
+            return;
+        }
+
+        try
+        {
+            attachmentService.DeleteAttachment(attachment.Id);
+            LoadResultAttachments();
+            StatusMessage = "Attachment deleted.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = ex.Message;
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanCreateLinkedBug))]
+    private void CreateLinkedBug()
+    {
+        try
+        {
+            bugReportService.CreateBug(new CreateBugReportRequest(
+                LinkedBugTitle,
+                LinkedBugDescription,
+                "Medium",
+                "Medium",
+                SelectedSession?.TestedVersion ?? string.Empty,
+                SelectedSession?.BuildNumber ?? string.Empty,
+                userContext.UserName,
+                GetEditingEntityType(),
+                EditingResultId,
+                LinkedBugTargetDisplay));
+
+            StatusMessage = "Linked bug created.";
+        }
+        catch (Exception ex)
+        {
+            var title = ex is DuplicateBugTitleException
+                ? "Duplicate Bug"
+                : "Bug Creation Error";
+            errorDialogService.ShowError(title, ex.Message);
+            StatusMessage = ex.Message;
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanShowTestCaseDiscussion))]
+    private void ShowTestCaseDiscussion(TestCaseResultViewModel? testCase)
+    {
+        var targetTestCase = testCase ?? SelectedTestCase;
+        if (targetTestCase is null)
+        {
+            return;
+        }
+
+        SelectedTestCase = targetTestCase;
+        OpenDiscussion(
+            EntityReferenceType.TestCaseResult,
+            targetTestCase.Id,
+            $"Test case discussion: {targetTestCase.Title}");
+    }
+
+    [RelayCommand(CanExecute = nameof(CanShowTestStepDiscussion))]
+    private void ShowTestStepDiscussion(TestStepResultViewModel? step)
+    {
+        var targetStep = step ?? SelectedStep;
+        if (targetStep is null)
+        {
+            return;
+        }
+
+        SelectedStep = targetStep;
+        OpenDiscussion(
+            EntityReferenceType.TestStepResult,
+            targetStep.Id,
+            $"Check discussion: {targetStep.CheckText}");
+    }
+
+    [RelayCommand(CanExecute = nameof(CanShowCurrentResultDiscussion))]
+    private void ShowCurrentResultDiscussion()
+    {
+        switch (EditingResultTarget)
+        {
+            case TestSessionResultTargetKind.TestCase when SelectedTestCase is not null:
+                ShowTestCaseDiscussion(SelectedTestCase);
+                break;
+            case TestSessionResultTargetKind.Step when SelectedStep is not null:
+                ShowTestStepDiscussion(SelectedStep);
+                break;
+        }
+    }
+
+    [RelayCommand]
+    private void CloseDiscussion()
+    {
+        DiscussionDrawerVisibility = Visibility.Collapsed;
+        discussionEntityId = Guid.Empty;
+        DiscussionTitle = "Discussion";
+        DiscussionMessage = string.Empty;
+        ClearDiscussionEdit();
+        DiscussionComments.Clear();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanSaveDiscussionMessage))]
+    private void SaveDiscussionMessage()
+    {
+        try
+        {
+            if (EditingDiscussionComment is null)
+            {
+                discussionService.AddComment(new AddDiscussionCommentRequest(
+                    discussionEntityType,
+                    discussionEntityId,
+                    DiscussionMessage,
+                    userContext.UserName));
+            }
+            else
+            {
+                discussionService.UpdateComment(new UpdateDiscussionCommentRequest(
+                    EditingDiscussionComment.Id,
+                    DiscussionMessage,
+                    userContext.UserName));
+            }
+
+            DiscussionMessage = string.Empty;
+            ClearDiscussionEdit();
+            LoadDiscussionComments();
+            StatusMessage = "Discussion saved.";
+        }
+        catch (Exception ex)
+        {
+            errorDialogService.ShowError("Discussion Error", ex.Message);
+            StatusMessage = ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private void EditDiscussionMessage(DiscussionCommentItemViewModel? comment)
+    {
+        if (comment is null)
+        {
+            return;
+        }
+
+        EditingDiscussionComment = comment;
+        DiscussionMessage = comment.Message;
+        DiscussionEditorTitle = "Edit message";
+        DiscussionSaveButtonText = "Save Message";
+        SaveDiscussionMessageCommand.NotifyCanExecuteChanged();
+    }
+
+    [RelayCommand]
+    private void CancelDiscussionEdit()
+    {
+        DiscussionMessage = string.Empty;
+        ClearDiscussionEdit();
+    }
+
+    [RelayCommand]
+    private void DeleteDiscussionMessage(DiscussionCommentItemViewModel? comment)
+    {
+        if (comment is null)
+        {
+            return;
+        }
+
+        try
+        {
+            discussionService.DeleteComment(comment.Id);
+            LoadDiscussionComments();
+            StatusMessage = "Discussion message deleted.";
+        }
+        catch (Exception ex)
+        {
+            errorDialogService.ShowError("Discussion Error", ex.Message);
             StatusMessage = ex.Message;
         }
     }
@@ -389,6 +662,31 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     {
         return EditingResultTarget != TestSessionResultTargetKind.None
             && EditingResultId != Guid.Empty;
+    }
+
+    private bool CanCreateLinkedBug()
+    {
+        return CanAddAttachment() && !string.IsNullOrWhiteSpace(LinkedBugTitle);
+    }
+
+    private bool CanShowTestCaseDiscussion(TestCaseResultViewModel? testCase)
+    {
+        return testCase is not null || SelectedTestCase is not null;
+    }
+
+    private bool CanShowTestStepDiscussion(TestStepResultViewModel? step)
+    {
+        return step is not null || SelectedStep is not null;
+    }
+
+    private bool CanShowCurrentResultDiscussion()
+    {
+        return EditingResultTarget != TestSessionResultTargetKind.None && EditingResultId != Guid.Empty;
+    }
+
+    private bool CanSaveDiscussionMessage()
+    {
+        return discussionEntityId != Guid.Empty && !string.IsNullOrWhiteSpace(DiscussionMessage);
     }
 
     private void LoadTestSuites()
@@ -535,6 +833,43 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         }
     }
 
+    private void OpenDiscussion(EntityReferenceType entityType, Guid entityId, string title)
+    {
+        discussionEntityType = entityType;
+        discussionEntityId = entityId;
+        DiscussionTitle = title;
+        DiscussionMessage = string.Empty;
+        ClearDiscussionEdit();
+        LoadDiscussionComments();
+        DiscussionDrawerVisibility = Visibility.Visible;
+        SaveDiscussionMessageCommand.NotifyCanExecuteChanged();
+    }
+
+    private void LoadDiscussionComments()
+    {
+        DiscussionComments.Clear();
+
+        if (discussionEntityId == Guid.Empty)
+        {
+            return;
+        }
+
+        foreach (var comment in discussionService
+                     .GetComments(discussionEntityType, discussionEntityId)
+                     .Select(MapComment))
+        {
+            DiscussionComments.Add(comment);
+        }
+    }
+
+    private void ClearDiscussionEdit()
+    {
+        EditingDiscussionComment = null;
+        DiscussionEditorTitle = "New message";
+        DiscussionSaveButtonText = "Add Message";
+        SaveDiscussionMessageCommand.NotifyCanExecuteChanged();
+    }
+
     private EntityReferenceType GetEditingEntityType()
     {
         return EditingResultTarget switch
@@ -603,9 +938,33 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         return new AttachmentItemViewModel(
             attachment.Id,
             attachment.OriginalFileName,
+            attachment.AbsolutePath,
             attachment.ContentType,
             attachment.SizeBytes,
             attachment.UploadedBy,
             attachment.UploadedAt);
+    }
+
+    private static DiscussionCommentItemViewModel MapComment(DiscussionCommentItem comment)
+    {
+        return new DiscussionCommentItemViewModel(
+            comment.Id,
+            comment.Message,
+            comment.CreatedBy,
+            comment.CreatedAt,
+            comment.UpdatedBy,
+            comment.UpdatedAt);
+    }
+
+    private static string BuildDefaultBugDescription(string expectedResult, string comment)
+    {
+        if (!string.IsNullOrWhiteSpace(comment))
+        {
+            return comment;
+        }
+
+        return string.IsNullOrWhiteSpace(expectedResult)
+            ? "Created from a test result."
+            : $"Expected result: {expectedResult}";
     }
 }

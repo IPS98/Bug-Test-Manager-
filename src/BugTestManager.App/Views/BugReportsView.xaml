@@ -1,0 +1,501 @@
+<UserControl x:Class="BugTestManager.App.Views.BugReportsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <Style x:Key="FullWidthListBoxItemStyle" TargetType="ListBoxItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        </Style>
+
+        <Style x:Key="SmallActionButtonStyle" TargetType="Button">
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="MinWidth" Value="72" />
+            <Setter Property="Padding" Value="10,0" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="360" />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Padding="18"
+                    Background="White"
+                    CornerRadius="8">
+                <StackPanel>
+                    <TextBlock FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="#172033"
+                               Text="New Bug" />
+
+                    <TextBlock Margin="0,18,0,6"
+                               Foreground="#64748B"
+                               Text="Title" />
+                    <TextBox MinHeight="34"
+                             VerticalContentAlignment="Center"
+                             Text="{Binding NewBugTitle, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <TextBlock Margin="0,14,0,6"
+                               Foreground="#64748B"
+                               Text="Description" />
+                    <TextBox MinHeight="110"
+                             AcceptsReturn="True"
+                             Text="{Binding NewBugDescription, UpdateSourceTrigger=PropertyChanged}"
+                             TextWrapping="Wrap" />
+
+                    <TextBlock Margin="0,14,0,6"
+                               Foreground="#64748B"
+                               Text="Severity" />
+                    <TextBox MinHeight="34"
+                             VerticalContentAlignment="Center"
+                             Text="{Binding NewBugSeverity, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <TextBlock Margin="0,14,0,6"
+                               Foreground="#64748B"
+                               Text="Priority" />
+                    <TextBox MinHeight="34"
+                             VerticalContentAlignment="Center"
+                             Text="{Binding NewBugPriority, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <TextBlock Margin="0,14,0,6"
+                               Foreground="#64748B"
+                               Text="Found in version" />
+                    <TextBox MinHeight="34"
+                             VerticalContentAlignment="Center"
+                             Text="{Binding NewBugFoundInVersion, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <TextBlock Margin="0,14,0,6"
+                               Foreground="#64748B"
+                               Text="Build number" />
+                    <TextBox MinHeight="34"
+                             VerticalContentAlignment="Center"
+                             Text="{Binding NewBugBuildNumber, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <Button Margin="0,18,0,0"
+                            MinHeight="36"
+                            HorizontalAlignment="Stretch"
+                            Command="{Binding CreateBugCommand}"
+                            Content="Create Bug" />
+
+                    <TextBlock Margin="0,14,0,0"
+                               Foreground="#64748B"
+                               Text="{Binding StatusMessage}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2"
+                    Padding="18"
+                    Background="White"
+                    CornerRadius="8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="220" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock VerticalAlignment="Center"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Foreground="#172033"
+                                   Text="Bug Tracker" />
+                        <ComboBox Grid.Column="1"
+                                  MinHeight="34"
+                                  Margin="12,0,10,0"
+                                  DisplayMemberPath="DisplayName"
+                                  ItemsSource="{Binding BugStatuses}"
+                                  SelectedItem="{Binding SelectedBugStatus}" />
+                        <Button Grid.Column="2"
+                                MinHeight="34"
+                                MinWidth="110"
+                                Command="{Binding UpdateBugStatusCommand}"
+                                Content="Update Status" />
+                    </Grid>
+
+                    <ListBox Grid.Row="1"
+                             ItemsSource="{Binding Bugs}"
+                             SelectedItem="{Binding SelectedBug}"
+                             ItemContainerStyle="{StaticResource FullWidthListBoxItemStyle}"
+                             BorderThickness="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="0,4,0,12"
+                                        Padding="14"
+                                        BorderBrush="#E2E8F0"
+                                        BorderThickness="1"
+                                        CornerRadius="6">
+                                    <Border.InputBindings>
+                                        <MouseBinding MouseAction="LeftDoubleClick"
+                                                      Command="{Binding DataContext.OpenBugDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                      CommandParameter="{Binding}" />
+                                    </Border.InputBindings>
+                                    <StackPanel>
+                                        <DockPanel LastChildFill="True">
+                                            <Border DockPanel.Dock="Right"
+                                                    Padding="8,3"
+                                                    Background="{Binding StatusBackground}"
+                                                    CornerRadius="4">
+                                                <TextBlock FontWeight="SemiBold"
+                                                           Foreground="{Binding StatusForeground}"
+                                                           Text="{Binding StatusDisplay}" />
+                                            </Border>
+                                            <TextBlock FontWeight="SemiBold"
+                                                       Text="{Binding Title}"
+                                                       TextWrapping="Wrap" />
+                                        </DockPanel>
+
+                                        <TextBlock Margin="0,8,0,0"
+                                                   Foreground="#64748B"
+                                                   Text="{Binding Description}"
+                                                   TextWrapping="Wrap" />
+
+                                        <WrapPanel Margin="0,10,0,0">
+                                            <TextBlock Margin="0,0,18,0"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="#256D5A"
+                                                       Text="{Binding SeverityDisplay}" />
+                                            <TextBlock Margin="0,0,18,0"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="#256D5A"
+                                                       Text="{Binding PriorityDisplay}" />
+                                            <TextBlock Margin="0,0,18,0"
+                                                       Foreground="#64748B"
+                                                       Text="{Binding VersionDisplay}" />
+                                            <TextBlock Margin="0,0,18,0"
+                                                       Foreground="#64748B"
+                                                       Text="{Binding BuildDisplay}" />
+                                        </WrapPanel>
+
+                                        <Grid Margin="0,10,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="8" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock VerticalAlignment="Center"
+                                                       Foreground="#64748B"
+                                                       Text="{Binding UpdatedDisplay}"
+                                                       TextWrapping="Wrap" />
+                                            <Button Grid.Column="1"
+                                                    Command="{Binding DataContext.OpenBugDiscussionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"
+                                                    Content="Chat"
+                                                    Style="{StaticResource SmallActionButtonStyle}" />
+                                            <Button Grid.Column="3"
+                                                    Command="{Binding DataContext.OpenBugDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"
+                                                    Content="Open"
+                                                    Style="{StaticResource SmallActionButtonStyle}" />
+                                        </Grid>
+
+                                        <TextBlock Margin="0,6,0,0"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#256D5A"
+                                                   Text="{Binding LinkDisplay}"
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Border Panel.ZIndex="20"
+                Background="#660F172A"
+                Visibility="{Binding BugDetailsDrawerVisibility}">
+            <Border Width="620"
+                    Padding="22"
+                    HorizontalAlignment="Right"
+                    Background="White">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <DockPanel Margin="0,0,0,16">
+                        <Button DockPanel.Dock="Right"
+                                MinHeight="30"
+                                MinWidth="72"
+                                Command="{Binding CloseBugDetailsCommand}"
+                                Content="Close" />
+                        <TextBlock FontSize="22"
+                                   FontWeight="SemiBold"
+                                   Foreground="#172033"
+                                   Text="Bug Details" />
+                    </DockPanel>
+
+                    <ScrollViewer Grid.Row="1"
+                                  VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Foreground="#64748B"
+                                       Text="Title" />
+                            <TextBox Margin="0,6,0,12"
+                                     MinHeight="34"
+                                     Text="{Binding DetailBugTitle, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <TextBlock Foreground="#64748B"
+                                       Text="Description" />
+                            <TextBox Margin="0,6,0,12"
+                                     MinHeight="130"
+                                     AcceptsReturn="True"
+                                     Text="{Binding DetailBugDescription, UpdateSourceTrigger=PropertyChanged}"
+                                     TextWrapping="Wrap" />
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Foreground="#64748B"
+                                               Text="Severity" />
+                                    <TextBox Margin="0,6,0,12"
+                                             MinHeight="34"
+                                             Text="{Binding DetailBugSeverity, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Foreground="#64748B"
+                                               Text="Priority" />
+                                    <TextBox Margin="0,6,0,12"
+                                             MinHeight="34"
+                                             Text="{Binding DetailBugPriority, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Grid>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Foreground="#64748B"
+                                               Text="Found in version" />
+                                    <TextBox Margin="0,6,0,12"
+                                             MinHeight="34"
+                                             Text="{Binding DetailBugFoundInVersion, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Foreground="#64748B"
+                                               Text="Build number" />
+                                    <TextBox Margin="0,6,0,12"
+                                             MinHeight="34"
+                                             Text="{Binding DetailBugBuildNumber, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock Foreground="#64748B"
+                                       Text="Status" />
+                            <ComboBox Margin="0,6,0,16"
+                                      MinHeight="34"
+                                      DisplayMemberPath="DisplayName"
+                                      ItemsSource="{Binding BugStatuses}"
+                                      SelectedItem="{Binding DetailSelectedBugStatus}" />
+
+                            <Grid Margin="0,4,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="8" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock VerticalAlignment="Center"
+                                           FontSize="16"
+                                           FontWeight="SemiBold"
+                                           Foreground="#172033"
+                                           Text="Attachments" />
+                                <Button Grid.Column="1"
+                                        Command="{Binding AddBugAttachmentCommand}"
+                                        Content="Add File"
+                                        Style="{StaticResource SmallActionButtonStyle}" />
+                                <Button Grid.Column="3"
+                                        Command="{Binding OpenBugDiscussionCommand}"
+                                        Content="Chat"
+                                        Style="{StaticResource SmallActionButtonStyle}" />
+                            </Grid>
+
+                            <ItemsControl ItemsSource="{Binding BugAttachments}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Margin="0,0,0,10"
+                                                Padding="10"
+                                                BorderBrush="#E2E8F0"
+                                                BorderThickness="1"
+                                                CornerRadius="6">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="8" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel>
+                                                    <TextBlock FontWeight="SemiBold"
+                                                               Text="{Binding OriginalFileName}"
+                                                               TextWrapping="Wrap" />
+                                                    <TextBlock Margin="0,3,0,0"
+                                                               Foreground="#64748B"
+                                                               Text="{Binding DetailsDisplay}"
+                                                               TextWrapping="Wrap" />
+                                                </StackPanel>
+                                                <Button Grid.Column="1"
+                                                        Command="{Binding DataContext.OpenBugAttachmentCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        Content="Open"
+                                                        Style="{StaticResource SmallActionButtonStyle}" />
+                                                <Button Grid.Column="3"
+                                                        Command="{Binding DataContext.DeleteBugAttachmentCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        Content="Delete"
+                                                        Foreground="#B91C1C"
+                                                        Style="{StaticResource SmallActionButtonStyle}" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <StackPanel Grid.Row="2"
+                                Margin="0,18,0,0"
+                                HorizontalAlignment="Right"
+                                Orientation="Horizontal">
+                        <Button MinWidth="92"
+                                MinHeight="34"
+                                Margin="0,0,10,0"
+                                Command="{Binding CloseBugDetailsCommand}"
+                                Content="Cancel" />
+                        <Button MinWidth="92"
+                                MinHeight="34"
+                                Command="{Binding SaveBugDetailsCommand}"
+                                Content="Save" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Border>
+
+        <Border Panel.ZIndex="30"
+                Background="#330F172A"
+                Visibility="{Binding DiscussionDrawerVisibility}">
+            <Border Width="440"
+                    Padding="18"
+                    HorizontalAlignment="Right"
+                    Background="#F8FAFC"
+                    BorderBrush="#CBD5E1"
+                    BorderThickness="1,0,0,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <DockPanel Margin="0,0,0,14">
+                        <Button DockPanel.Dock="Right"
+                                MinHeight="30"
+                                MinWidth="72"
+                                Command="{Binding CloseDiscussionCommand}"
+                                Content="Close" />
+                        <TextBlock FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Foreground="#172033"
+                                   Text="{Binding DiscussionTitle}"
+                                   TextWrapping="Wrap" />
+                    </DockPanel>
+
+                    <ListBox Grid.Row="1"
+                             ItemsSource="{Binding DiscussionComments}"
+                             ItemContainerStyle="{StaticResource FullWidthListBoxItemStyle}"
+                             BorderThickness="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="0,0,0,10"
+                                        Padding="10"
+                                        Background="White"
+                                        BorderBrush="#E2E8F0"
+                                        BorderThickness="1"
+                                        CornerRadius="6">
+                                    <StackPanel>
+                                        <DockPanel LastChildFill="True">
+                                            <StackPanel DockPanel.Dock="Right"
+                                                        Orientation="Horizontal">
+                                                <Button MinWidth="48"
+                                                        Command="{Binding DataContext.EditDiscussionMessageCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        Content="Edit" />
+                                                <Button MinWidth="56"
+                                                        Margin="6,0,0,0"
+                                                        Foreground="#B91C1C"
+                                                        Command="{Binding DataContext.DeleteDiscussionMessageCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        Content="Delete" />
+                                            </StackPanel>
+                                            <TextBlock FontWeight="SemiBold"
+                                                       Foreground="#256D5A"
+                                                       Text="{Binding HeaderDisplay}"
+                                                       TextWrapping="Wrap" />
+                                        </DockPanel>
+                                        <TextBlock Margin="0,6,0,0"
+                                                   Foreground="#172033"
+                                                   Text="{Binding Message}"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock Margin="0,5,0,0"
+                                                   Foreground="#94A3B8"
+                                                   Text="{Binding EditedDisplay}"
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <Border Grid.Row="2"
+                            Margin="0,14,0,0"
+                            Padding="12"
+                            Background="White"
+                            BorderBrush="#E2E8F0"
+                            BorderThickness="1"
+                            CornerRadius="6">
+                        <StackPanel>
+                            <TextBlock FontWeight="SemiBold"
+                                       Foreground="#172033"
+                                       Text="{Binding DiscussionEditorTitle}" />
+                            <TextBox Margin="0,8,0,10"
+                                     MinHeight="82"
+                                     AcceptsReturn="True"
+                                     Text="{Binding DiscussionMessage, UpdateSourceTrigger=PropertyChanged}"
+                                     TextWrapping="Wrap" />
+                            <StackPanel HorizontalAlignment="Right"
+                                        Orientation="Horizontal">
+                                <Button MinWidth="76"
+                                        Margin="0,0,8,0"
+                                        Command="{Binding CancelDiscussionEditCommand}"
+                                        Content="Clear" />
+                                <Button MinWidth="110"
+                                        Command="{Binding SaveDiscussionMessageCommand}"
+                                        Content="{Binding DiscussionSaveButtonText}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+        </Border>
+    </Grid>
+</UserControl>

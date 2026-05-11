@@ -69,14 +69,33 @@ Status: implementation in progress after approved architecture and skeleton setu
 - Testers can save result comments for test cases and checks.
 - Updating a failed check automatically marks the parent test case as failed.
 - Testers can add attachment evidence files to test case and check results.
+- Testers can open and delete attachment evidence files from the result dialog.
+- Image attachments show a small preview in the result dialog.
 - Test Sessions page shows a selected session status summary.
 - Test Sessions page can filter visible test cases by result status.
 - SQLite persistence added for test sessions, section results, case results, and check results.
 - SQLite persistence added for attachment metadata.
 - Local file storage added for attachment evidence files.
-- Infrastructure test coverage expanded for test session creation, result updates, attachment evidence, and revision validation.
+- Infrastructure test coverage expanded for test session creation, result updates, attachment evidence add/delete, and revision validation.
 - Demo script documentation added for work presentation.
 - Release checklist documentation added for build/test/publish steps.
+- Bugs page added with first create/list/status update workflow.
+- SQLite persistence added for bug reports.
+- Infrastructure test coverage expanded for bug creation and status updates.
+- Bug creation now rejects duplicate bug titles.
+- Modular error dialog service added for popup errors.
+- Test case/check result dialog can create a linked bug report.
+- Bugs page shows the linked test item for linked bugs.
+- Popup errors now use a modular MahApps.Metro dialog service instead of classic Windows message boxes.
+- Bugs page supports tester/developer comments for the selected bug.
+- Bugs page supports attachments for the selected bug.
+- Attachment picker now accepts screenshots, videos, logs, scripts, documents, and all file types.
+- SQLite persistence added for generic discussion comments.
+- Infrastructure test coverage expanded for bug comments and bug video attachments.
+- Bugs page opens the selected bug in a right-side detail drawer for review and correction.
+- Bugs page opens discussion in a compact right-side drawer instead of using permanent screen space.
+- Test case and check results can open their own discussion drawer.
+- Discussion messages can be added, edited, deleted, and show created/edited timestamps.
 
 ## Product Goal
 
@@ -94,6 +113,9 @@ The application must replace the current Excel-based workflow where each applica
 - Code comments: English.
 - Conversation language with the project owner: Russian.
 - Users: more than one person will use the system. At minimum, tester and developer roles are expected.
+- Users must have their own accounts and roles in the future.
+- Users must be able to sign in from more than one PC, not only from their own Windows machine.
+- The first demo may use Windows user name, but the architecture must be ready for real shared authentication.
 - First demo should use local storage, but the architecture must be ready for server storage.
 - Future production target should support shared storage on a company server.
 - Audit tracking should use the Windows user name in the first version.
@@ -101,19 +123,28 @@ The application must replace the current Excel-based workflow where each applica
 - Tests and bugs must support dynamic fields.
 - Each team must be able to define which fields are required and which fields are optional.
 - Test suite revision must be optional because many checks are based on windows, controls, firmware workflows, or UI areas without formal revisions.
-- Test templates are required. New manual test sessions should be created from previous templates or previous sessions.
+- Test templates are recommended for repeatable work, but manual test sessions must also support creating tests directly without a template.
+- New manual test sessions should be creatable from a template, from a previous session, or from an empty manual session.
 - Test structure must support user-defined test suites, revisions such as Revision A and Revision B, sections such as Normal and Abnormal, test cases, checks, dates, versions, tags, and attachments.
 - Reports must include information per test suite, revision, section, application tab/window, sub-tab, button, table, graph, date field, model, firmware, status, comments, images, and other details.
 - PDF report generation is mandatory.
 - PDF reports should start from the current Excel report idea but become cleaner and easier to read.
 - Attachments and photos are mandatory.
-- Templates, manual sessions, bugs, comments, and results must support attachments/photos.
+- Attachments must support screenshots, photos, videos, text files, logs, scripts, documents, and future file types.
+- Templates, manual sessions, bugs, comments, and results must support attachments/photos/files where useful.
 - Copying templates or previous sessions for the next version is mandatory.
 - Tags and links between related items are mandatory.
 - Sorting, filtering, and tags are mandatory.
 - Users must be able to filter by failed tests, unfinished bugs, version, revision, section, category, tags, status, owner, and date.
 - Developers should be able to add comments, change bug status such as Fixed, and edit bug-related information.
 - Testers should be able to edit test results, add comments, add photos, and create bugs.
+- Bugs must support a conversation/comment area for tester and developer communication.
+- Test sessions/results should support a conversation/comment area when discussion is needed around a result.
+- Popup errors should follow the app visual style and use MahApps.Metro dialogs, not classic Windows message boxes.
+- Discussion/chat UI should not permanently take main screen space; it should open as a compact drawer or dialog from a chat action.
+- Each bug, test case result, and check result should have its own discussion/chat thread.
+- Chat messages should support created time, edit, and delete workflows.
+- Bugs should open into a full detail view/drawer for review, scrolling, and correction.
 - Application versioning, builds, future updates, and release control must be planned from the beginning.
 - Final app should be publishable as a Windows .exe.
 
@@ -133,6 +164,9 @@ These are still important, but they do not block the first skeleton:
 - Internally rename the technical Step/TestStep naming to Check/TestCheck after the workflow is stable. The UI already uses Check, but the C# model still contains old Step names to avoid a risky rename while behavior is changing quickly.
 - Keep the storage layer ready for a future shared database/server deployment. Local SQLite is only the first demo storage, and production should be able to move to a shared SQL database and shared attachment folder without rewriting the UI.
 - Keep each feature modular so test templates, sessions, bugs, attachments, reports, and audit history can be changed independently.
+- Add direct manual test creation inside Test Sessions after the current bug attachment/comment workflow is stable.
+- Do not force every test session to start from a template; keep the model ready for template-based and free-form testing.
+- Keep business logic ready for a future web UI by avoiding WPF dependencies outside the App project.
 
 ## Proposed Technology
 
@@ -336,9 +370,12 @@ History:
 ### Milestone 4 - Test Execution
 
 - Create manual test sessions from templates. Started.
+- Create manual test sessions without templates.
+- Add manual section, test case, and check creation inside an active test session.
 - Add statuses: Not Tested, Pass, Fail, Blocked, Not Applicable.
 - Add comments, dates, model, firmware, and custom fields.
 - Add photo/file attachments.
+- Add result discussion/comments for tester/developer communication.
 - Add filtering by status, revision, section, category, tags, owner, and dates.
 
 ### Milestone 5 - Bug Tracker
@@ -348,6 +385,8 @@ History:
 - Add severity and priority.
 - Link bugs to test cases and checks.
 - Add bug comments, attachments, and history.
+- Add bug conversation/comments for tester/developer communication.
+- Add bug attachments for screenshots, videos, logs, scripts, and documents.
 - Add filtering by status, priority, severity, owner, tags, version, and date.
 
 ### Milestone 6 - PDF Reports
@@ -387,4 +426,4 @@ Database storage has started. The first editing workflow can create, edit, and d
 
 ## Next Step
 
-Continue the attachment/photo workflow with preview/open/delete support, then begin the bug tracker slice.
+Add filtering for bug status/priority/severity, then add direct manual session creation without a template.
