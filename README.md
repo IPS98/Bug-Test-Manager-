@@ -34,7 +34,7 @@ src/     Application source code.
 tests/   Automated tests.
 ```
 
-The initial application skeleton has been created. It includes the WPF app, layered projects, MahApps.Metro setup, MVVM starter structure, first Domain entities, a clickable template browser, first template hierarchy create/edit/delete workflow, first scoped dynamic field definition screen, first manual test session creation, case/check result editing, first attachment evidence workflow with open/delete support, first linked bug tracker workflow, compact discussion drawers, bug detail editing, bug attachments, SQLite persistence, seed data, and test projects.
+The initial application skeleton has been created. It includes the WPF app, layered projects, MahApps.Metro setup, MVVM starter structure, first Domain entities, a clickable template browser, first template hierarchy create/edit/delete workflow, first scoped dynamic field definition screen, first manual test session creation, case/check result editing, first attachment evidence workflow with open/delete support, first linked bug tracker workflow, compact discussion drawers, bug detail editing, bug filters, bug attachments, SQLite persistence, seed data, and test projects.
 
 ## Documentation
 

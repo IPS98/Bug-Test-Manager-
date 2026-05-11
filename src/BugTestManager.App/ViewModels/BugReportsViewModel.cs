@@ -13,6 +13,9 @@ namespace BugTestManager.App.ViewModels;
 
 public sealed partial class BugReportsViewModel : ObservableObject
 {
+    private const string AllSeveritiesFilter = "All severities";
+    private const string AllPrioritiesFilter = "All priorities";
+
     private readonly IBugReportService bugReportService;
     private readonly IAttachmentService attachmentService;
     private readonly IDiscussionService discussionService;
@@ -23,6 +26,7 @@ public sealed partial class BugReportsViewModel : ObservableObject
 
     private EntityReferenceType discussionEntityType;
     private Guid discussionEntityId;
+    private List<BugReportItemViewModel> allBugs = [];
 
     public BugReportsViewModel(
         IBugReportService bugReportService,
@@ -43,12 +47,25 @@ public sealed partial class BugReportsViewModel : ObservableObject
         Bugs = [];
         BugAttachments = [];
         DiscussionComments = [];
+        SeverityFilters = [];
+        PriorityFilters = [];
         BugStatuses = Enum.GetValues<BugStatus>()
             .Select(status => new SelectionOption<BugStatus>(
                 status,
                 BugStatusDisplayNames.ForStatus(status)))
             .ToList();
+        BugStatusFilters =
+        [
+            new SelectionOption<BugStatus?>(null, "All statuses"),
+            .. Enum.GetValues<BugStatus>()
+                .Select(status => new SelectionOption<BugStatus?>(
+                    status,
+                    BugStatusDisplayNames.ForStatus(status)))
+        ];
         SelectedBugStatus = BugStatuses.FirstOrDefault();
+        SelectedBugStatusFilter = BugStatusFilters.FirstOrDefault();
+        SelectedSeverityFilter = AllSeveritiesFilter;
+        SelectedPriorityFilter = AllPrioritiesFilter;
         DetailSelectedBugStatus = BugStatuses.FirstOrDefault();
         Refresh();
     }
@@ -59,13 +76,28 @@ public sealed partial class BugReportsViewModel : ObservableObject
 
     public ObservableCollection<DiscussionCommentItemViewModel> DiscussionComments { get; }
 
+    public ObservableCollection<string> SeverityFilters { get; }
+
+    public ObservableCollection<string> PriorityFilters { get; }
+
     public IReadOnlyList<SelectionOption<BugStatus>> BugStatuses { get; }
+
+    public IReadOnlyList<SelectionOption<BugStatus?>> BugStatusFilters { get; }
 
     [ObservableProperty]
     private BugReportItemViewModel? selectedBug;
 
     [ObservableProperty]
     private SelectionOption<BugStatus>? selectedBugStatus;
+
+    [ObservableProperty]
+    private SelectionOption<BugStatus?>? selectedBugStatusFilter;
+
+    [ObservableProperty]
+    private string selectedSeverityFilter = AllSeveritiesFilter;
+
+    [ObservableProperty]
+    private string selectedPriorityFilter = AllPrioritiesFilter;
 
     [ObservableProperty]
     private string newBugTitle = string.Empty;
@@ -150,6 +182,21 @@ public sealed partial class BugReportsViewModel : ObservableObject
     partial void OnSelectedBugStatusChanged(SelectionOption<BugStatus>? value)
     {
         UpdateBugStatusCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnSelectedBugStatusFilterChanged(SelectionOption<BugStatus?>? value)
+    {
+        ApplyBugFilters(SelectedBug?.Id);
+    }
+
+    partial void OnSelectedSeverityFilterChanged(string value)
+    {
+        ApplyBugFilters(SelectedBug?.Id);
+    }
+
+    partial void OnSelectedPriorityFilterChanged(string value)
+    {
+        ApplyBugFilters(SelectedBug?.Id);
     }
 
     partial void OnDetailBugTitleChanged(string value)
@@ -492,9 +539,39 @@ public sealed partial class BugReportsViewModel : ObservableObject
 
     private void LoadBugs(Guid? selectedBugId = null)
     {
-        var bugs = bugReportService.GetBugs()
+        allBugs = bugReportService.GetBugs()
             .Select(MapBug)
             .ToList();
+
+        RefreshFilterOptions();
+        ApplyBugFilters(selectedBugId);
+    }
+
+    private void ApplyBugFilters(Guid? selectedBugId = null)
+    {
+        var filteredBugs = allBugs.AsEnumerable();
+        var selectedStatus = SelectedBugStatusFilter?.Value;
+        if (selectedStatus is not null)
+        {
+            filteredBugs = filteredBugs.Where(bug => bug.Status == selectedStatus.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(SelectedSeverityFilter)
+            && !string.Equals(SelectedSeverityFilter, AllSeveritiesFilter, StringComparison.Ordinal))
+        {
+            filteredBugs = filteredBugs.Where(bug =>
+                string.Equals(bug.Severity, SelectedSeverityFilter, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrWhiteSpace(SelectedPriorityFilter)
+            && !string.Equals(SelectedPriorityFilter, AllPrioritiesFilter, StringComparison.Ordinal))
+        {
+            filteredBugs = filteredBugs.Where(bug =>
+                string.Equals(bug.Priority, SelectedPriorityFilter, StringComparison.OrdinalIgnoreCase));
+        }
+
+        var preferredBugId = selectedBugId ?? SelectedBug?.Id;
+        var bugs = filteredBugs.ToList();
 
         Bugs.Clear();
         foreach (var bug in bugs)
@@ -502,9 +579,44 @@ public sealed partial class BugReportsViewModel : ObservableObject
             Bugs.Add(bug);
         }
 
-        SelectedBug = selectedBugId is null
+        SelectedBug = preferredBugId is null
             ? Bugs.FirstOrDefault()
-            : Bugs.FirstOrDefault(bug => bug.Id == selectedBugId) ?? Bugs.FirstOrDefault();
+            : Bugs.FirstOrDefault(bug => bug.Id == preferredBugId) ?? Bugs.FirstOrDefault();
+    }
+
+    private void RefreshFilterOptions()
+    {
+        var selectedSeverity = SelectedSeverityFilter;
+        var selectedPriority = SelectedPriorityFilter;
+
+        SeverityFilters.Clear();
+        SeverityFilters.Add(AllSeveritiesFilter);
+        foreach (var severity in allBugs
+                     .Select(bug => bug.Severity)
+                     .Where(value => !string.IsNullOrWhiteSpace(value))
+                     .Distinct(StringComparer.OrdinalIgnoreCase)
+                     .OrderBy(value => value))
+        {
+            SeverityFilters.Add(severity);
+        }
+
+        PriorityFilters.Clear();
+        PriorityFilters.Add(AllPrioritiesFilter);
+        foreach (var priority in allBugs
+                     .Select(bug => bug.Priority)
+                     .Where(value => !string.IsNullOrWhiteSpace(value))
+                     .Distinct(StringComparer.OrdinalIgnoreCase)
+                     .OrderBy(value => value))
+        {
+            PriorityFilters.Add(priority);
+        }
+
+        SelectedSeverityFilter = SeverityFilters.Contains(selectedSeverity, StringComparer.OrdinalIgnoreCase)
+            ? selectedSeverity
+            : AllSeveritiesFilter;
+        SelectedPriorityFilter = PriorityFilters.Contains(selectedPriority, StringComparer.OrdinalIgnoreCase)
+            ? selectedPriority
+            : AllPrioritiesFilter;
     }
 
     private void LoadSelectedBugAttachments()

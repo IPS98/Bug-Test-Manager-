@@ -93,6 +93,7 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
@@ -120,7 +121,46 @@
                                 Content="Update Status" />
                     </Grid>
 
-                    <ListBox Grid.Row="1"
+                    <Grid Grid.Row="1"
+                          Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="14" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="14" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel>
+                            <TextBlock Margin="0,0,0,5"
+                                       Foreground="#64748B"
+                                       Text="Status filter" />
+                            <ComboBox MinHeight="32"
+                                      DisplayMemberPath="DisplayName"
+                                      ItemsSource="{Binding BugStatusFilters}"
+                                      SelectedItem="{Binding SelectedBugStatusFilter}" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Margin="0,0,0,5"
+                                       Foreground="#64748B"
+                                       Text="Severity filter" />
+                            <ComboBox MinHeight="32"
+                                      ItemsSource="{Binding SeverityFilters}"
+                                      SelectedItem="{Binding SelectedSeverityFilter}" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="4">
+                            <TextBlock Margin="0,0,0,5"
+                                       Foreground="#64748B"
+                                       Text="Priority filter" />
+                            <ComboBox MinHeight="32"
+                                      ItemsSource="{Binding PriorityFilters}"
+                                      SelectedItem="{Binding SelectedPriorityFilter}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <ListBox Grid.Row="2"
                              ItemsSource="{Binding Bugs}"
                              SelectedItem="{Binding SelectedBug}"
                              ItemContainerStyle="{StaticResource FullWidthListBoxItemStyle}"

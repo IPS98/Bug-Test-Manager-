@@ -26,15 +26,16 @@ Show that the project already has a real Windows desktop foundation for replacin
 16. Go to `Bugs`.
 17. Create a bug report.
 18. Change the bug status to `Fixed` or `Ready for Retest`.
-19. Try creating another bug with the same title and show the duplicate-title popup.
-20. Return to `Test Sessions`, open a failed case/check, and create a linked bug from the result dialog.
-21. Select the linked bug in `Bugs`.
-22. Open the bug details drawer by double-clicking the bug or pressing `Open`.
-23. Correct bug details and save.
-24. Open the bug discussion drawer with `Chat`.
-25. Add, edit, and delete a tester/developer message.
-26. Add a screenshot, video, log, script, or document in the bug details attachment area.
-27. Return to `Test Sessions` and open `Chat` on a test case or check.
+19. Filter bugs by status, severity, and priority.
+20. Try creating another bug with the same title and show the duplicate-title popup.
+21. Return to `Test Sessions`, open a failed case/check, and create a linked bug from the result dialog.
+22. Select the linked bug in `Bugs`.
+23. Open the bug details drawer by double-clicking the bug or pressing `Open`.
+24. Correct bug details and save.
+25. Open the bug discussion drawer with `Chat`.
+26. Add, edit, and delete a tester/developer message.
+27. Add a screenshot, video, log, script, or document in the bug details attachment area.
+28. Return to `Test Sessions` and open `Chat` on a test case or check.
 
 ## What Works Now
 
@@ -56,6 +57,7 @@ Show that the project already has a real Windows desktop foundation for replacin
 - Compact discussion drawer for bugs, test cases, and checks.
 - Discussion messages support add, edit, delete, created time, and edited time.
 - Bug details drawer for reviewing and correcting a bug.
+- Bug filters by status, severity, and priority.
 - Bug attachments for screenshots, videos, logs, scripts, and documents.
 - Automated tests for core persistence workflows.
 
