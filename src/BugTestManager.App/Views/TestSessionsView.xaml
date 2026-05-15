@@ -43,10 +43,6 @@
                                Foreground="#172033"
                                Text="New Test Session" />
 
-                    <CheckBox Margin="0,18,0,0"
-                              Content="Start without template"
-                              IsChecked="{Binding CreateSessionWithoutTemplate}" />
-
                     <TextBlock Margin="0,18,0,6"
                                Foreground="#64748B"
                                Text="Template source" />

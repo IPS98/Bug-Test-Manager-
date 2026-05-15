@@ -13,6 +13,8 @@ namespace BugTestManager.App.ViewModels;
 
 public sealed partial class TestSessionsViewModel : ObservableObject
 {
+    private static readonly Guid ManualSessionTemplateOptionId = Guid.Empty;
+
     private readonly ITestSessionService testSessionService;
     private readonly ITestSuiteCatalogService testSuiteCatalogService;
     private readonly IAttachmentService attachmentService;
@@ -194,6 +196,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
 
     partial void OnSelectedTestSuiteChanged(TestSessionSuiteOption? value)
     {
+        CreateSessionWithoutTemplate = IsManualSessionTemplateOption(value);
         Revisions.Clear();
 
         if (value is not null)
@@ -859,7 +862,16 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     private void LoadTestSuites()
     {
         var selectedSuiteId = SelectedTestSuite?.Id;
-        var suites = testSuiteCatalogService.GetCatalog()
+        var suites = new List<TestSessionSuiteOption>
+        {
+            new(
+                ManualSessionTemplateOptionId,
+                "Start without template",
+                revisionIsRequired: false,
+                [new TestSessionRevisionOption(null, "No revision")])
+        };
+
+        suites.AddRange(testSuiteCatalogService.GetCatalog()
             .Select(suite => new TestSessionSuiteOption(
                 suite.Id,
                 suite.Name,
@@ -869,7 +881,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
                         .Select(revision => new TestSessionRevisionOption(revision.Id, revision.Name))
                         .ToList()
                     : [new TestSessionRevisionOption(null, "No revision")]))
-            .ToList();
+            .ToList());
 
         TestSuites.Clear();
         foreach (var suite in suites)
@@ -878,8 +890,13 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         }
 
         SelectedTestSuite = selectedSuiteId is null
-            ? TestSuites.FirstOrDefault()
+            ? TestSuites.FirstOrDefault(suite => !IsManualSessionTemplateOption(suite)) ?? TestSuites.FirstOrDefault()
             : TestSuites.FirstOrDefault(suite => suite.Id == selectedSuiteId) ?? TestSuites.FirstOrDefault();
+    }
+
+    private static bool IsManualSessionTemplateOption(TestSessionSuiteOption? option)
+    {
+        return option?.Id == ManualSessionTemplateOptionId;
     }
 
     private void LoadSessions(Guid? selectedSessionId = null)

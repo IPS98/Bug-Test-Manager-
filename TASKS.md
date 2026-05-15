@@ -171,6 +171,7 @@ These are still important, but they do not block the first skeleton:
 - Do not force every test session to start from a template; keep the model ready for template-based and free-form testing.
 - Keep business logic ready for a future web UI by avoiding WPF dependencies outside the App project.
 - Later, add a dedicated navigation/view composition layer: `NavigationService`, optional `ViewModelFactory`, app-level service registration extensions, and possibly a `ViewLocator` so view-model-to-view mapping stays modular and easy to replace.
+- Later, add an analytics/dashboard screen with a table and charts for filtering test and bug data by date range, status, version, build, owner, and other report fields.
 
 ## Proposed Technology
 
@@ -412,7 +413,7 @@ History:
 - Excel import.
 - Shared server deployment.
 - Advanced search.
-- Dashboard.
+- Dashboard with filterable tables, charts, version statistics, test status statistics, bug status statistics, and date range filtering.
 - Auto-update.
 - More languages.
 
