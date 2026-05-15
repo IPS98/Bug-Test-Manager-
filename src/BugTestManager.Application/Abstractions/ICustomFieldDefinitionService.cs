@@ -9,5 +9,9 @@ public interface ICustomFieldDefinitionService
 
     Guid CreateDefinition(CreateCustomFieldDefinitionRequest request);
 
+    void UpdateDefinition(UpdateCustomFieldDefinitionRequest request);
+
     void ArchiveDefinition(Guid fieldDefinitionId);
+
+    void DeleteDefinition(Guid fieldDefinitionId);
 }

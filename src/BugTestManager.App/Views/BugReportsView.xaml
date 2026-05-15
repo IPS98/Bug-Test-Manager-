@@ -25,6 +25,7 @@
             <Border Padding="18"
                     Background="White"
                     CornerRadius="8">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel>
                     <TextBlock FontSize="18"
                                FontWeight="SemiBold"
@@ -74,6 +75,8 @@
                              VerticalContentAlignment="Center"
                              Text="{Binding NewBugBuildNumber, UpdateSourceTrigger=PropertyChanged}" />
 
+                    <shared:CustomFieldValuesEditor DataContext="{Binding NewBugCustomFields}" />
+
                     <Button Margin="0,18,0,0"
                             MinHeight="36"
                             HorizontalAlignment="Stretch"
@@ -85,6 +88,7 @@
                                Text="{Binding StatusMessage}"
                                TextWrapping="Wrap" />
                 </StackPanel>
+                </ScrollViewer>
             </Border>
 
             <Border Grid.Column="2"

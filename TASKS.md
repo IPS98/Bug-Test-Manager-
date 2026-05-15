@@ -56,8 +56,11 @@ Status: implementation in progress after approved architecture and skeleton setu
 - Fields page added for user-defined dynamic field definitions.
 - Dynamic fields can be created for templates, sessions, results, and bug reports.
 - Dynamic fields can be scoped globally or to a selected test suite, section, or test case.
+- Dynamic field definitions can be edited and re-scoped.
 - Dynamic field definitions can be archived.
+- Dynamic field definitions can be deleted with a confirmation popup that warns about losing saved values.
 - SQLite persistence added for custom field definitions.
+- SQLite persistence added for custom field values.
 - Infrastructure test coverage expanded for dynamic field definition create/archive/scope workflows.
 - Test Sessions page added.
 - Manual test sessions can be created from an existing test suite/revision.
@@ -100,7 +103,8 @@ Status: implementation in progress after approved architecture and skeleton setu
 - Test Sessions page can create a manual session without a template.
 - Test Sessions page hides the revision picker when the selected template source does not require revisions.
 - Test Sessions page can add manual sections, test cases, and checks directly inside a selected session.
-- SQLite persistence added for custom field values.
+- New bug creation shows active bug custom fields before the bug is saved.
+- Required custom fields are validated when creating a bug or saving field values.
 - Custom field values can be saved for bug reports.
 - Custom field values can be saved for test case and check results.
 - Scoped custom fields appear for matching test suites, sections, and test cases.

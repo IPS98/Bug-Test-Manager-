@@ -382,6 +382,55 @@ public sealed class SqlitePersistenceTests
     }
 
     [Fact]
+    public void FieldDefinitionService_UpdatesDefinitionsAndScopes()
+    {
+        var databasePath = CreateTempDatabasePath();
+        using var serviceProvider = CreateServiceProvider(databasePath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var managementService = serviceProvider.GetRequiredService<ITestSuiteManagementService>();
+        var testSuite = managementService.CreateTestSuite(new CreateTestSuiteRequest(
+            "Updated Scope Suite",
+            "Used to verify field re-scoping.",
+            RevisionIsRequired: false,
+            InitialRevisionName: null));
+        var fieldService = serviceProvider.GetRequiredService<ICustomFieldDefinitionService>();
+        var fieldId = fieldService.CreateDefinition(new CreateCustomFieldDefinitionRequest(
+            EntityReferenceType.BugReport,
+            "Module",
+            FieldType.Text,
+            IsRequired: false,
+            SortOrder: 1,
+            ScopeType: CustomFieldScopeType.Global,
+            ScopeEntityId: null,
+            ScopeDisplayName: "All matching items",
+            Options: []));
+
+        fieldService.UpdateDefinition(new UpdateCustomFieldDefinitionRequest(
+            fieldId,
+            EntityReferenceType.TestCaseResult,
+            "Power model",
+            FieldType.SingleSelect,
+            IsRequired: true,
+            SortOrder: 2,
+            ScopeType: CustomFieldScopeType.TestSuite,
+            ScopeEntityId: testSuite.TestSuiteId,
+            ScopeDisplayName: "Test suite: Updated Scope Suite",
+            Options: ["PM-42", "PM-84"]));
+
+        var field = fieldService.GetDefinitions().Single(definition => definition.Id == fieldId);
+
+        Assert.Equal(EntityReferenceType.TestCaseResult, field.TargetEntityType);
+        Assert.Equal("Power model", field.Name);
+        Assert.Equal(FieldType.SingleSelect, field.FieldType);
+        Assert.True(field.IsRequired);
+        Assert.Equal(2, field.SortOrder);
+        Assert.Equal(CustomFieldScopeType.TestSuite, field.ScopeType);
+        Assert.Equal(testSuite.TestSuiteId, field.ScopeEntityId);
+        Assert.Equal(["PM-42", "PM-84"], field.Options);
+    }
+
+    [Fact]
     public void CustomFieldValueService_SavesAndUpdatesBugValues()
     {
         var databasePath = CreateTempDatabasePath();
@@ -429,6 +478,107 @@ public sealed class SqlitePersistenceTests
 
         Assert.Equal("Affected module", fieldValue.Name);
         Assert.Equal("Power Controls", fieldValue.Value);
+    }
+
+    [Fact]
+    public void FieldDefinitionService_DeletesDefinitionsAndValues()
+    {
+        var databasePath = CreateTempDatabasePath();
+        using var serviceProvider = CreateServiceProvider(databasePath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var fieldService = serviceProvider.GetRequiredService<ICustomFieldDefinitionService>();
+        var fieldId = fieldService.CreateDefinition(new CreateCustomFieldDefinitionRequest(
+            EntityReferenceType.BugReport,
+            "Affected module",
+            FieldType.Text,
+            IsRequired: false,
+            SortOrder: 1,
+            ScopeType: CustomFieldScopeType.Global,
+            ScopeEntityId: null,
+            ScopeDisplayName: "All matching items",
+            Options: []));
+        var bugService = serviceProvider.GetRequiredService<IBugReportService>();
+        var bugId = bugService.CreateBug(new CreateBugReportRequest(
+            "Graph refresh fails",
+            "The graph stops updating.",
+            "Medium",
+            "High",
+            "1.2.8",
+            "802",
+            "tester"));
+
+        var valueService = serviceProvider.GetRequiredService<ICustomFieldValueService>();
+        valueService.SaveValue(new SaveCustomFieldValueRequest(
+            fieldId,
+            EntityReferenceType.BugReport,
+            bugId,
+            "Graphs",
+            "tester"));
+
+        fieldService.DeleteDefinition(fieldId);
+
+        Assert.DoesNotContain(fieldService.GetDefinitions(), field => field.Id == fieldId);
+        Assert.DoesNotContain(
+            valueService.GetValues(EntityReferenceType.BugReport, bugId, []),
+            field => field.FieldDefinitionId == fieldId);
+    }
+
+    [Fact]
+    public void CustomFieldValueService_ReturnsDefinitionsForNewBug()
+    {
+        var databasePath = CreateTempDatabasePath();
+        using var serviceProvider = CreateServiceProvider(databasePath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var fieldService = serviceProvider.GetRequiredService<ICustomFieldDefinitionService>();
+        var fieldId = fieldService.CreateDefinition(new CreateCustomFieldDefinitionRequest(
+            EntityReferenceType.BugReport,
+            "Affected module",
+            FieldType.Text,
+            IsRequired: true,
+            SortOrder: 1,
+            ScopeType: CustomFieldScopeType.Global,
+            ScopeEntityId: null,
+            ScopeDisplayName: "All matching items",
+            Options: []));
+
+        var values = serviceProvider
+            .GetRequiredService<ICustomFieldValueService>()
+            .GetValues(EntityReferenceType.BugReport, Guid.Empty, []);
+
+        var field = values.Single(item => item.FieldDefinitionId == fieldId);
+        Assert.True(field.IsRequired);
+        Assert.Equal(string.Empty, field.Value);
+    }
+
+    [Fact]
+    public void CustomFieldValueService_RejectsMissingRequiredValue()
+    {
+        var databasePath = CreateTempDatabasePath();
+        using var serviceProvider = CreateServiceProvider(databasePath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var fieldService = serviceProvider.GetRequiredService<ICustomFieldDefinitionService>();
+        var fieldId = fieldService.CreateDefinition(new CreateCustomFieldDefinitionRequest(
+            EntityReferenceType.BugReport,
+            "Affected module",
+            FieldType.Text,
+            IsRequired: true,
+            SortOrder: 1,
+            ScopeType: CustomFieldScopeType.Global,
+            ScopeEntityId: null,
+            ScopeDisplayName: "All matching items",
+            Options: []));
+
+        var valueService = serviceProvider.GetRequiredService<ICustomFieldValueService>();
+
+        Assert.Throws<InvalidOperationException>(() => valueService.SaveValue(new SaveCustomFieldValueRequest(
+            fieldId,
+            EntityReferenceType.BugReport,
+            Guid.NewGuid(),
+            "",
+            "tester")));
     }
 
     [Fact]

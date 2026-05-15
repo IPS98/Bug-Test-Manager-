@@ -16,11 +16,6 @@ public sealed class SqliteCustomFieldValueService(IDbContextFactory<BugTestManag
         Guid entityId,
         IReadOnlyCollection<CustomFieldValueScopeItem> scopes)
     {
-        if (entityId == Guid.Empty)
-        {
-            return [];
-        }
-
         using var dbContext = dbContextFactory.CreateDbContext();
         var activeDefinitions = dbContext.CustomFieldDefinitions
             .AsNoTracking()
@@ -36,11 +31,13 @@ public sealed class SqliteCustomFieldValueService(IDbContextFactory<BugTestManag
             return [];
         }
 
-        var values = dbContext.CustomFieldValues
-            .AsNoTracking()
-            .Where(value => value.EntityType == entityType && value.EntityId == entityId)
-            .ToList()
-            .ToDictionary(value => value.FieldDefinitionId);
+        Dictionary<Guid, CustomFieldValueRecord> values = entityId == Guid.Empty
+            ? []
+            : dbContext.CustomFieldValues
+                .AsNoTracking()
+                .Where(value => value.EntityType == entityType && value.EntityId == entityId)
+                .ToList()
+                .ToDictionary(value => value.FieldDefinitionId);
 
         return activeDefinitions
             .Select(field =>
@@ -154,6 +151,11 @@ public sealed class SqliteCustomFieldValueService(IDbContextFactory<BugTestManag
     {
         if (string.IsNullOrWhiteSpace(value))
         {
+            if (field.IsRequired)
+            {
+                throw new InvalidOperationException($"Field '{field.Name}' is required.");
+            }
+
             return;
         }
 

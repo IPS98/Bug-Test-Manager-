@@ -1,6 +1,14 @@
 <UserControl x:Class="BugTestManager.App.Views.FieldDefinitionsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <Style x:Key="SmallActionButtonStyle" TargetType="Button">
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="MinWidth" Value="68" />
+            <Setter Property="Padding" Value="10,0" />
+        </Style>
+    </UserControl.Resources>
+
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="360" />
@@ -138,18 +146,173 @@
                                                Text="{Binding StatusDisplay}" />
                                 </StackPanel>
 
-                                <Button Grid.Column="2"
-                                        MinWidth="76"
-                                        MinHeight="30"
-                                        VerticalAlignment="Center"
-                                        Command="{Binding DataContext.ArchiveFieldCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        CommandParameter="{Binding}"
-                                        Content="Archive" />
+                                <StackPanel Grid.Column="2"
+                                            VerticalAlignment="Center"
+                                            Orientation="Horizontal">
+                                    <Button Command="{Binding DataContext.ShowEditFieldDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"
+                                            Content="Edit"
+                                            Style="{StaticResource SmallActionButtonStyle}" />
+                                    <Button Margin="8,0,0,0"
+                                            Command="{Binding DataContext.ArchiveFieldCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"
+                                            Content="Archive"
+                                            Style="{StaticResource SmallActionButtonStyle}" />
+                                    <Button Margin="8,0,0,0"
+                                            Command="{Binding DataContext.ShowDeleteFieldDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"
+                                            Content="Delete"
+                                            Foreground="#B91C1C"
+                                            Style="{StaticResource SmallActionButtonStyle}" />
+                                </StackPanel>
                             </Grid>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
             </DockPanel>
+        </Border>
+
+        <Border Grid.ColumnSpan="3"
+                Background="#990F172A"
+                Visibility="{Binding EditFieldDialogVisibility}">
+            <Border Width="540"
+                    Padding="24"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Background="White"
+                    CornerRadius="8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="18" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock FontSize="20"
+                               FontWeight="SemiBold"
+                               Foreground="#172033"
+                               Text="Edit Field" />
+
+                    <ScrollViewer Grid.Row="2"
+                                  MaxHeight="520"
+                                  VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Foreground="#64748B"
+                                       Text="Where this field appears" />
+                            <ComboBox Margin="0,6,0,14"
+                                      MinHeight="34"
+                                      DisplayMemberPath="DisplayName"
+                                      ItemsSource="{Binding TargetEntityTypes}"
+                                      SelectedItem="{Binding EditTargetEntityType}" />
+
+                            <TextBlock Foreground="#64748B"
+                                       Text="Available in" />
+                            <ComboBox Margin="0,6,0,14"
+                                      MinHeight="34"
+                                      DisplayMemberPath="DisplayName"
+                                      ItemsSource="{Binding ScopeOptions}"
+                                      SelectedItem="{Binding EditScopeOption}" />
+
+                            <TextBlock Foreground="#64748B"
+                                       Text="Name" />
+                            <TextBox Margin="0,6,0,14"
+                                     MinHeight="34"
+                                     VerticalContentAlignment="Center"
+                                     Text="{Binding EditFieldName, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <TextBlock Foreground="#64748B"
+                                       Text="Type" />
+                            <ComboBox Margin="0,6,0,14"
+                                      MinHeight="34"
+                                      DisplayMemberPath="DisplayName"
+                                      ItemsSource="{Binding FieldTypes}"
+                                      SelectedItem="{Binding EditFieldType}" />
+
+                            <CheckBox Margin="0,2,0,14"
+                                      Content="Required"
+                                      IsChecked="{Binding EditFieldIsRequired}" />
+
+                            <TextBlock Foreground="#64748B"
+                                       Text="Sort order" />
+                            <TextBox Margin="0,6,0,14"
+                                     MinHeight="34"
+                                     VerticalContentAlignment="Center"
+                                     Text="{Binding EditFieldSortOrder, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <TextBlock Foreground="#64748B"
+                                       Text="Options" />
+                            <TextBox Margin="0,6,0,0"
+                                     MinHeight="90"
+                                     AcceptsReturn="True"
+                                     Text="{Binding EditFieldOptionsText, UpdateSourceTrigger=PropertyChanged}"
+                                     TextWrapping="Wrap" />
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <StackPanel Grid.Row="3"
+                                Margin="0,18,0,0"
+                                HorizontalAlignment="Right"
+                                Orientation="Horizontal">
+                        <Button MinWidth="92"
+                                MinHeight="34"
+                                Margin="0,0,10,0"
+                                Command="{Binding CloseEditFieldDialogCommand}"
+                                Content="Cancel" />
+                        <Button MinWidth="92"
+                                MinHeight="34"
+                                Command="{Binding UpdateFieldCommand}"
+                                Content="Save" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Border>
+
+        <Border Grid.ColumnSpan="3"
+                Background="#990F172A"
+                Visibility="{Binding DeleteFieldDialogVisibility}">
+            <Border Width="480"
+                    Padding="24"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Background="White"
+                    CornerRadius="8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="14" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="18" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock FontSize="20"
+                               FontWeight="SemiBold"
+                               Foreground="#172033"
+                               Text="{Binding DeleteFieldTitle}"
+                               TextWrapping="Wrap" />
+
+                    <TextBlock Grid.Row="2"
+                               Foreground="#64748B"
+                               Text="{Binding DeleteFieldWarning}"
+                               TextWrapping="Wrap" />
+
+                    <StackPanel Grid.Row="4"
+                                HorizontalAlignment="Right"
+                                Orientation="Horizontal">
+                        <Button MinWidth="92"
+                                MinHeight="34"
+                                Margin="0,0,10,0"
+                                Command="{Binding CloseDeleteFieldDialogCommand}"
+                                Content="Cancel" />
+                        <Button MinWidth="92"
+                                MinHeight="34"
+                                Command="{Binding ConfirmDeleteFieldCommand}"
+                                Content="Delete"
+                                Foreground="#B91C1C" />
+                    </StackPanel>
+                </Grid>
+            </Border>
         </Border>
     </Grid>
 </UserControl>

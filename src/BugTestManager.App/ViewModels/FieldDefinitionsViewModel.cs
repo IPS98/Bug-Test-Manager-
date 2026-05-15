@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows;
 using BugTestManager.Application.Abstractions;
 using BugTestManager.Application.ReadModels;
 using BugTestManager.Application.Requests;
@@ -71,6 +72,45 @@ public sealed partial class FieldDefinitionsViewModel : ObservableObject
     private string newFieldOptionsText = string.Empty;
 
     [ObservableProperty]
+    private FieldDefinitionItemViewModel? editingField;
+
+    [ObservableProperty]
+    private Visibility editFieldDialogVisibility = Visibility.Collapsed;
+
+    [ObservableProperty]
+    private SelectionOption<EntityReferenceType>? editTargetEntityType;
+
+    [ObservableProperty]
+    private SelectionOption<FieldType>? editFieldType;
+
+    [ObservableProperty]
+    private FieldScopeOption? editScopeOption;
+
+    [ObservableProperty]
+    private string editFieldName = string.Empty;
+
+    [ObservableProperty]
+    private bool editFieldIsRequired;
+
+    [ObservableProperty]
+    private int editFieldSortOrder;
+
+    [ObservableProperty]
+    private string editFieldOptionsText = string.Empty;
+
+    [ObservableProperty]
+    private FieldDefinitionItemViewModel? deletingField;
+
+    [ObservableProperty]
+    private Visibility deleteFieldDialogVisibility = Visibility.Collapsed;
+
+    [ObservableProperty]
+    private string deleteFieldTitle = string.Empty;
+
+    [ObservableProperty]
+    private string deleteFieldWarning = string.Empty;
+
+    [ObservableProperty]
     private string statusMessage = "Ready";
 
     partial void OnNewFieldNameChanged(string value)
@@ -81,6 +121,26 @@ public sealed partial class FieldDefinitionsViewModel : ObservableObject
     partial void OnSelectedScopeOptionChanged(FieldScopeOption? value)
     {
         CreateFieldCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnEditFieldNameChanged(string value)
+    {
+        UpdateFieldCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnEditTargetEntityTypeChanged(SelectionOption<EntityReferenceType>? value)
+    {
+        UpdateFieldCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnEditFieldTypeChanged(SelectionOption<FieldType>? value)
+    {
+        UpdateFieldCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnEditScopeOptionChanged(FieldScopeOption? value)
+    {
+        UpdateFieldCommand.NotifyCanExecuteChanged();
     }
 
     public void Refresh()
@@ -119,6 +179,76 @@ public sealed partial class FieldDefinitionsViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void ShowEditFieldDialog(FieldDefinitionItemViewModel? field)
+    {
+        if (field is null)
+        {
+            return;
+        }
+
+        EditingField = field;
+        EditTargetEntityType = TargetEntityTypes.Single(option => option.Value == field.TargetEntityType);
+        EditFieldType = FieldTypes.Single(option => option.Value == field.FieldType);
+        EditScopeOption = ScopeOptions.FirstOrDefault(option =>
+            option.ScopeType == field.ScopeType && option.ScopeEntityId == field.ScopeEntityId)
+            ?? ScopeOptions.FirstOrDefault();
+        EditFieldName = field.Name;
+        EditFieldIsRequired = field.IsRequired;
+        EditFieldSortOrder = field.SortOrder;
+        EditFieldOptionsText = string.Join(Environment.NewLine, field.Options);
+        EditFieldDialogVisibility = Visibility.Visible;
+        UpdateFieldCommand.NotifyCanExecuteChanged();
+    }
+
+    [RelayCommand]
+    private void CloseEditFieldDialog()
+    {
+        EditFieldDialogVisibility = Visibility.Collapsed;
+        EditingField = null;
+        EditFieldName = string.Empty;
+        EditFieldIsRequired = false;
+        EditFieldSortOrder = 0;
+        EditFieldOptionsText = string.Empty;
+        EditTargetEntityType = TargetEntityTypes.FirstOrDefault();
+        EditFieldType = FieldTypes.FirstOrDefault();
+        EditScopeOption = ScopeOptions.FirstOrDefault();
+        UpdateFieldCommand.NotifyCanExecuteChanged();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanUpdateField))]
+    private void UpdateField()
+    {
+        if (EditingField is null || EditTargetEntityType is null || EditFieldType is null || EditScopeOption is null)
+        {
+            return;
+        }
+
+        try
+        {
+            fieldDefinitionService.UpdateDefinition(new UpdateCustomFieldDefinitionRequest(
+                EditingField.Id,
+                EditTargetEntityType.Value,
+                EditFieldName,
+                EditFieldType.Value,
+                EditFieldIsRequired,
+                EditFieldSortOrder,
+                EditScopeOption.ScopeType,
+                EditScopeOption.ScopeEntityId,
+                EditScopeOption.DisplayName,
+                ParseOptions(EditFieldOptionsText)));
+
+            var fieldId = EditingField.Id;
+            CloseEditFieldDialog();
+            LoadFields(fieldId);
+            StatusMessage = "Field definition updated.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = ex.Message;
+        }
+    }
+
+    [RelayCommand]
     private void ArchiveField(FieldDefinitionItemViewModel? field)
     {
         if (field is null)
@@ -138,12 +268,66 @@ public sealed partial class FieldDefinitionsViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
+    private void ShowDeleteFieldDialog(FieldDefinitionItemViewModel? field)
+    {
+        if (field is null)
+        {
+            return;
+        }
+
+        DeletingField = field;
+        DeleteFieldTitle = $"Delete field: {field.Name}";
+        DeleteFieldWarning = "This will permanently delete the field definition and all saved values that use it.";
+        DeleteFieldDialogVisibility = Visibility.Visible;
+    }
+
+    [RelayCommand]
+    private void CloseDeleteFieldDialog()
+    {
+        DeleteFieldDialogVisibility = Visibility.Collapsed;
+        DeletingField = null;
+        DeleteFieldTitle = string.Empty;
+        DeleteFieldWarning = string.Empty;
+    }
+
+    [RelayCommand]
+    private void ConfirmDeleteField()
+    {
+        if (DeletingField is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var deletedFieldName = DeletingField.Name;
+            fieldDefinitionService.DeleteDefinition(DeletingField.Id);
+            CloseDeleteFieldDialog();
+            LoadFields();
+            StatusMessage = $"Field '{deletedFieldName}' deleted.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = ex.Message;
+        }
+    }
+
     private bool CanCreateField()
     {
         return SelectedTargetEntityType is not null
             && SelectedFieldType is not null
             && SelectedScopeOption is not null
             && !string.IsNullOrWhiteSpace(NewFieldName);
+    }
+
+    private bool CanUpdateField()
+    {
+        return EditingField is not null
+            && EditTargetEntityType is not null
+            && EditFieldType is not null
+            && EditScopeOption is not null
+            && !string.IsNullOrWhiteSpace(EditFieldName);
     }
 
     private void LoadScopeOptions()

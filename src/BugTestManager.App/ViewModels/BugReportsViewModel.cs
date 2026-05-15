@@ -49,6 +49,7 @@ public sealed partial class BugReportsViewModel : ObservableObject
         this.userContext = userContext;
         Bugs = [];
         BugAttachments = [];
+        NewBugCustomFields = [];
         BugCustomFields = [];
         DiscussionComments = [];
         SeverityFilters = [];
@@ -77,6 +78,8 @@ public sealed partial class BugReportsViewModel : ObservableObject
     public ObservableCollection<BugReportItemViewModel> Bugs { get; }
 
     public ObservableCollection<AttachmentItemViewModel> BugAttachments { get; }
+
+    public ObservableCollection<CustomFieldValueItemViewModel> NewBugCustomFields { get; }
 
     public ObservableCollection<CustomFieldValueItemViewModel> BugCustomFields { get; }
 
@@ -222,6 +225,7 @@ public sealed partial class BugReportsViewModel : ObservableObject
 
     public void Refresh()
     {
+        LoadNewBugCustomFields();
         LoadBugs(SelectedBug?.Id);
     }
 
@@ -230,6 +234,8 @@ public sealed partial class BugReportsViewModel : ObservableObject
     {
         try
         {
+            ValidateRequiredCustomFields(NewBugCustomFields);
+
             var bugId = bugReportService.CreateBug(new CreateBugReportRequest(
                 NewBugTitle,
                 NewBugDescription,
@@ -239,12 +245,14 @@ public sealed partial class BugReportsViewModel : ObservableObject
                 NewBugBuildNumber,
                 userContext.UserName));
 
+            SaveCustomFields(NewBugCustomFields, bugId);
             NewBugTitle = string.Empty;
             NewBugDescription = string.Empty;
             NewBugSeverity = "Medium";
             NewBugPriority = "Medium";
             NewBugFoundInVersion = string.Empty;
             NewBugBuildNumber = string.Empty;
+            LoadNewBugCustomFields();
             LoadBugs(bugId);
             StatusMessage = "Bug created.";
         }
@@ -329,7 +337,7 @@ public sealed partial class BugReportsViewModel : ObservableObject
                 DetailBugBuildNumber,
                 userContext.UserName));
 
-            SaveBugCustomFields(SelectedBug.Id);
+            SaveCustomFields(BugCustomFields, SelectedBug.Id);
             LoadBugs(SelectedBug.Id);
             LoadBugCustomFields(SelectedBug.Id);
             StatusMessage = "Bug details saved.";
@@ -657,9 +665,21 @@ public sealed partial class BugReportsViewModel : ObservableObject
         }
     }
 
-    private void SaveBugCustomFields(Guid bugId)
+    private void LoadNewBugCustomFields()
     {
-        foreach (var field in BugCustomFields)
+        NewBugCustomFields.Clear();
+
+        foreach (var field in customFieldValueService
+                     .GetValues(EntityReferenceType.BugReport, Guid.Empty, [])
+                     .Select(MapCustomField))
+        {
+            NewBugCustomFields.Add(field);
+        }
+    }
+
+    private void SaveCustomFields(IEnumerable<CustomFieldValueItemViewModel> fields, Guid bugId)
+    {
+        foreach (var field in fields)
         {
             customFieldValueService.SaveValue(new SaveCustomFieldValueRequest(
                 field.FieldDefinitionId,
@@ -667,6 +687,17 @@ public sealed partial class BugReportsViewModel : ObservableObject
                 bugId,
                 field.Value,
                 userContext.UserName));
+        }
+    }
+
+    private static void ValidateRequiredCustomFields(IEnumerable<CustomFieldValueItemViewModel> fields)
+    {
+        var missingField = fields.FirstOrDefault(field =>
+            field.IsRequired && string.IsNullOrWhiteSpace(field.Value));
+
+        if (missingField is not null)
+        {
+            throw new InvalidOperationException($"Field '{missingField.Name}' is required.");
         }
     }
 

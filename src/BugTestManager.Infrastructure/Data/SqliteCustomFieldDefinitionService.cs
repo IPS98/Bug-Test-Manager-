@@ -82,6 +82,47 @@ public sealed class SqliteCustomFieldDefinitionService(IDbContextFactory<BugTest
         return fieldDefinitionId;
     }
 
+    public void UpdateDefinition(UpdateCustomFieldDefinitionRequest request)
+    {
+        var name = Require(request.Name, "Field name");
+        var options = NormalizeOptions(request.Options);
+
+        if (RequiresOptions(request.FieldType) && options.Count == 0)
+        {
+            throw new ArgumentException("Select fields require at least one option.", nameof(request));
+        }
+
+        using var dbContext = dbContextFactory.CreateDbContext();
+        var field = dbContext.CustomFieldDefinitions.SingleOrDefault(definition => definition.Id == request.FieldDefinitionId)
+            ?? throw new InvalidOperationException("Selected field definition was not found.");
+        var duplicateExists = dbContext.CustomFieldDefinitions
+            .AsNoTracking()
+            .Any(definition =>
+                definition.Id != request.FieldDefinitionId
+                && definition.TargetEntityType == request.TargetEntityType
+                && definition.ScopeType == request.ScopeType
+                && definition.ScopeEntityId == request.ScopeEntityId
+                && definition.Name.ToUpper() == name.ToUpper()
+                && definition.IsActive);
+
+        if (duplicateExists)
+        {
+            throw new InvalidOperationException($"Field '{name}' already exists for {request.ScopeDisplayName}.");
+        }
+
+        field.TargetEntityType = request.TargetEntityType;
+        field.Name = name;
+        field.FieldType = request.FieldType;
+        field.IsRequired = request.IsRequired;
+        field.SortOrder = Math.Max(0, request.SortOrder);
+        field.ScopeType = request.ScopeType;
+        field.ScopeEntityId = request.ScopeEntityId;
+        field.ScopeDisplayName = NormalizeScopeDisplayName(request.ScopeDisplayName);
+        field.OptionsJson = JsonSerializer.Serialize(options);
+
+        dbContext.SaveChanges();
+    }
+
     public void ArchiveDefinition(Guid fieldDefinitionId)
     {
         using var dbContext = dbContextFactory.CreateDbContext();
@@ -89,6 +130,19 @@ public sealed class SqliteCustomFieldDefinitionService(IDbContextFactory<BugTest
             ?? throw new InvalidOperationException("Selected field definition was not found.");
 
         field.IsActive = false;
+        dbContext.SaveChanges();
+    }
+
+    public void DeleteDefinition(Guid fieldDefinitionId)
+    {
+        using var dbContext = dbContextFactory.CreateDbContext();
+        var field = dbContext.CustomFieldDefinitions.SingleOrDefault(definition => definition.Id == fieldDefinitionId)
+            ?? throw new InvalidOperationException("Selected field definition was not found.");
+
+        dbContext.CustomFieldValues
+            .Where(value => value.FieldDefinitionId == fieldDefinitionId)
+            .ExecuteDelete();
+        dbContext.CustomFieldDefinitions.Remove(field);
         dbContext.SaveChanges();
     }
 
