@@ -109,6 +109,7 @@ public sealed class BugTestManagerDbContext(DbContextOptions<BugTestManagerDbCon
             entity.ToTable("TestSessions");
             entity.HasKey(session => session.Id);
             entity.Property(session => session.Name).HasMaxLength(300).IsRequired();
+            entity.Property(session => session.IsManual).IsRequired();
             entity.Property(session => session.TestSuiteName).HasMaxLength(200).IsRequired();
             entity.Property(session => session.TestSuiteRevisionName).HasMaxLength(200);
             entity.Property(session => session.TestedVersion).HasMaxLength(100).IsRequired();

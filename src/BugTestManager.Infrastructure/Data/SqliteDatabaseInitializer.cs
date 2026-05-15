@@ -154,6 +154,7 @@ public sealed class SqliteDatabaseInitializer(IDbContextFactory<BugTestManagerDb
                 "Name" TEXT NOT NULL,
                 "TestSuiteId" TEXT NOT NULL,
                 "TestSuiteRevisionId" TEXT NULL,
+                "IsManual" INTEGER NOT NULL DEFAULT 0,
                 "TestSuiteName" TEXT NOT NULL,
                 "TestSuiteRevisionName" TEXT NULL,
                 "TestedVersion" TEXT NOT NULL,
@@ -163,6 +164,8 @@ public sealed class SqliteDatabaseInitializer(IDbContextFactory<BugTestManagerDb
                 "CreatedAt" TEXT NOT NULL
             );
             """);
+
+        EnsureColumn(dbContext, "TestSessions", "IsManual", "\"IsManual\" INTEGER NOT NULL DEFAULT 0");
 
         dbContext.Database.ExecuteSqlRaw(
             """

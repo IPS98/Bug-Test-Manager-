@@ -97,6 +97,8 @@ Status: implementation in progress after approved architecture and skeleton setu
 - Test case and check results can open their own discussion drawer.
 - Discussion messages can be added, edited, deleted, and show created/edited timestamps.
 - Bugs page can filter by status, severity, and priority.
+- Test Sessions page can create a manual session without a template.
+- Test Sessions page can add manual sections, test cases, and checks directly inside a selected session.
 
 ## Product Goal
 
@@ -428,4 +430,4 @@ Database storage has started. The first editing workflow can create, edit, and d
 
 ## Next Step
 
-Add direct manual session creation without a template.
+Add custom field values so created field definitions can appear inside sessions, results, and bugs.

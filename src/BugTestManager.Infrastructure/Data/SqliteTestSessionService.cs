@@ -124,6 +124,7 @@ public sealed class SqliteTestSessionService(IDbContextFactory<BugTestManagerDbC
             Name = name,
             TestSuiteId = testSuite.Id,
             TestSuiteRevisionId = request.TestSuiteRevisionId,
+            IsManual = false,
             TestSuiteName = testSuite.Name,
             TestSuiteRevisionName = revision?.Name,
             TestedVersion = request.TestedVersion.Trim(),
@@ -182,6 +183,118 @@ public sealed class SqliteTestSessionService(IDbContextFactory<BugTestManagerDbC
         dbContext.SaveChanges();
 
         return sessionId;
+    }
+
+    public Guid CreateManualSession(CreateManualTestSessionRequest request)
+    {
+        var name = Require(request.Name, "Session name");
+        var createdBy = Require(request.CreatedBy, "Created by");
+        var sessionId = Guid.NewGuid();
+
+        using var dbContext = dbContextFactory.CreateDbContext();
+        dbContext.TestSessions.Add(new TestSessionRecord
+        {
+            Id = sessionId,
+            Name = name,
+            TestSuiteId = Guid.Empty,
+            TestSuiteRevisionId = null,
+            IsManual = true,
+            TestSuiteName = "Manual Session",
+            TestSuiteRevisionName = null,
+            TestedVersion = request.TestedVersion.Trim(),
+            BuildNumber = request.BuildNumber.Trim(),
+            Notes = request.Notes.Trim(),
+            CreatedBy = createdBy,
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+        dbContext.SaveChanges();
+
+        return sessionId;
+    }
+
+    public Guid CreateManualSection(CreateManualTestSectionRequest request)
+    {
+        var name = Require(request.Name, "Section name");
+
+        using var dbContext = dbContextFactory.CreateDbContext();
+        var sessionExists = dbContext.TestSessions.Any(item => item.Id == request.TestSessionId);
+        if (!sessionExists)
+        {
+            throw new InvalidOperationException("Selected test session was not found.");
+        }
+
+        var sectionId = Guid.NewGuid();
+        var sortOrder = dbContext.TestSectionResults.Count(item => item.TestSessionId == request.TestSessionId) + 1;
+        dbContext.TestSectionResults.Add(new TestSectionResultRecord
+        {
+            Id = sectionId,
+            TestSessionId = request.TestSessionId,
+            TemplateSectionId = Guid.Empty,
+            Name = name,
+            Category = request.Category.Trim(),
+            SortOrder = sortOrder
+        });
+        dbContext.SaveChanges();
+
+        return sectionId;
+    }
+
+    public Guid CreateManualTestCase(CreateManualTestCaseRequest request)
+    {
+        var title = Require(request.Title, "Test case title");
+
+        using var dbContext = dbContextFactory.CreateDbContext();
+        var sectionExists = dbContext.TestSectionResults.Any(item => item.Id == request.TestSectionResultId);
+        if (!sectionExists)
+        {
+            throw new InvalidOperationException("Selected section was not found.");
+        }
+
+        var testCaseId = Guid.NewGuid();
+        var sortOrder = dbContext.TestCaseResults.Count(item => item.TestSectionResultId == request.TestSectionResultId) + 1;
+        dbContext.TestCaseResults.Add(new TestCaseResultRecord
+        {
+            Id = testCaseId,
+            TestSectionResultId = request.TestSectionResultId,
+            TestCaseTemplateId = Guid.Empty,
+            Title = title,
+            ExpectedResult = request.ExpectedResult.Trim(),
+            SortOrder = sortOrder,
+            Status = TestResultStatus.NotTested,
+            Comment = string.Empty
+        });
+        dbContext.SaveChanges();
+
+        return testCaseId;
+    }
+
+    public Guid CreateManualCheck(CreateManualTestCheckRequest request)
+    {
+        var checkText = Require(request.CheckText, "Check text");
+
+        using var dbContext = dbContextFactory.CreateDbContext();
+        var testCaseExists = dbContext.TestCaseResults.Any(item => item.Id == request.TestCaseResultId);
+        if (!testCaseExists)
+        {
+            throw new InvalidOperationException("Selected test case was not found.");
+        }
+
+        var checkId = Guid.NewGuid();
+        var sortOrder = dbContext.TestStepResults.Count(item => item.TestCaseResultId == request.TestCaseResultId) + 1;
+        dbContext.TestStepResults.Add(new TestStepResultRecord
+        {
+            Id = checkId,
+            TestCaseResultId = request.TestCaseResultId,
+            TestStepTemplateId = Guid.Empty,
+            StepText = checkText,
+            ExpectedResult = request.ExpectedResult.Trim(),
+            SortOrder = sortOrder,
+            Status = TestResultStatus.NotTested,
+            Comment = string.Empty
+        });
+        dbContext.SaveChanges();
+
+        return checkId;
     }
 
     public void UpdateTestCaseResult(UpdateTestCaseResultRequest request)

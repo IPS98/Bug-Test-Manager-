@@ -120,6 +120,9 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     private string notes = string.Empty;
 
     [ObservableProperty]
+    private bool createSessionWithoutTemplate;
+
+    [ObservableProperty]
     private string statusMessage = "Ready";
 
     [ObservableProperty]
@@ -170,6 +173,21 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     [ObservableProperty]
     private string discussionSaveButtonText = "Add Message";
 
+    [ObservableProperty]
+    private ManualTestSessionDialogKind manualDialogKind;
+
+    [ObservableProperty]
+    private Visibility manualDialogOverlayVisibility = Visibility.Collapsed;
+
+    [ObservableProperty]
+    private string manualDialogTitle = string.Empty;
+
+    [ObservableProperty]
+    private string manualItemName = string.Empty;
+
+    [ObservableProperty]
+    private string manualItemDescription = string.Empty;
+
     private EntityReferenceType discussionEntityType;
 
     private Guid discussionEntityId;
@@ -198,11 +216,13 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     partial void OnSelectedSessionChanged(TestSessionSummaryViewModel? value)
     {
         LoadSelectedSession(value?.Id);
+        ShowCreateManualSectionDialogCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnSelectedSectionChanged(TestSectionResultViewModel? value)
     {
         RefreshFilteredTestCases();
+        ShowCreateManualTestCaseDialogCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnSelectedTestCaseChanged(TestCaseResultViewModel? value)
@@ -210,6 +230,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         SelectedStep = value?.Steps.FirstOrDefault();
         ShowEditTestCaseResultCommand.NotifyCanExecuteChanged();
         ShowTestCaseDiscussionCommand.NotifyCanExecuteChanged();
+        ShowCreateManualCheckDialogCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnSelectedStepChanged(TestStepResultViewModel? value)
@@ -219,6 +240,11 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     }
 
     partial void OnNewSessionNameChanged(string value)
+    {
+        CreateSessionCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnCreateSessionWithoutTemplateChanged(bool value)
     {
         CreateSessionCommand.NotifyCanExecuteChanged();
     }
@@ -263,6 +289,28 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         RefreshFilteredTestCases(SelectedTestCase?.Id);
     }
 
+    partial void OnManualDialogKindChanged(ManualTestSessionDialogKind value)
+    {
+        ManualDialogOverlayVisibility = value == ManualTestSessionDialogKind.None
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+
+        ManualDialogTitle = value switch
+        {
+            ManualTestSessionDialogKind.Section => "Add Manual Section",
+            ManualTestSessionDialogKind.TestCase => "Add Manual Test Case",
+            ManualTestSessionDialogKind.Check => "Add Manual Check",
+            _ => string.Empty
+        };
+
+        SaveManualItemCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnManualItemNameChanged(string value)
+    {
+        SaveManualItemCommand.NotifyCanExecuteChanged();
+    }
+
     public void Refresh()
     {
         LoadTestSuites();
@@ -272,21 +320,28 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanCreateSession))]
     private void CreateSession()
     {
-        if (SelectedTestSuite is null)
+        if (!CreateSessionWithoutTemplate && SelectedTestSuite is null)
         {
             return;
         }
 
         try
         {
-            var sessionId = testSessionService.CreateSession(new CreateTestSessionRequest(
-                NewSessionName,
-                SelectedTestSuite.Id,
-                SelectedRevision?.Id,
-                TestedVersion,
-                BuildNumber,
-                Notes,
-                userContext.UserName));
+            var sessionId = CreateSessionWithoutTemplate
+                ? testSessionService.CreateManualSession(new CreateManualTestSessionRequest(
+                    NewSessionName,
+                    TestedVersion,
+                    BuildNumber,
+                    Notes,
+                    userContext.UserName))
+                : testSessionService.CreateSession(new CreateTestSessionRequest(
+                    NewSessionName,
+                    SelectedTestSuite!.Id,
+                    SelectedRevision?.Id,
+                    TestedVersion,
+                    BuildNumber,
+                    Notes,
+                    userContext.UserName));
 
             NewSessionName = string.Empty;
             TestedVersion = string.Empty;
@@ -294,7 +349,9 @@ public sealed partial class TestSessionsViewModel : ObservableObject
             Notes = string.Empty;
 
             LoadSessions(sessionId);
-            StatusMessage = "Test session created from template.";
+            StatusMessage = CreateSessionWithoutTemplate
+                ? "Manual test session created."
+                : "Test session created from template.";
         }
         catch (Exception ex)
         {
@@ -356,6 +413,94 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         LinkedBugTargetDisplay = string.Empty;
         SelectedResultStatus = ResultStatuses.FirstOrDefault();
         ResultAttachments.Clear();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanShowCreateManualSectionDialog))]
+    private void ShowCreateManualSectionDialog()
+    {
+        ManualItemName = string.Empty;
+        ManualItemDescription = string.Empty;
+        ManualDialogKind = ManualTestSessionDialogKind.Section;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanShowCreateManualTestCaseDialog))]
+    private void ShowCreateManualTestCaseDialog()
+    {
+        ManualItemName = string.Empty;
+        ManualItemDescription = string.Empty;
+        ManualDialogKind = ManualTestSessionDialogKind.TestCase;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanShowCreateManualCheckDialog))]
+    private void ShowCreateManualCheckDialog(TestCaseResultViewModel? testCase)
+    {
+        var targetTestCase = testCase ?? SelectedTestCase;
+        if (targetTestCase is null)
+        {
+            return;
+        }
+
+        SelectedTestCase = targetTestCase;
+        ManualItemName = string.Empty;
+        ManualItemDescription = string.Empty;
+        ManualDialogKind = ManualTestSessionDialogKind.Check;
+    }
+
+    [RelayCommand]
+    private void CloseManualItemDialog()
+    {
+        ManualDialogKind = ManualTestSessionDialogKind.None;
+        ManualItemName = string.Empty;
+        ManualItemDescription = string.Empty;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanSaveManualItem))]
+    private void SaveManualItem()
+    {
+        var sessionId = SelectedSession?.Id;
+        var sectionId = SelectedSection?.Id;
+        var testCaseId = SelectedTestCase?.Id;
+
+        try
+        {
+            switch (ManualDialogKind)
+            {
+                case ManualTestSessionDialogKind.Section when sessionId is not null:
+                    sectionId = testSessionService.CreateManualSection(new CreateManualTestSectionRequest(
+                        sessionId.Value,
+                        ManualItemName,
+                        ManualItemDescription));
+                    StatusMessage = "Manual section added.";
+                    break;
+                case ManualTestSessionDialogKind.TestCase when sectionId is not null:
+                    testCaseId = testSessionService.CreateManualTestCase(new CreateManualTestCaseRequest(
+                        sectionId.Value,
+                        ManualItemName,
+                        ManualItemDescription));
+                    StatusMessage = "Manual test case added.";
+                    break;
+                case ManualTestSessionDialogKind.Check when testCaseId is not null:
+                    var checkId = testSessionService.CreateManualCheck(new CreateManualTestCheckRequest(
+                        testCaseId.Value,
+                        ManualItemName,
+                        ManualItemDescription));
+                    CloseManualItemDialog();
+                    LoadSessions(sessionId);
+                    LoadSelectedSession(sessionId, sectionId, testCaseId, checkId);
+                    StatusMessage = "Manual check added.";
+                    return;
+                default:
+                    return;
+            }
+
+            CloseManualItemDialog();
+            LoadSessions(sessionId);
+            LoadSelectedSession(sessionId, sectionId, testCaseId);
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = ex.Message;
+        }
     }
 
     [RelayCommand(CanExecute = nameof(CanAddAttachment))]
@@ -636,9 +781,10 @@ public sealed partial class TestSessionsViewModel : ObservableObject
 
     private bool CanCreateSession()
     {
-        return SelectedTestSuite is not null
-            && !string.IsNullOrWhiteSpace(NewSessionName)
-            && (!SelectedTestSuite.RevisionIsRequired || SelectedRevision?.Id is not null);
+        return !string.IsNullOrWhiteSpace(NewSessionName)
+            && (CreateSessionWithoutTemplate
+                || (SelectedTestSuite is not null
+                    && (!SelectedTestSuite.RevisionIsRequired || SelectedRevision?.Id is not null)));
     }
 
     private bool CanShowEditTestCaseResult(TestCaseResultViewModel? testCase)
@@ -667,6 +813,27 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     private bool CanCreateLinkedBug()
     {
         return CanAddAttachment() && !string.IsNullOrWhiteSpace(LinkedBugTitle);
+    }
+
+    private bool CanShowCreateManualSectionDialog()
+    {
+        return SelectedSession is not null;
+    }
+
+    private bool CanShowCreateManualTestCaseDialog()
+    {
+        return SelectedSection is not null;
+    }
+
+    private bool CanShowCreateManualCheckDialog(TestCaseResultViewModel? testCase)
+    {
+        return testCase is not null || SelectedTestCase is not null;
+    }
+
+    private bool CanSaveManualItem()
+    {
+        return ManualDialogKind != ManualTestSessionDialogKind.None
+            && !string.IsNullOrWhiteSpace(ManualItemName);
     }
 
     private bool CanShowTestCaseDiscussion(TestCaseResultViewModel? testCase)

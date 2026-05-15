@@ -10,6 +10,8 @@ public sealed class TestSessionRecord
 
     public Guid? TestSuiteRevisionId { get; set; }
 
+    public bool IsManual { get; set; }
+
     public string TestSuiteName { get; set; } = string.Empty;
 
     public string? TestSuiteRevisionName { get; set; }

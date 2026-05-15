@@ -413,6 +413,48 @@ public sealed class SqlitePersistenceTests
     }
 
     [Fact]
+    public void TestSessionService_CreatesManualSessionItemsWithoutTemplate()
+    {
+        var databasePath = CreateTempDatabasePath();
+        using var serviceProvider = CreateServiceProvider(databasePath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var sessionService = serviceProvider.GetRequiredService<ITestSessionService>();
+        var sessionId = sessionService.CreateManualSession(new CreateManualTestSessionRequest(
+            "Manual smoke test",
+            "2.0.0",
+            "1001",
+            "Created without a template.",
+            "tester"));
+        var sectionId = sessionService.CreateManualSection(new CreateManualTestSectionRequest(
+            sessionId,
+            "Power Controls",
+            "UI"));
+        var testCaseId = sessionService.CreateManualTestCase(new CreateManualTestCaseRequest(
+            sectionId,
+            "ON/OFF button",
+            "Button toggles the output state."));
+        var checkId = sessionService.CreateManualCheck(new CreateManualTestCheckRequest(
+            testCaseId,
+            "Tooltip is visible.",
+            "Tooltip explains the control."));
+
+        var session = sessionService.GetSession(sessionId);
+        var section = session.Sections.Single(item => item.Id == sectionId);
+        var testCase = section.TestCases.Single(item => item.Id == testCaseId);
+        var check = testCase.Steps.Single(item => item.Id == checkId);
+
+        Assert.Equal("Manual Session", session.TestSuiteName);
+        Assert.Null(session.TestSuiteRevisionName);
+        Assert.Equal("Power Controls", section.Name);
+        Assert.Equal("UI", section.Category);
+        Assert.Equal("ON/OFF button", testCase.Title);
+        Assert.Equal(TestResultStatus.NotTested, testCase.Status);
+        Assert.Equal("Tooltip is visible.", check.StepText);
+        Assert.Equal(TestResultStatus.NotTested, check.Status);
+    }
+
+    [Fact]
     public void TestSessionService_UpdatesCaseAndCheckResults()
     {
         var databasePath = CreateTempDatabasePath();

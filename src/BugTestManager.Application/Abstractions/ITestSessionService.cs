@@ -11,6 +11,14 @@ public interface ITestSessionService
 
     Guid CreateSession(CreateTestSessionRequest request);
 
+    Guid CreateManualSession(CreateManualTestSessionRequest request);
+
+    Guid CreateManualSection(CreateManualTestSectionRequest request);
+
+    Guid CreateManualTestCase(CreateManualTestCaseRequest request);
+
+    Guid CreateManualCheck(CreateManualTestCheckRequest request);
+
     void UpdateTestCaseResult(UpdateTestCaseResultRequest request);
 
     void UpdateTestStepResult(UpdateTestStepResultRequest request);

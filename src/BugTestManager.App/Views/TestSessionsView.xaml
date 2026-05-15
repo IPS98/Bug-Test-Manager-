@@ -43,6 +43,10 @@
                                Foreground="#172033"
                                Text="New Test Session" />
 
+                    <CheckBox Margin="0,18,0,0"
+                              Content="Start without template"
+                              IsChecked="{Binding CreateSessionWithoutTemplate}" />
+
                     <TextBlock Margin="0,18,0,6"
                                Foreground="#64748B"
                                Text="Template source" />
@@ -189,10 +193,16 @@
                         </Grid.ColumnDefinitions>
 
                         <DockPanel>
-                            <TextBlock DockPanel.Dock="Top"
-                                       Margin="0,0,0,12"
-                                       Style="{StaticResource SectionHeaderStyle}"
-                                       Text="Sections" />
+                            <DockPanel DockPanel.Dock="Top"
+                                       Margin="0,0,0,12">
+                                <Button DockPanel.Dock="Right"
+                                        Command="{Binding ShowCreateManualSectionDialogCommand}"
+                                        Content="+ Add"
+                                        Style="{StaticResource SmallActionButtonStyle}" />
+                                <TextBlock VerticalAlignment="Center"
+                                           Style="{StaticResource SectionHeaderStyle}"
+                                           Text="Sections" />
+                            </DockPanel>
                             <ListBox ItemsSource="{Binding Sections}"
                                      SelectedItem="{Binding SelectedSection}"
                                      ItemContainerStyle="{StaticResource FullWidthListBoxItemStyle}"
@@ -223,12 +233,18 @@
                                   Margin="0,0,0,12">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="12" />
                                     <ColumnDefinition Width="180" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock VerticalAlignment="Center"
                                            Style="{StaticResource SectionHeaderStyle}"
                                            Text="Test Cases" />
-                                <ComboBox Grid.Column="1"
+                                <Button Grid.Column="1"
+                                        Command="{Binding ShowCreateManualTestCaseDialogCommand}"
+                                        Content="+ Add Case"
+                                        Style="{StaticResource SmallActionButtonStyle}" />
+                                <ComboBox Grid.Column="3"
                                           MinHeight="32"
                                           DisplayMemberPath="DisplayName"
                                           ItemsSource="{Binding ResultStatusFilters}"
@@ -253,6 +269,12 @@
                                                             Command="{Binding DataContext.ShowEditTestCaseResultCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                             CommandParameter="{Binding}"
                                                             Content="Update Case"
+                                                            Style="{StaticResource SmallActionButtonStyle}" />
+                                                    <Button DockPanel.Dock="Right"
+                                                            Margin="12,0,0,0"
+                                                            Command="{Binding DataContext.ShowCreateManualCheckDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}"
+                                                            Content="+ Check"
                                                             Style="{StaticResource SmallActionButtonStyle}" />
                                                     <Button DockPanel.Dock="Right"
                                                             Margin="12,0,0,0"
@@ -362,6 +384,69 @@
                 </DockPanel>
             </Border>
         </Grid>
+
+        <Border Background="#990F172A"
+                Visibility="{Binding ManualDialogOverlayVisibility}">
+            <Border Width="520"
+                    Padding="24"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Background="White"
+                    CornerRadius="8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="18" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="18" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock FontSize="20"
+                               FontWeight="SemiBold"
+                               Foreground="#172033"
+                               Text="{Binding ManualDialogTitle}"
+                               TextWrapping="Wrap" />
+
+                    <StackPanel Grid.Row="2">
+                        <TextBlock Foreground="#64748B"
+                                   Text="Name or title" />
+                        <TextBox Margin="0,6,0,14"
+                                 MinHeight="34"
+                                 Text="{Binding ManualItemName, UpdateSourceTrigger=PropertyChanged}" />
+
+                        <TextBlock Foreground="#64748B"
+                                   Text="Category, expected result, or details" />
+                        <TextBox Margin="0,6,0,0"
+                                 MinHeight="110"
+                                 AcceptsReturn="True"
+                                 Text="{Binding ManualItemDescription, UpdateSourceTrigger=PropertyChanged}"
+                                 TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <TextBlock Grid.Row="4"
+                               Margin="0,0,0,14"
+                               Foreground="#64748B"
+                               Text="{Binding StatusMessage}"
+                               TextWrapping="Wrap" />
+
+                    <StackPanel Grid.Row="5"
+                                HorizontalAlignment="Right"
+                                Orientation="Horizontal">
+                        <Button MinWidth="92"
+                                MinHeight="34"
+                                Margin="0,0,10,0"
+                                Command="{Binding CloseManualItemDialogCommand}"
+                                Content="Cancel" />
+                        <Button MinWidth="92"
+                                MinHeight="34"
+                                Command="{Binding SaveManualItemCommand}"
+                                Content="Save" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Border>
 
         <Border Background="#990F172A"
                 Visibility="{Binding ResultDialogOverlayVisibility}">
