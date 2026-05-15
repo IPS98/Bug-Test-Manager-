@@ -7,6 +7,7 @@ public sealed class TestStepResultViewModel
 {
     public TestStepResultViewModel(
         Guid id,
+        Guid testStepTemplateId,
         string stepText,
         string expectedResult,
         int sortOrder,
@@ -14,6 +15,7 @@ public sealed class TestStepResultViewModel
         string comment)
     {
         Id = id;
+        TestStepTemplateId = testStepTemplateId;
         StepText = stepText;
         ExpectedResult = expectedResult;
         SortOrder = sortOrder;
@@ -22,6 +24,8 @@ public sealed class TestStepResultViewModel
     }
 
     public Guid Id { get; }
+
+    public Guid TestStepTemplateId { get; }
 
     public string StepText { get; }
 

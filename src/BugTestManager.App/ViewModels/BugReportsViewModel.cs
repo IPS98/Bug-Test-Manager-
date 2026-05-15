@@ -18,6 +18,7 @@ public sealed partial class BugReportsViewModel : ObservableObject
 
     private readonly IBugReportService bugReportService;
     private readonly IAttachmentService attachmentService;
+    private readonly ICustomFieldValueService customFieldValueService;
     private readonly IDiscussionService discussionService;
     private readonly IFilePickerService filePickerService;
     private readonly IFileLauncherService fileLauncherService;
@@ -31,6 +32,7 @@ public sealed partial class BugReportsViewModel : ObservableObject
     public BugReportsViewModel(
         IBugReportService bugReportService,
         IAttachmentService attachmentService,
+        ICustomFieldValueService customFieldValueService,
         IDiscussionService discussionService,
         IFilePickerService filePickerService,
         IFileLauncherService fileLauncherService,
@@ -39,6 +41,7 @@ public sealed partial class BugReportsViewModel : ObservableObject
     {
         this.bugReportService = bugReportService;
         this.attachmentService = attachmentService;
+        this.customFieldValueService = customFieldValueService;
         this.discussionService = discussionService;
         this.filePickerService = filePickerService;
         this.fileLauncherService = fileLauncherService;
@@ -46,6 +49,7 @@ public sealed partial class BugReportsViewModel : ObservableObject
         this.userContext = userContext;
         Bugs = [];
         BugAttachments = [];
+        BugCustomFields = [];
         DiscussionComments = [];
         SeverityFilters = [];
         PriorityFilters = [];
@@ -73,6 +77,8 @@ public sealed partial class BugReportsViewModel : ObservableObject
     public ObservableCollection<BugReportItemViewModel> Bugs { get; }
 
     public ObservableCollection<AttachmentItemViewModel> BugAttachments { get; }
+
+    public ObservableCollection<CustomFieldValueItemViewModel> BugCustomFields { get; }
 
     public ObservableCollection<DiscussionCommentItemViewModel> DiscussionComments { get; }
 
@@ -292,6 +298,7 @@ public sealed partial class BugReportsViewModel : ObservableObject
         DetailBugBuildNumber = targetBug.BuildNumber;
         DetailSelectedBugStatus = BugStatuses.Single(option => option.Value == targetBug.Status);
         LoadSelectedBugAttachments();
+        LoadBugCustomFields(targetBug.Id);
         BugDetailsDrawerVisibility = Visibility.Visible;
     }
 
@@ -322,7 +329,9 @@ public sealed partial class BugReportsViewModel : ObservableObject
                 DetailBugBuildNumber,
                 userContext.UserName));
 
+            SaveBugCustomFields(SelectedBug.Id);
             LoadBugs(SelectedBug.Id);
+            LoadBugCustomFields(SelectedBug.Id);
             StatusMessage = "Bug details saved.";
         }
         catch (Exception ex)
@@ -636,6 +645,31 @@ public sealed partial class BugReportsViewModel : ObservableObject
         }
     }
 
+    private void LoadBugCustomFields(Guid bugId)
+    {
+        BugCustomFields.Clear();
+
+        foreach (var field in customFieldValueService
+                     .GetValues(EntityReferenceType.BugReport, bugId, [])
+                     .Select(MapCustomField))
+        {
+            BugCustomFields.Add(field);
+        }
+    }
+
+    private void SaveBugCustomFields(Guid bugId)
+    {
+        foreach (var field in BugCustomFields)
+        {
+            customFieldValueService.SaveValue(new SaveCustomFieldValueRequest(
+                field.FieldDefinitionId,
+                EntityReferenceType.BugReport,
+                bugId,
+                field.Value,
+                userContext.UserName));
+        }
+    }
+
     private void OpenDiscussion(EntityReferenceType entityType, Guid entityId, string title)
     {
         discussionEntityType = entityType;
@@ -723,5 +757,19 @@ public sealed partial class BugReportsViewModel : ObservableObject
             attachment.SizeBytes,
             attachment.UploadedBy,
             attachment.UploadedAt);
+    }
+
+    private static CustomFieldValueItemViewModel MapCustomField(CustomFieldValueItem field)
+    {
+        return new CustomFieldValueItemViewModel(
+            field.FieldDefinitionId,
+            field.EntityType,
+            field.EntityId,
+            field.Name,
+            field.FieldType,
+            field.IsRequired,
+            field.SortOrder,
+            field.Options,
+            field.Value);
     }
 }

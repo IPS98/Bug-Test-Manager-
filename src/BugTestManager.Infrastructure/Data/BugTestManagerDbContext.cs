@@ -17,6 +17,8 @@ public sealed class BugTestManagerDbContext(DbContextOptions<BugTestManagerDbCon
 
     public DbSet<CustomFieldDefinitionRecord> CustomFieldDefinitions => Set<CustomFieldDefinitionRecord>();
 
+    public DbSet<CustomFieldValueRecord> CustomFieldValues => Set<CustomFieldValueRecord>();
+
     public DbSet<TestSessionRecord> TestSessions => Set<TestSessionRecord>();
 
     public DbSet<TestSectionResultRecord> TestSectionResults => Set<TestSectionResultRecord>();
@@ -102,6 +104,20 @@ public sealed class BugTestManagerDbContext(DbContextOptions<BugTestManagerDbCon
             entity.Property(field => field.ScopeDisplayName).HasMaxLength(500).IsRequired();
             entity.Property(field => field.OptionsJson).HasMaxLength(4000).IsRequired();
             entity.HasIndex(field => new { field.TargetEntityType, field.ScopeType, field.ScopeEntityId, field.Name });
+        });
+
+        modelBuilder.Entity<CustomFieldValueRecord>(entity =>
+        {
+            entity.ToTable("CustomFieldValues");
+            entity.HasKey(value => value.Id);
+            entity.Property(value => value.ValueJson).HasMaxLength(4000).IsRequired();
+            entity.Property(value => value.UpdatedBy).HasMaxLength(200).IsRequired();
+            entity.HasIndex(value => new { value.EntityType, value.EntityId });
+            entity.HasIndex(value => new { value.FieldDefinitionId, value.EntityType, value.EntityId }).IsUnique();
+            entity.HasOne(value => value.FieldDefinition)
+                .WithMany()
+                .HasForeignKey(value => value.FieldDefinitionId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<TestSessionRecord>(entity =>

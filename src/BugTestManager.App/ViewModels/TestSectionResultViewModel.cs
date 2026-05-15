@@ -6,12 +6,14 @@ public sealed class TestSectionResultViewModel
 {
     public TestSectionResultViewModel(
         Guid id,
+        Guid templateSectionId,
         string name,
         string category,
         int sortOrder,
         IEnumerable<TestCaseResultViewModel> testCases)
     {
         Id = id;
+        TemplateSectionId = templateSectionId;
         Name = name;
         Category = category;
         SortOrder = sortOrder;
@@ -19,6 +21,8 @@ public sealed class TestSectionResultViewModel
     }
 
     public Guid Id { get; }
+
+    public Guid TemplateSectionId { get; }
 
     public string Name { get; }
 

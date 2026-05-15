@@ -4,6 +4,7 @@ public sealed class TestSessionSummaryViewModel
 {
     public TestSessionSummaryViewModel(
         Guid id,
+        Guid testSuiteId,
         string name,
         string testSuiteName,
         string? revisionName,
@@ -16,6 +17,7 @@ public sealed class TestSessionSummaryViewModel
         int stepCount)
     {
         Id = id;
+        TestSuiteId = testSuiteId;
         Name = name;
         TestSuiteName = testSuiteName;
         RevisionName = revisionName;
@@ -29,6 +31,8 @@ public sealed class TestSessionSummaryViewModel
     }
 
     public Guid Id { get; }
+
+    public Guid TestSuiteId { get; }
 
     public string Name { get; }
 

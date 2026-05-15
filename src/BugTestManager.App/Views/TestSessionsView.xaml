@@ -1,6 +1,7 @@
 <UserControl x:Class="BugTestManager.App.Views.TestSessionsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:shared="clr-namespace:BugTestManager.App.Views.Shared">
     <UserControl.Resources>
         <Style x:Key="FullWidthListBoxItemStyle" TargetType="ListBoxItem">
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -51,13 +52,15 @@
                               ItemsSource="{Binding TestSuites}"
                               SelectedItem="{Binding SelectedTestSuite}" />
 
-                    <TextBlock Margin="0,14,0,6"
-                               Foreground="#64748B"
-                               Text="Revision" />
-                    <ComboBox MinHeight="34"
-                              DisplayMemberPath="Name"
-                              ItemsSource="{Binding Revisions}"
-                              SelectedItem="{Binding SelectedRevision}" />
+                    <StackPanel Visibility="{Binding RevisionPickerVisibility}">
+                        <TextBlock Margin="0,14,0,6"
+                                   Foreground="#64748B"
+                                   Text="Revision" />
+                        <ComboBox MinHeight="34"
+                                  DisplayMemberPath="Name"
+                                  ItemsSource="{Binding Revisions}"
+                                  SelectedItem="{Binding SelectedRevision}" />
+                    </StackPanel>
 
                     <TextBlock Margin="0,14,0,6"
                                Foreground="#64748B"
@@ -495,6 +498,8 @@
                                  AcceptsReturn="True"
                                  Text="{Binding ResultComment, UpdateSourceTrigger=PropertyChanged}"
                                  TextWrapping="Wrap" />
+
+                        <shared:CustomFieldValuesEditor DataContext="{Binding ResultCustomFields}" />
 
                         <Grid Margin="0,18,0,8">
                             <Grid.ColumnDefinitions>

@@ -27,6 +27,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<ITestSuiteCatalogService, SqliteTestSuiteCatalogService>();
         services.AddSingleton<ITestSuiteManagementService, SqliteTestSuiteManagementService>();
         services.AddSingleton<ICustomFieldDefinitionService, SqliteCustomFieldDefinitionService>();
+        services.AddSingleton<ICustomFieldValueService, SqliteCustomFieldValueService>();
         services.AddSingleton<ITestSessionService, SqliteTestSessionService>();
         services.AddSingleton<IBugReportService, SqliteBugReportService>();
         services.AddSingleton<IDiscussionService, SqliteDiscussionService>();

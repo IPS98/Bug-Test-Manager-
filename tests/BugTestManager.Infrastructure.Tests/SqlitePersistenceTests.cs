@@ -1,5 +1,6 @@
 using BugTestManager.Application.Abstractions;
 using BugTestManager.Application.Exceptions;
+using BugTestManager.Application.ReadModels;
 using BugTestManager.Application.Requests;
 using BugTestManager.Domain.Enums;
 using BugTestManager.Infrastructure;
@@ -378,6 +379,136 @@ public sealed class SqlitePersistenceTests
         Assert.Equal(CustomFieldScopeType.TestSuite, field.ScopeType);
         Assert.Equal(testSuite.TestSuiteId, field.ScopeEntityId);
         Assert.Equal("Test suite: Scoped Field Suite", field.ScopeDisplayName);
+    }
+
+    [Fact]
+    public void CustomFieldValueService_SavesAndUpdatesBugValues()
+    {
+        var databasePath = CreateTempDatabasePath();
+        using var serviceProvider = CreateServiceProvider(databasePath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var fieldService = serviceProvider.GetRequiredService<ICustomFieldDefinitionService>();
+        var fieldId = fieldService.CreateDefinition(new CreateCustomFieldDefinitionRequest(
+            EntityReferenceType.BugReport,
+            "Affected module",
+            FieldType.Text,
+            IsRequired: false,
+            SortOrder: 1,
+            ScopeType: CustomFieldScopeType.Global,
+            ScopeEntityId: null,
+            ScopeDisplayName: "All matching items",
+            Options: []));
+        var bugService = serviceProvider.GetRequiredService<IBugReportService>();
+        var bugId = bugService.CreateBug(new CreateBugReportRequest(
+            "Power button tooltip is wrong",
+            "The tooltip shows an old label.",
+            "Medium",
+            "Medium",
+            "1.2.7",
+            "801",
+            "tester"));
+
+        var valueService = serviceProvider.GetRequiredService<ICustomFieldValueService>();
+        valueService.SaveValue(new SaveCustomFieldValueRequest(
+            fieldId,
+            EntityReferenceType.BugReport,
+            bugId,
+            "Main Window",
+            "tester"));
+        valueService.SaveValue(new SaveCustomFieldValueRequest(
+            fieldId,
+            EntityReferenceType.BugReport,
+            bugId,
+            "Power Controls",
+            "developer"));
+
+        var fieldValue = valueService
+            .GetValues(EntityReferenceType.BugReport, bugId, [])
+            .Single(item => item.FieldDefinitionId == fieldId);
+
+        Assert.Equal("Affected module", fieldValue.Name);
+        Assert.Equal("Power Controls", fieldValue.Value);
+    }
+
+    [Fact]
+    public void CustomFieldValueService_ReturnsScopedTestResultValues()
+    {
+        var databasePath = CreateTempDatabasePath();
+        using var serviceProvider = CreateServiceProvider(databasePath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var managementService = serviceProvider.GetRequiredService<ITestSuiteManagementService>();
+        var testSuite = managementService.CreateTestSuite(new CreateTestSuiteRequest(
+            "Scoped Result Suite",
+            "Used to verify scoped result fields.",
+            RevisionIsRequired: false,
+            InitialRevisionName: null));
+        var sectionId = managementService.CreateSection(new CreateTemplateSectionRequest(
+            testSuite.TestSuiteId,
+            TestSuiteRevisionId: null,
+            "Power Controls",
+            "UI"));
+        var testCaseTemplateId = managementService.CreateTestCase(new CreateTestCaseTemplateRequest(
+            sectionId,
+            "ON/OFF button",
+            "Button toggles output."));
+        managementService.CreateTestStep(new CreateTestStepTemplateRequest(
+            testCaseTemplateId,
+            "Check tooltip.",
+            "Tooltip is visible."));
+
+        var fieldService = serviceProvider.GetRequiredService<ICustomFieldDefinitionService>();
+        var globalFieldId = fieldService.CreateDefinition(new CreateCustomFieldDefinitionRequest(
+            EntityReferenceType.TestCaseResult,
+            "Firmware",
+            FieldType.Text,
+            IsRequired: false,
+            SortOrder: 1,
+            ScopeType: CustomFieldScopeType.Global,
+            ScopeEntityId: null,
+            ScopeDisplayName: "All matching items",
+            Options: []));
+        var scopedFieldId = fieldService.CreateDefinition(new CreateCustomFieldDefinitionRequest(
+            EntityReferenceType.TestCaseResult,
+            "Power model",
+            FieldType.Text,
+            IsRequired: false,
+            SortOrder: 2,
+            ScopeType: CustomFieldScopeType.TestCaseTemplate,
+            ScopeEntityId: testCaseTemplateId,
+            ScopeDisplayName: "Test case: ON/OFF button",
+            Options: []));
+
+        var sessionService = serviceProvider.GetRequiredService<ITestSessionService>();
+        var sessionId = sessionService.CreateSession(new CreateTestSessionRequest(
+            "Scoped custom field run",
+            testSuite.TestSuiteId,
+            TestSuiteRevisionId: null,
+            TestedVersion: "2.0.0",
+            BuildNumber: "1001",
+            Notes: "",
+            CreatedBy: "tester"));
+        var testCase = sessionService.GetSession(sessionId)
+            .Sections
+            .SelectMany(section => section.TestCases)
+            .Single();
+
+        var valueService = serviceProvider.GetRequiredService<ICustomFieldValueService>();
+        valueService.SaveValue(new SaveCustomFieldValueRequest(
+            scopedFieldId,
+            EntityReferenceType.TestCaseResult,
+            testCase.Id,
+            "PM-42",
+            "tester"));
+
+        var values = valueService.GetValues(
+            EntityReferenceType.TestCaseResult,
+            testCase.Id,
+            [new CustomFieldValueScopeItem(CustomFieldScopeType.TestCaseTemplate, testCaseTemplateId)]);
+
+        Assert.Contains(values, item => item.FieldDefinitionId == globalFieldId);
+        Assert.Contains(values, item => item.FieldDefinitionId == scopedFieldId && item.Value == "PM-42");
     }
 
     [Fact]

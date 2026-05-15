@@ -1,6 +1,7 @@
 <UserControl x:Class="BugTestManager.App.Views.BugReportsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:shared="clr-namespace:BugTestManager.App.Views.Shared">
     <UserControl.Resources>
         <Style x:Key="FullWidthListBoxItemStyle" TargetType="ListBoxItem">
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -346,6 +347,8 @@
                                       DisplayMemberPath="DisplayName"
                                       ItemsSource="{Binding BugStatuses}"
                                       SelectedItem="{Binding DetailSelectedBugStatus}" />
+
+                            <shared:CustomFieldValuesEditor DataContext="{Binding BugCustomFields}" />
 
                             <Grid Margin="0,4,0,10">
                                 <Grid.ColumnDefinitions>

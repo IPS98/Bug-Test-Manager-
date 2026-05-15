@@ -11,6 +11,7 @@ public sealed class SqliteDatabaseInitializer(IDbContextFactory<BugTestManagerDb
         using var dbContext = dbContextFactory.CreateDbContext();
         dbContext.Database.EnsureCreated();
         EnsureCustomFieldDefinitionTable(dbContext);
+        EnsureCustomFieldValueTable(dbContext);
         EnsureTestSessionTables(dbContext);
         EnsureAttachmentTable(dbContext);
         EnsureBugReportTable(dbContext);
@@ -227,6 +228,36 @@ public sealed class SqliteDatabaseInitializer(IDbContextFactory<BugTestManagerDb
             """
             CREATE INDEX IF NOT EXISTS "IX_TestStepResults_TestCaseResultId"
             ON "TestStepResults" ("TestCaseResultId");
+            """);
+    }
+
+    private static void EnsureCustomFieldValueTable(BugTestManagerDbContext dbContext)
+    {
+        dbContext.Database.ExecuteSqlRaw(
+            """
+            CREATE TABLE IF NOT EXISTS "CustomFieldValues" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_CustomFieldValues" PRIMARY KEY,
+                "FieldDefinitionId" TEXT NOT NULL,
+                "EntityType" INTEGER NOT NULL,
+                "EntityId" TEXT NOT NULL,
+                "ValueJson" TEXT NOT NULL,
+                "UpdatedBy" TEXT NOT NULL,
+                "UpdatedAt" TEXT NOT NULL,
+                CONSTRAINT "FK_CustomFieldValues_CustomFieldDefinitions_FieldDefinitionId"
+                    FOREIGN KEY ("FieldDefinitionId") REFERENCES "CustomFieldDefinitions" ("Id") ON DELETE CASCADE
+            );
+            """);
+
+        dbContext.Database.ExecuteSqlRaw(
+            """
+            CREATE INDEX IF NOT EXISTS "IX_CustomFieldValues_EntityType_EntityId"
+            ON "CustomFieldValues" ("EntityType", "EntityId");
+            """);
+
+        dbContext.Database.ExecuteSqlRaw(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_CustomFieldValues_FieldDefinitionId_EntityType_EntityId"
+            ON "CustomFieldValues" ("FieldDefinitionId", "EntityType", "EntityId");
             """);
     }
 

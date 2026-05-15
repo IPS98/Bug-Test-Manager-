@@ -98,7 +98,13 @@ Status: implementation in progress after approved architecture and skeleton setu
 - Discussion messages can be added, edited, deleted, and show created/edited timestamps.
 - Bugs page can filter by status, severity, and priority.
 - Test Sessions page can create a manual session without a template.
+- Test Sessions page hides the revision picker when the selected template source does not require revisions.
 - Test Sessions page can add manual sections, test cases, and checks directly inside a selected session.
+- SQLite persistence added for custom field values.
+- Custom field values can be saved for bug reports.
+- Custom field values can be saved for test case and check results.
+- Scoped custom fields appear for matching test suites, sections, and test cases.
+- A shared WPF custom field editor is used by bug details and test result dialogs.
 
 ## Product Goal
 
@@ -167,7 +173,7 @@ These are still important, but they do not block the first skeleton:
 - Internally rename the technical Step/TestStep naming to Check/TestCheck after the workflow is stable. The UI already uses Check, but the C# model still contains old Step names to avoid a risky rename while behavior is changing quickly.
 - Keep the storage layer ready for a future shared database/server deployment. Local SQLite is only the first demo storage, and production should be able to move to a shared SQL database and shared attachment folder without rewriting the UI.
 - Keep each feature modular so test templates, sessions, bugs, attachments, reports, and audit history can be changed independently.
-- Add direct manual test creation inside Test Sessions after the current bug attachment/comment workflow is stable.
+- Continue improving direct manual test creation inside Test Sessions as real workflows become clearer.
 - Do not force every test session to start from a template; keep the model ready for template-based and free-form testing.
 - Keep business logic ready for a future web UI by avoiding WPF dependencies outside the App project.
 - Later, add a dedicated navigation/view composition layer: `NavigationService`, optional `ViewModelFactory`, app-level service registration extensions, and possibly a `ViewLocator` so view-model-to-view mapping stays modular and easy to replace.
@@ -379,6 +385,7 @@ History:
 - Add manual section, test case, and check creation inside an active test session.
 - Add statuses: Not Tested, Pass, Fail, Blocked, Not Applicable.
 - Add comments, dates, model, firmware, and custom fields.
+- Add custom field value editing for test case and check results. Started.
 - Add photo/file attachments.
 - Add result discussion/comments for tester/developer communication.
 - Add filtering by status, revision, section, category, tags, owner, and dates.
@@ -392,6 +399,7 @@ History:
 - Add bug comments, attachments, and history.
 - Add bug conversation/comments for tester/developer communication.
 - Add bug attachments for screenshots, videos, logs, scripts, and documents.
+- Add custom field value editing for bug reports. Started.
 - Add filtering by status, priority, severity, owner, tags, version, and date.
 
 ### Milestone 6 - PDF Reports
@@ -419,16 +427,18 @@ History:
 
 ## Current Stage
 
-The project is between Milestone 2 and Milestone 3.
+The project is between Milestone 4 and Milestone 5.
 
 Milestone 1 created the WPF/MVVM skeleton and basic navigation.
 
-Milestone 2 has started with the first Domain entities.
+Milestone 2 has started with the first Domain entities and SQLite persistence.
 
 Milestone 3 has started with a Templates screen using database-backed seeded data.
 
-Database storage has started. The first editing workflow can create, edit, and delete test suites, sections, test cases, and checks. Dynamic field definition management has started. Manual test session creation has started. Test execution has started with status and comment editing for copied test case and check results.
+Milestone 4 has started with manual test sessions, result status editing, result comments, attachments, discussions, filters, manual session items, and custom field values for result items.
+
+Milestone 5 has started with bug creation, duplicate-title validation, status updates, filters, attachments, detail drawers, discussions, linked bugs, and custom field values for bug reports.
 
 ## Next Step
 
-Add custom field values so created field definitions can appear inside sessions, results, and bugs.
+Add copy-from-previous-session workflow so a previous manual run can be reused for a new tested version or build.

@@ -8,6 +8,7 @@ public sealed class TestCaseResultViewModel
 {
     public TestCaseResultViewModel(
         Guid id,
+        Guid testCaseTemplateId,
         string title,
         string expectedResult,
         int sortOrder,
@@ -16,6 +17,7 @@ public sealed class TestCaseResultViewModel
         IEnumerable<TestStepResultViewModel> steps)
     {
         Id = id;
+        TestCaseTemplateId = testCaseTemplateId;
         Title = title;
         ExpectedResult = expectedResult;
         SortOrder = sortOrder;
@@ -25,6 +27,8 @@ public sealed class TestCaseResultViewModel
     }
 
     public Guid Id { get; }
+
+    public Guid TestCaseTemplateId { get; }
 
     public string Title { get; }
 

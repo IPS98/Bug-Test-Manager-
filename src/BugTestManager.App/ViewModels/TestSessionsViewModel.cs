@@ -18,6 +18,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     private readonly ITestSessionService testSessionService;
     private readonly ITestSuiteCatalogService testSuiteCatalogService;
     private readonly IAttachmentService attachmentService;
+    private readonly ICustomFieldValueService customFieldValueService;
     private readonly IDiscussionService discussionService;
     private readonly IBugReportService bugReportService;
     private readonly IFilePickerService filePickerService;
@@ -29,6 +30,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         ITestSessionService testSessionService,
         ITestSuiteCatalogService testSuiteCatalogService,
         IAttachmentService attachmentService,
+        ICustomFieldValueService customFieldValueService,
         IDiscussionService discussionService,
         IBugReportService bugReportService,
         IFilePickerService filePickerService,
@@ -39,6 +41,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         this.testSessionService = testSessionService;
         this.testSuiteCatalogService = testSuiteCatalogService;
         this.attachmentService = attachmentService;
+        this.customFieldValueService = customFieldValueService;
         this.discussionService = discussionService;
         this.bugReportService = bugReportService;
         this.filePickerService = filePickerService;
@@ -51,6 +54,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         Sections = [];
         FilteredTestCases = [];
         ResultAttachments = [];
+        ResultCustomFields = [];
         DiscussionComments = [];
         ResultStatuses = Enum.GetValues<TestResultStatus>()
             .Select(status => new SelectionOption<TestResultStatus>(
@@ -82,11 +86,17 @@ public sealed partial class TestSessionsViewModel : ObservableObject
 
     public ObservableCollection<AttachmentItemViewModel> ResultAttachments { get; }
 
+    public ObservableCollection<CustomFieldValueItemViewModel> ResultCustomFields { get; }
+
     public ObservableCollection<DiscussionCommentItemViewModel> DiscussionComments { get; }
 
     public IReadOnlyList<SelectionOption<TestResultStatus>> ResultStatuses { get; }
 
     public IReadOnlyList<SelectionOption<TestResultStatus?>> ResultStatusFilters { get; }
+
+    public Visibility RevisionPickerVisibility => SelectedTestSuite?.RevisionIsRequired == true
+        ? Visibility.Visible
+        : Visibility.Collapsed;
 
     [ObservableProperty]
     private TestSessionSuiteOption? selectedTestSuite;
@@ -208,6 +218,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         }
 
         SelectedRevision = Revisions.FirstOrDefault();
+        OnPropertyChanged(nameof(RevisionPickerVisibility));
         CreateSessionCommand.NotifyCanExecuteChanged();
     }
 
@@ -381,6 +392,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         StatusMessage = "Ready";
         EditingResultTarget = TestSessionResultTargetKind.TestCase;
         LoadResultAttachments();
+        LoadResultCustomFields();
     }
 
     [RelayCommand(CanExecute = nameof(CanShowEditTestStepResult))]
@@ -402,6 +414,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         StatusMessage = "Ready";
         EditingResultTarget = TestSessionResultTargetKind.Step;
         LoadResultAttachments();
+        LoadResultCustomFields();
     }
 
     [RelayCommand]
@@ -416,6 +429,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         LinkedBugTargetDisplay = string.Empty;
         SelectedResultStatus = ResultStatuses.FirstOrDefault();
         ResultAttachments.Clear();
+        ResultCustomFields.Clear();
     }
 
     [RelayCommand(CanExecute = nameof(CanShowCreateManualSectionDialog))]
@@ -752,6 +766,8 @@ public sealed partial class TestSessionsViewModel : ObservableObject
 
         try
         {
+            SaveResultCustomFields();
+
             switch (EditingResultTarget)
             {
                 case TestSessionResultTargetKind.TestCase:
@@ -1017,6 +1033,58 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         }
     }
 
+    private void LoadResultCustomFields()
+    {
+        ResultCustomFields.Clear();
+
+        if (!CanAddAttachment())
+        {
+            return;
+        }
+
+        foreach (var field in customFieldValueService
+                     .GetValues(GetEditingEntityType(), EditingResultId, BuildCurrentResultScopes())
+                     .Select(MapCustomField))
+        {
+            ResultCustomFields.Add(field);
+        }
+    }
+
+    private void SaveResultCustomFields()
+    {
+        foreach (var field in ResultCustomFields)
+        {
+            customFieldValueService.SaveValue(new SaveCustomFieldValueRequest(
+                field.FieldDefinitionId,
+                GetEditingEntityType(),
+                EditingResultId,
+                field.Value,
+                userContext.UserName));
+        }
+    }
+
+    private IReadOnlyCollection<CustomFieldValueScopeItem> BuildCurrentResultScopes()
+    {
+        var scopes = new List<CustomFieldValueScopeItem>();
+
+        if (SelectedSession?.TestSuiteId is { } testSuiteId && testSuiteId != Guid.Empty)
+        {
+            scopes.Add(new CustomFieldValueScopeItem(CustomFieldScopeType.TestSuite, testSuiteId));
+        }
+
+        if (SelectedSection?.TemplateSectionId is { } sectionId && sectionId != Guid.Empty)
+        {
+            scopes.Add(new CustomFieldValueScopeItem(CustomFieldScopeType.TemplateSection, sectionId));
+        }
+
+        if (SelectedTestCase?.TestCaseTemplateId is { } testCaseTemplateId && testCaseTemplateId != Guid.Empty)
+        {
+            scopes.Add(new CustomFieldValueScopeItem(CustomFieldScopeType.TestCaseTemplate, testCaseTemplateId));
+        }
+
+        return scopes;
+    }
+
     private void OpenDiscussion(EntityReferenceType entityType, Guid entityId, string title)
     {
         discussionEntityType = entityType;
@@ -1068,6 +1136,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     {
         return new TestSessionSummaryViewModel(
             session.Id,
+            session.TestSuiteId,
             session.Name,
             session.TestSuiteName,
             session.TestSuiteRevisionName,
@@ -1084,6 +1153,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     {
         return new TestSectionResultViewModel(
             section.Id,
+            section.TemplateSectionId,
             section.Name,
             section.Category,
             section.SortOrder,
@@ -1096,6 +1166,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     {
         return new TestCaseResultViewModel(
             testCase.Id,
+            testCase.TestCaseTemplateId,
             testCase.Title,
             testCase.ExpectedResult,
             testCase.SortOrder,
@@ -1110,6 +1181,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     {
         return new TestStepResultViewModel(
             step.Id,
+            step.TestStepTemplateId,
             step.StepText,
             step.ExpectedResult,
             step.SortOrder,
@@ -1138,6 +1210,20 @@ public sealed partial class TestSessionsViewModel : ObservableObject
             comment.CreatedAt,
             comment.UpdatedBy,
             comment.UpdatedAt);
+    }
+
+    private static CustomFieldValueItemViewModel MapCustomField(CustomFieldValueItem field)
+    {
+        return new CustomFieldValueItemViewModel(
+            field.FieldDefinitionId,
+            field.EntityType,
+            field.EntityId,
+            field.Name,
+            field.FieldType,
+            field.IsRequired,
+            field.SortOrder,
+            field.Options,
+            field.Value);
     }
 
     private static string BuildDefaultBugDescription(string expectedResult, string comment)

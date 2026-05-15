@@ -23,6 +23,7 @@ public sealed class SqliteTestSessionService(IDbContextFactory<BugTestManagerDbC
             .OrderByDescending(session => session.CreatedAt)
             .Select(session => new TestSessionSummaryItem(
                 session.Id,
+                session.TestSuiteId,
                 session.Name,
                 session.TestSuiteName,
                 session.TestSuiteRevisionName,
@@ -49,6 +50,7 @@ public sealed class SqliteTestSessionService(IDbContextFactory<BugTestManagerDbC
 
         return new TestSessionDetailsItem(
             session.Id,
+            session.TestSuiteId,
             session.Name,
             session.TestSuiteName,
             session.TestSuiteRevisionName,
@@ -61,6 +63,7 @@ public sealed class SqliteTestSessionService(IDbContextFactory<BugTestManagerDbC
                 .OrderBy(section => section.SortOrder)
                 .Select(section => new TestSectionResultItem(
                     section.Id,
+                    section.TemplateSectionId,
                     section.Name,
                     section.Category,
                     section.SortOrder,
@@ -68,6 +71,7 @@ public sealed class SqliteTestSessionService(IDbContextFactory<BugTestManagerDbC
                         .OrderBy(testCase => testCase.SortOrder)
                         .Select(testCase => new TestCaseResultItem(
                             testCase.Id,
+                            testCase.TestCaseTemplateId,
                             testCase.Title,
                             testCase.ExpectedResult,
                             testCase.SortOrder,
@@ -77,6 +81,7 @@ public sealed class SqliteTestSessionService(IDbContextFactory<BugTestManagerDbC
                                 .OrderBy(step => step.SortOrder)
                                 .Select(step => new TestStepResultItem(
                                     step.Id,
+                                    step.TestStepTemplateId,
                                     step.StepText,
                                     step.ExpectedResult,
                                     step.SortOrder,
