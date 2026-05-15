@@ -7,4 +7,5 @@ public sealed record CreateTestSessionRequest(
     string TestedVersion,
     string BuildNumber,
     string Notes,
-    string CreatedBy);
+    string CreatedBy,
+    Guid? ProjectId = null);

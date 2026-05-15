@@ -4,4 +4,5 @@ public sealed record CreateTestSuiteRequest(
     string Name,
     string Description,
     bool RevisionIsRequired,
-    string? InitialRevisionName);
+    string? InitialRevisionName,
+    Guid? ProjectId = null);

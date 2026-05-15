@@ -5,4 +5,5 @@ public sealed record CreateManualTestSessionRequest(
     string TestedVersion,
     string BuildNumber,
     string Notes,
-    string CreatedBy);
+    string CreatedBy,
+    Guid? ProjectId = null);

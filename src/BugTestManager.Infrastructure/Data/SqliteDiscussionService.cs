@@ -23,6 +23,33 @@ public sealed class SqliteDiscussionService(IDbContextFactory<BugTestManagerDbCo
             .ToList();
     }
 
+    public int GetUnreadCount(EntityReferenceType entityType, Guid entityId, string userName)
+    {
+        if (entityId == Guid.Empty || string.IsNullOrWhiteSpace(userName))
+        {
+            return 0;
+        }
+
+        var normalizedUserName = userName.Trim();
+        using var dbContext = dbContextFactory.CreateDbContext();
+        var lastReadAt = dbContext.DiscussionReadStates
+            .AsNoTracking()
+            .Where(readState =>
+                readState.EntityType == entityType
+                && readState.EntityId == entityId
+                && readState.UserName.ToUpper() == normalizedUserName.ToUpper())
+            .Select(readState => (DateTimeOffset?)readState.LastReadAt)
+            .SingleOrDefault();
+
+        return dbContext.DiscussionComments
+            .AsNoTracking()
+            .Where(comment => comment.EntityType == entityType && comment.EntityId == entityId)
+            .ToList()
+            .Count(comment =>
+                !string.Equals(comment.CreatedBy, normalizedUserName, StringComparison.OrdinalIgnoreCase)
+                && (lastReadAt == null || comment.CreatedAt > lastReadAt.Value));
+    }
+
     public Guid AddComment(AddDiscussionCommentRequest request)
     {
         if (request.EntityId == Guid.Empty)
@@ -51,6 +78,39 @@ public sealed class SqliteDiscussionService(IDbContextFactory<BugTestManagerDbCo
         dbContext.SaveChanges();
 
         return commentId;
+    }
+
+    public void MarkRead(EntityReferenceType entityType, Guid entityId, string userName)
+    {
+        if (entityId == Guid.Empty)
+        {
+            return;
+        }
+
+        var normalizedUserName = Require(userName, "User name");
+        using var dbContext = dbContextFactory.CreateDbContext();
+        var readState = dbContext.DiscussionReadStates.SingleOrDefault(item =>
+            item.EntityType == entityType
+            && item.EntityId == entityId
+            && item.UserName.ToUpper() == normalizedUserName.ToUpper());
+
+        if (readState is null)
+        {
+            dbContext.DiscussionReadStates.Add(new DiscussionReadStateRecord
+            {
+                Id = Guid.NewGuid(),
+                EntityType = entityType,
+                EntityId = entityId,
+                UserName = normalizedUserName,
+                LastReadAt = DateTimeOffset.UtcNow
+            });
+        }
+        else
+        {
+            readState.LastReadAt = DateTimeOffset.UtcNow;
+        }
+
+        dbContext.SaveChanges();
     }
 
     public void UpdateComment(UpdateDiscussionCommentRequest request)

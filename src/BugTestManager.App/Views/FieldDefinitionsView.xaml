@@ -27,7 +27,7 @@
 
                 <TextBlock Margin="0,18,0,6"
                            Foreground="#64748B"
-                           Text="Where this field appears" />
+                           Text="Field group" />
                 <ComboBox MinHeight="34"
                           DisplayMemberPath="DisplayName"
                           ItemsSource="{Binding TargetEntityTypes}"
@@ -35,11 +35,24 @@
 
                 <TextBlock Margin="0,14,0,6"
                            Foreground="#64748B"
-                           Text="Available in" />
-                <ComboBox MinHeight="34"
-                          DisplayMemberPath="DisplayName"
-                          ItemsSource="{Binding ScopeOptions}"
-                          SelectedItem="{Binding SelectedScopeOption}" />
+                           Text="Apply to" />
+                <Border MaxHeight="150"
+                        Padding="8"
+                        BorderBrush="#E2E8F0"
+                        BorderThickness="1"
+                        CornerRadius="6">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding ScopeOptions}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox Margin="0,0,0,7"
+                                              Content="{Binding DisplayName}"
+                                              IsChecked="{Binding IsSelected}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Border>
 
                 <TextBlock Margin="0,14,0,6"
                            Foreground="#64748B"
@@ -199,7 +212,7 @@
                                   VerticalScrollBarVisibility="Auto">
                         <StackPanel>
                             <TextBlock Foreground="#64748B"
-                                       Text="Where this field appears" />
+                                       Text="Field group" />
                             <ComboBox Margin="0,6,0,14"
                                       MinHeight="34"
                                       DisplayMemberPath="DisplayName"
@@ -207,12 +220,25 @@
                                       SelectedItem="{Binding EditTargetEntityType}" />
 
                             <TextBlock Foreground="#64748B"
-                                       Text="Available in" />
-                            <ComboBox Margin="0,6,0,14"
-                                      MinHeight="34"
-                                      DisplayMemberPath="DisplayName"
-                                      ItemsSource="{Binding ScopeOptions}"
-                                      SelectedItem="{Binding EditScopeOption}" />
+                                       Text="Apply to" />
+                            <Border Margin="0,6,0,14"
+                                    MaxHeight="180"
+                                    Padding="8"
+                                    BorderBrush="#E2E8F0"
+                                    BorderThickness="1"
+                                    CornerRadius="6">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <ItemsControl ItemsSource="{Binding EditScopeOptions}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <CheckBox Margin="0,0,0,7"
+                                                          Content="{Binding DisplayName}"
+                                                          IsChecked="{Binding IsSelected}" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </Border>
 
                             <TextBlock Foreground="#64748B"
                                        Text="Name" />

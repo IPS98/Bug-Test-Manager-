@@ -5,7 +5,7 @@ namespace BugTestManager.Application.Abstractions;
 
 public interface ICustomFieldDefinitionService
 {
-    IReadOnlyList<CustomFieldDefinitionItem> GetDefinitions();
+    IReadOnlyList<CustomFieldDefinitionItem> GetDefinitions(Guid? projectId = null);
 
     Guid CreateDefinition(CreateCustomFieldDefinitionRequest request);
 

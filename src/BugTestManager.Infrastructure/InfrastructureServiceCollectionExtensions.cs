@@ -24,11 +24,18 @@ public static class InfrastructureServiceCollectionExtensions
             options.UseSqlite($"Data Source={resolvedDatabasePath}"));
 
         services.AddSingleton<IDatabaseInitializer, SqliteDatabaseInitializer>();
+        services.AddSingleton<IProjectService>(provider =>
+            new SqliteProjectService(
+                provider.GetRequiredService<IDbContextFactory<BugTestManagerDbContext>>(),
+                attachmentRootPath));
         services.AddSingleton<ITestSuiteCatalogService, SqliteTestSuiteCatalogService>();
         services.AddSingleton<ITestSuiteManagementService, SqliteTestSuiteManagementService>();
         services.AddSingleton<ICustomFieldDefinitionService, SqliteCustomFieldDefinitionService>();
         services.AddSingleton<ICustomFieldValueService, SqliteCustomFieldValueService>();
-        services.AddSingleton<ITestSessionService, SqliteTestSessionService>();
+        services.AddSingleton<ITestSessionService>(provider =>
+            new SqliteTestSessionService(
+                provider.GetRequiredService<IDbContextFactory<BugTestManagerDbContext>>(),
+                attachmentRootPath));
         services.AddSingleton<IBugReportService, SqliteBugReportService>();
         services.AddSingleton<IDiscussionService, SqliteDiscussionService>();
         services.AddSingleton<IAttachmentService>(_ =>

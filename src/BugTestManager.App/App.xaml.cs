@@ -38,6 +38,7 @@ public partial class App : System.Windows.Application
         services.AddSingleton<IFilePickerService, WindowsFilePickerService>();
         services.AddSingleton<IFileLauncherService, WindowsFileLauncherService>();
         services.AddSingleton<IErrorDialogService, MetroErrorDialogService>();
+        services.AddSingleton<IProjectContext, ProjectContext>();
         services.AddInfrastructure();
         services.AddSingleton<TestSuitesViewModel>();
         services.AddSingleton<FieldDefinitionsViewModel>();

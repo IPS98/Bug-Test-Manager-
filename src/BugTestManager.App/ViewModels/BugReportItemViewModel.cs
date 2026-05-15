@@ -1,9 +1,11 @@
+using System.Windows;
 using System.Windows.Media;
 using BugTestManager.Domain.Enums;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace BugTestManager.App.ViewModels;
 
-public sealed class BugReportItemViewModel
+public sealed class BugReportItemViewModel : ObservableObject
 {
     public BugReportItemViewModel(
         Guid id,
@@ -20,7 +22,8 @@ public sealed class BugReportItemViewModel
         DateTimeOffset updatedAt,
         EntityReferenceType? linkedEntityType,
         Guid? linkedEntityId,
-        string linkedEntityDisplayName)
+        string linkedEntityDisplayName,
+        int unreadDiscussionCount)
     {
         Id = id;
         Title = title;
@@ -37,6 +40,7 @@ public sealed class BugReportItemViewModel
         LinkedEntityType = linkedEntityType;
         LinkedEntityId = linkedEntityId;
         LinkedEntityDisplayName = linkedEntityDisplayName;
+        UnreadDiscussionCount = unreadDiscussionCount;
     }
 
     public Guid Id { get; }
@@ -90,4 +94,27 @@ public sealed class BugReportItemViewModel
     public string LinkDisplay => string.IsNullOrWhiteSpace(LinkedEntityDisplayName)
         ? "No linked test item"
         : $"Linked to: {LinkedEntityDisplayName}";
+
+    private int unreadDiscussionCount;
+
+    public int UnreadDiscussionCount
+    {
+        get => unreadDiscussionCount;
+        set
+        {
+            if (SetProperty(ref unreadDiscussionCount, value))
+            {
+                OnPropertyChanged(nameof(DiscussionBadgeVisibility));
+                OnPropertyChanged(nameof(DiscussionBadgeText));
+            }
+        }
+    }
+
+    public Visibility DiscussionBadgeVisibility => UnreadDiscussionCount > 0
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public string DiscussionBadgeText => UnreadDiscussionCount > 99
+        ? "99+"
+        : UnreadDiscussionCount.ToString();
 }

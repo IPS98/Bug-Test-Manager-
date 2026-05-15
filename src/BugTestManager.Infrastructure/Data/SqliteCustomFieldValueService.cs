@@ -1,5 +1,6 @@
 using System.Text.Json;
 using BugTestManager.Application.Abstractions;
+using BugTestManager.Application.Defaults;
 using BugTestManager.Application.ReadModels;
 using BugTestManager.Application.Requests;
 using BugTestManager.Domain.Enums;
@@ -14,12 +15,18 @@ public sealed class SqliteCustomFieldValueService(IDbContextFactory<BugTestManag
     public IReadOnlyList<CustomFieldValueItem> GetValues(
         EntityReferenceType entityType,
         Guid entityId,
-        IReadOnlyCollection<CustomFieldValueScopeItem> scopes)
+        IReadOnlyCollection<CustomFieldValueScopeItem> scopes,
+        Guid? projectId = null)
     {
         using var dbContext = dbContextFactory.CreateDbContext();
+        var resolvedProjectId = ResolveProjectId(projectId);
         var activeDefinitions = dbContext.CustomFieldDefinitions
             .AsNoTracking()
-            .Where(field => field.IsActive && field.TargetEntityType == entityType)
+            .Include(field => field.Scopes)
+            .Where(field =>
+                field.ProjectId == resolvedProjectId
+                && field.IsActive
+                && field.TargetEntityType == entityType)
             .ToList()
             .Where(field => MatchesScope(field, scopes))
             .OrderBy(field => field.SortOrder)
@@ -137,6 +144,16 @@ public sealed class SqliteCustomFieldValueService(IDbContextFactory<BugTestManag
             return true;
         }
 
+        if (field.Scopes.Count > 0)
+        {
+            return field.Scopes.Any(fieldScope =>
+                fieldScope.ScopeType == CustomFieldScopeType.Global
+                || (fieldScope.ScopeEntityId is not null
+                    && scopes.Any(scope =>
+                        scope.ScopeType == fieldScope.ScopeType
+                        && scope.ScopeEntityId == fieldScope.ScopeEntityId.Value)));
+        }
+
         if (field.ScopeEntityId is null)
         {
             return false;
@@ -195,5 +212,10 @@ public sealed class SqliteCustomFieldValueService(IDbContextFactory<BugTestManag
         }
 
         return value.Trim();
+    }
+
+    private static Guid ResolveProjectId(Guid? projectId)
+    {
+        return projectId ?? ProjectDefaults.DefaultProjectId;
     }
 }

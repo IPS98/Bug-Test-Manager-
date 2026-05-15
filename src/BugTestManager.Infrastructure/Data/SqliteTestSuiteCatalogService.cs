@@ -1,4 +1,5 @@
 using BugTestManager.Application.Abstractions;
+using BugTestManager.Application.Defaults;
 using BugTestManager.Application.ReadModels;
 using BugTestManager.Infrastructure.Data.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -7,12 +8,14 @@ namespace BugTestManager.Infrastructure.Data;
 
 public sealed class SqliteTestSuiteCatalogService(IDbContextFactory<BugTestManagerDbContext> dbContextFactory) : ITestSuiteCatalogService
 {
-    public IReadOnlyList<TestSuiteCatalogItem> GetCatalog()
+    public IReadOnlyList<TestSuiteCatalogItem> GetCatalog(Guid? projectId = null)
     {
         using var dbContext = dbContextFactory.CreateDbContext();
+        var resolvedProjectId = ResolveProjectId(projectId);
 
         var testSuites = dbContext.TestSuites
             .AsNoTracking()
+            .Where(testSuite => testSuite.ProjectId == resolvedProjectId)
             .Include(testSuite => testSuite.Revisions)
             .Include(testSuite => testSuite.Sections)
                 .ThenInclude(section => section.TestCases)
@@ -21,6 +24,11 @@ public sealed class SqliteTestSuiteCatalogService(IDbContextFactory<BugTestManag
             .ToList();
 
         return testSuites.Select(MapTestSuite).ToList();
+    }
+
+    private static Guid ResolveProjectId(Guid? projectId)
+    {
+        return projectId ?? ProjectDefaults.DefaultProjectId;
     }
 
     private static TestSuiteCatalogItem MapTestSuite(TestSuiteRecord testSuite)

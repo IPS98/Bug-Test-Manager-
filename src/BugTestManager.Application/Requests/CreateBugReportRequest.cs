@@ -12,4 +12,5 @@ public sealed record CreateBugReportRequest(
     string CreatedBy,
     EntityReferenceType? LinkedEntityType = null,
     Guid? LinkedEntityId = null,
-    string LinkedEntityDisplayName = "");
+    string LinkedEntityDisplayName = "",
+    Guid? ProjectId = null);

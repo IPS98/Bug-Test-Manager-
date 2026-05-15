@@ -24,6 +24,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     private readonly IFilePickerService filePickerService;
     private readonly IFileLauncherService fileLauncherService;
     private readonly IErrorDialogService errorDialogService;
+    private readonly IProjectContext projectContext;
     private readonly IUserContext userContext;
 
     public TestSessionsViewModel(
@@ -36,6 +37,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         IFilePickerService filePickerService,
         IFileLauncherService fileLauncherService,
         IErrorDialogService errorDialogService,
+        IProjectContext projectContext,
         IUserContext userContext)
     {
         this.testSessionService = testSessionService;
@@ -47,6 +49,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         this.filePickerService = filePickerService;
         this.fileLauncherService = fileLauncherService;
         this.errorDialogService = errorDialogService;
+        this.projectContext = projectContext;
         this.userContext = userContext;
         TestSuites = [];
         Revisions = [];
@@ -133,6 +136,20 @@ public sealed partial class TestSessionsViewModel : ObservableObject
 
     [ObservableProperty]
     private bool createSessionWithoutTemplate;
+
+    [ObservableProperty]
+    private Visibility newSessionDialogVisibility = Visibility.Collapsed;
+
+    [ObservableProperty]
+    private Visibility deleteSessionDialogVisibility = Visibility.Collapsed;
+
+    [ObservableProperty]
+    private string deleteSessionTitle = string.Empty;
+
+    [ObservableProperty]
+    private string deleteSessionWarning = string.Empty;
+
+    private Guid pendingDeleteSessionId;
 
     [ObservableProperty]
     private string statusMessage = "Ready";
@@ -231,6 +248,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     {
         LoadSelectedSession(value?.Id);
         ShowCreateManualSectionDialogCommand.NotifyCanExecuteChanged();
+        ShowDeleteSessionDialogCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnSelectedSectionChanged(TestSectionResultViewModel? value)
@@ -331,6 +349,19 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         LoadSessions(SelectedSession?.Id);
     }
 
+    [RelayCommand]
+    private void ShowNewSessionDialog()
+    {
+        StatusMessage = "Ready";
+        NewSessionDialogVisibility = Visibility.Visible;
+    }
+
+    [RelayCommand]
+    private void CloseNewSessionDialog()
+    {
+        NewSessionDialogVisibility = Visibility.Collapsed;
+    }
+
     [RelayCommand(CanExecute = nameof(CanCreateSession))]
     private void CreateSession()
     {
@@ -347,7 +378,8 @@ public sealed partial class TestSessionsViewModel : ObservableObject
                     TestedVersion,
                     BuildNumber,
                     Notes,
-                    userContext.UserName))
+                    userContext.UserName,
+                    projectContext.CurrentProjectId))
                 : testSessionService.CreateSession(new CreateTestSessionRequest(
                     NewSessionName,
                     SelectedTestSuite!.Id,
@@ -355,7 +387,8 @@ public sealed partial class TestSessionsViewModel : ObservableObject
                     TestedVersion,
                     BuildNumber,
                     Notes,
-                    userContext.UserName));
+                    userContext.UserName,
+                    projectContext.CurrentProjectId));
 
             NewSessionName = string.Empty;
             TestedVersion = string.Empty;
@@ -366,6 +399,57 @@ public sealed partial class TestSessionsViewModel : ObservableObject
             StatusMessage = CreateSessionWithoutTemplate
                 ? "Manual test session created."
                 : "Test session created from template.";
+            NewSessionDialogVisibility = Visibility.Collapsed;
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = ex.Message;
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanShowDeleteSessionDialog))]
+    private void ShowDeleteSessionDialog(TestSessionSummaryViewModel? session)
+    {
+        var targetSession = session ?? SelectedSession;
+        if (targetSession is null)
+        {
+            return;
+        }
+
+        SelectedSession = targetSession;
+        pendingDeleteSessionId = targetSession.Id;
+        DeleteSessionTitle = $"Delete session: {targetSession.Name}";
+        DeleteSessionWarning = "This will permanently delete this test session with its results, attachments, custom field values, and discussions.";
+        StatusMessage = "This action cannot be undone.";
+        DeleteSessionDialogVisibility = Visibility.Visible;
+        ConfirmDeleteSessionCommand.NotifyCanExecuteChanged();
+    }
+
+    [RelayCommand]
+    private void CloseDeleteSessionDialog()
+    {
+        DeleteSessionDialogVisibility = Visibility.Collapsed;
+        pendingDeleteSessionId = Guid.Empty;
+        DeleteSessionTitle = string.Empty;
+        DeleteSessionWarning = string.Empty;
+        ConfirmDeleteSessionCommand.NotifyCanExecuteChanged();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanConfirmDeleteSession))]
+    private void ConfirmDeleteSession()
+    {
+        if (pendingDeleteSessionId == Guid.Empty)
+        {
+            return;
+        }
+
+        try
+        {
+            var deletedSessionId = pendingDeleteSessionId;
+            testSessionService.DeleteSession(deletedSessionId);
+            CloseDeleteSessionDialog();
+            LoadSessions(Sessions.FirstOrDefault(session => session.Id != deletedSessionId)?.Id);
+            StatusMessage = "Test session deleted.";
         }
         catch (Exception ex)
         {
@@ -600,7 +684,8 @@ public sealed partial class TestSessionsViewModel : ObservableObject
                 userContext.UserName,
                 GetEditingEntityType(),
                 EditingResultId,
-                LinkedBugTargetDisplay));
+                LinkedBugTargetDisplay,
+                projectContext.CurrentProjectId));
 
             StatusMessage = "Linked bug created.";
         }
@@ -694,7 +779,9 @@ public sealed partial class TestSessionsViewModel : ObservableObject
 
             DiscussionMessage = string.Empty;
             ClearDiscussionEdit();
+            discussionService.MarkRead(discussionEntityType, discussionEntityId, userContext.UserName);
             LoadDiscussionComments();
+            RefreshResultDiscussionBadges();
             StatusMessage = "Discussion saved.";
         }
         catch (Exception ex)
@@ -738,6 +825,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         {
             discussionService.DeleteComment(comment.Id);
             LoadDiscussionComments();
+            RefreshResultDiscussionBadges();
             StatusMessage = "Discussion message deleted.";
         }
         catch (Exception ex)
@@ -804,6 +892,16 @@ public sealed partial class TestSessionsViewModel : ObservableObject
             && (CreateSessionWithoutTemplate
                 || (SelectedTestSuite is not null
                     && (!SelectedTestSuite.RevisionIsRequired || SelectedRevision?.Id is not null)));
+    }
+
+    private bool CanShowDeleteSessionDialog(TestSessionSummaryViewModel? session)
+    {
+        return session is not null || SelectedSession is not null;
+    }
+
+    private bool CanConfirmDeleteSession()
+    {
+        return pendingDeleteSessionId != Guid.Empty;
     }
 
     private bool CanShowEditTestCaseResult(TestCaseResultViewModel? testCase)
@@ -887,7 +985,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
                 [new TestSessionRevisionOption(null, "No revision")])
         };
 
-        suites.AddRange(testSuiteCatalogService.GetCatalog()
+        suites.AddRange(testSuiteCatalogService.GetCatalog(projectContext.CurrentProjectId)
             .Select(suite => new TestSessionSuiteOption(
                 suite.Id,
                 suite.Name,
@@ -918,7 +1016,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     private void LoadSessions(Guid? selectedSessionId = null)
     {
         var preferredSessionId = selectedSessionId ?? SelectedSession?.Id;
-        var sessions = testSessionService.GetSessions()
+        var sessions = testSessionService.GetSessions(projectContext.CurrentProjectId)
             .Select(MapSession)
             .ToList();
 
@@ -968,6 +1066,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
                 : SelectedTestCase?.Steps.FirstOrDefault(step => step.Id == selectedStepId)
                     ?? SelectedTestCase?.Steps.FirstOrDefault();
 
+            RefreshResultDiscussionBadges();
             UpdateResultSummary();
         }
         catch (Exception ex)
@@ -1043,7 +1142,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         }
 
         foreach (var field in customFieldValueService
-                     .GetValues(GetEditingEntityType(), EditingResultId, BuildCurrentResultScopes())
+                     .GetValues(GetEditingEntityType(), EditingResultId, BuildCurrentResultScopes(), projectContext.CurrentProjectId)
                      .Select(MapCustomField))
         {
             ResultCustomFields.Add(field);
@@ -1093,6 +1192,8 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         DiscussionMessage = string.Empty;
         ClearDiscussionEdit();
         LoadDiscussionComments();
+        discussionService.MarkRead(entityType, entityId, userContext.UserName);
+        RefreshResultDiscussionBadges();
         DiscussionDrawerVisibility = Visibility.Visible;
         SaveDiscussionMessageCommand.NotifyCanExecuteChanged();
     }
@@ -1111,6 +1212,25 @@ public sealed partial class TestSessionsViewModel : ObservableObject
                      .Select(MapComment))
         {
             DiscussionComments.Add(comment);
+        }
+    }
+
+    private void RefreshResultDiscussionBadges()
+    {
+        foreach (var testCase in Sections.SelectMany(section => section.TestCases))
+        {
+            testCase.UnreadDiscussionCount = discussionService.GetUnreadCount(
+                EntityReferenceType.TestCaseResult,
+                testCase.Id,
+                userContext.UserName);
+
+            foreach (var step in testCase.Steps)
+            {
+                step.UnreadDiscussionCount = discussionService.GetUnreadCount(
+                    EntityReferenceType.TestStepResult,
+                    step.Id,
+                    userContext.UserName);
+            }
         }
     }
 

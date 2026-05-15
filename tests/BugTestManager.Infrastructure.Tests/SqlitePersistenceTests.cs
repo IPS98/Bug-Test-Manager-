@@ -168,7 +168,8 @@ public sealed class SqlitePersistenceTests
         managementService.UpdateTestSuite(new UpdateTestSuiteRequest(
             testSuite.TestSuiteId,
             "Updated Suite",
-            "Updated suite description."));
+            "Updated suite description.",
+            RevisionIsRequired: false));
         managementService.UpdateSection(new UpdateTemplateSectionRequest(
             sectionId,
             "Updated Section",
@@ -1067,6 +1068,222 @@ public sealed class SqlitePersistenceTests
         Assert.Equal("freeze-capture.mp4", attachment.OriginalFileName);
         Assert.Equal("video/mp4", attachment.ContentType);
         Assert.True(File.Exists(attachment.AbsolutePath));
+    }
+
+    [Fact]
+    public void ProjectService_AllowsSameTemplateNameInDifferentProjectsAndDeletesProjectData()
+    {
+        var databasePath = CreateTempDatabasePath();
+        using var serviceProvider = CreateServiceProvider(databasePath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var projectService = serviceProvider.GetRequiredService<IProjectService>();
+        var firstProjectId = projectService.CreateProject(new CreateProjectRequest("Project A"));
+        var secondProjectId = projectService.CreateProject(new CreateProjectRequest("Project B"));
+        var managementService = serviceProvider.GetRequiredService<ITestSuiteManagementService>();
+
+        managementService.CreateTestSuite(new CreateTestSuiteRequest(
+            "Shared Template",
+            "First project template.",
+            RevisionIsRequired: false,
+            InitialRevisionName: null,
+            ProjectId: firstProjectId));
+        managementService.CreateTestSuite(new CreateTestSuiteRequest(
+            "Shared Template",
+            "Second project template.",
+            RevisionIsRequired: false,
+            InitialRevisionName: null,
+            ProjectId: secondProjectId));
+
+        var catalogService = serviceProvider.GetRequiredService<ITestSuiteCatalogService>();
+        Assert.Contains(catalogService.GetCatalog(firstProjectId), suite => suite.Name == "Shared Template");
+        Assert.Contains(catalogService.GetCatalog(secondProjectId), suite => suite.Name == "Shared Template");
+
+        projectService.DeleteProject(firstProjectId);
+
+        Assert.DoesNotContain(projectService.GetProjects(), project => project.Id == firstProjectId);
+        Assert.Empty(catalogService.GetCatalog(firstProjectId));
+        Assert.Contains(catalogService.GetCatalog(secondProjectId), suite => suite.Name == "Shared Template");
+    }
+
+    [Fact]
+    public void ManagementService_CreatesRevisionByCopyingSourceRevisionAndUpdatesName()
+    {
+        var databasePath = CreateTempDatabasePath();
+        using var serviceProvider = CreateServiceProvider(databasePath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var managementService = serviceProvider.GetRequiredService<ITestSuiteManagementService>();
+        var testSuite = managementService.CreateTestSuite(new CreateTestSuiteRequest(
+            "Revision Copy Suite",
+            "Checks revision copy behavior.",
+            RevisionIsRequired: true,
+            InitialRevisionName: "Revision A"));
+        var revisionAId = testSuite.InitialRevisionId!.Value;
+        var sectionId = managementService.CreateSection(new CreateTemplateSectionRequest(
+            testSuite.TestSuiteId,
+            revisionAId,
+            "Normal",
+            "Startup"));
+        var testCaseId = managementService.CreateTestCase(new CreateTestCaseTemplateRequest(
+            sectionId,
+            "Power button",
+            "The unit powers on."));
+        managementService.CreateTestStep(new CreateTestStepTemplateRequest(
+            testCaseId,
+            "Press the power button.",
+            "The button toggles the unit state."));
+
+        var revisionBId = managementService.CreateRevision(new CreateTestSuiteRevisionRequest(
+            testSuite.TestSuiteId,
+            "Revision B",
+            revisionAId));
+        managementService.UpdateRevision(new UpdateTestSuiteRevisionRequest(
+            revisionBId,
+            "Revision B Updated"));
+
+        var catalog = serviceProvider.GetRequiredService<ITestSuiteCatalogService>().GetCatalog();
+        var createdSuite = catalog.Single(suite => suite.Id == testSuite.TestSuiteId);
+        var revisionA = createdSuite.Revisions.Single(revision => revision.Id == revisionAId);
+        var revisionB = createdSuite.Revisions.Single(revision => revision.Id == revisionBId);
+
+        Assert.Equal("Revision B Updated", revisionB.Name);
+        Assert.Equal("Normal", revisionB.Sections.Single().Name);
+        Assert.Equal("Power button", revisionB.Sections.Single().TestCases.Single().Title);
+        Assert.NotEqual(revisionA.Sections.Single().Id, revisionB.Sections.Single().Id);
+        Assert.NotEqual(revisionA.Sections.Single().TestCases.Single().Id, revisionB.Sections.Single().TestCases.Single().Id);
+    }
+
+    [Fact]
+    public void TestSessionService_DeletesSessionWithDiscussionSideData()
+    {
+        var databasePath = CreateTempDatabasePath();
+        var attachmentRootPath = CreateTempDirectoryPath();
+        using var serviceProvider = CreateServiceProvider(databasePath, attachmentRootPath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var managementService = serviceProvider.GetRequiredService<ITestSuiteManagementService>();
+        var testSuite = managementService.CreateTestSuite(new CreateTestSuiteRequest(
+            "Deletable Session Suite",
+            "Used to verify session deletion.",
+            RevisionIsRequired: false,
+            InitialRevisionName: null));
+        var sectionId = managementService.CreateSection(new CreateTemplateSectionRequest(
+            testSuite.TestSuiteId,
+            TestSuiteRevisionId: null,
+            "Controls",
+            "UI"));
+        var testCaseId = managementService.CreateTestCase(new CreateTestCaseTemplateRequest(
+            sectionId,
+            "Toggle output",
+            "Output toggles."));
+        managementService.CreateTestStep(new CreateTestStepTemplateRequest(
+            testCaseId,
+            "Click output.",
+            "Output state changes."));
+
+        var sessionService = serviceProvider.GetRequiredService<ITestSessionService>();
+        var sessionId = sessionService.CreateSession(new CreateTestSessionRequest(
+            "Delete me",
+            testSuite.TestSuiteId,
+            null,
+            "1.0",
+            "100",
+            "",
+            "tester"));
+        var testCaseResultId = sessionService.GetSession(sessionId).Sections.Single().TestCases.Single().Id;
+        var discussionService = serviceProvider.GetRequiredService<IDiscussionService>();
+        discussionService.AddComment(new AddDiscussionCommentRequest(
+            EntityReferenceType.TestCaseResult,
+            testCaseResultId,
+            "Needs review.",
+            "developer"));
+        var sourceDirectory = CreateTempDirectoryPath();
+        var sourceFilePath = Path.Combine(sourceDirectory, "evidence.png");
+        File.WriteAllBytes(sourceFilePath, [0x01, 0x02, 0x03]);
+        var attachmentService = serviceProvider.GetRequiredService<IAttachmentService>();
+        var attachmentId = attachmentService.AddAttachment(new AddAttachmentRequest(
+            EntityReferenceType.TestCaseResult,
+            testCaseResultId,
+            sourceFilePath,
+            "tester"));
+        var attachmentPath = attachmentService
+            .GetAttachments(EntityReferenceType.TestCaseResult, testCaseResultId)
+            .Single(item => item.Id == attachmentId)
+            .AbsolutePath;
+
+        sessionService.DeleteSession(sessionId);
+
+        Assert.Empty(sessionService.GetSessions());
+        Assert.Empty(discussionService.GetComments(EntityReferenceType.TestCaseResult, testCaseResultId));
+        Assert.Empty(attachmentService.GetAttachments(EntityReferenceType.TestCaseResult, testCaseResultId));
+        Assert.False(File.Exists(attachmentPath));
+    }
+
+    [Fact]
+    public void CustomFieldDefinitionService_AppliesOneFieldToMultipleScopes()
+    {
+        var databasePath = CreateTempDatabasePath();
+        using var serviceProvider = CreateServiceProvider(databasePath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var managementService = serviceProvider.GetRequiredService<ITestSuiteManagementService>();
+        var testSuite = managementService.CreateTestSuite(new CreateTestSuiteRequest(
+            "Multi Field Suite",
+            "Used to verify field multi-binding.",
+            RevisionIsRequired: false,
+            InitialRevisionName: null));
+        var sectionId = managementService.CreateSection(new CreateTemplateSectionRequest(
+            testSuite.TestSuiteId,
+            TestSuiteRevisionId: null,
+            "Main",
+            "UI"));
+        var firstCaseTemplateId = managementService.CreateTestCase(new CreateTestCaseTemplateRequest(
+            sectionId,
+            "First case",
+            "First expected result."));
+        var secondCaseTemplateId = managementService.CreateTestCase(new CreateTestCaseTemplateRequest(
+            sectionId,
+            "Second case",
+            "Second expected result."));
+
+        var fieldService = serviceProvider.GetRequiredService<ICustomFieldDefinitionService>();
+        var fieldId = fieldService.CreateDefinition(new CreateCustomFieldDefinitionRequest(
+            EntityReferenceType.TestCaseResult,
+            "Date",
+            FieldType.Date,
+            IsRequired: false,
+            SortOrder: 0,
+            ScopeType: CustomFieldScopeType.Global,
+            ScopeEntityId: null,
+            ScopeDisplayName: "Whole project",
+            Options: [],
+            Scopes:
+            [
+                new CustomFieldDefinitionScopeRequest(
+                    CustomFieldScopeType.TestCaseTemplate,
+                    firstCaseTemplateId,
+                    "First case"),
+                new CustomFieldDefinitionScopeRequest(
+                    CustomFieldScopeType.TestCaseTemplate,
+                    secondCaseTemplateId,
+                    "Second case")
+            ]));
+
+        var definition = fieldService.GetDefinitions().Single(field => field.Id == fieldId);
+        var valueService = serviceProvider.GetRequiredService<ICustomFieldValueService>();
+        var firstValues = valueService.GetValues(
+            EntityReferenceType.TestCaseResult,
+            Guid.Empty,
+            [new CustomFieldValueScopeItem(CustomFieldScopeType.TestCaseTemplate, firstCaseTemplateId)]);
+        var secondValues = valueService.GetValues(
+            EntityReferenceType.TestCaseResult,
+            Guid.Empty,
+            [new CustomFieldValueScopeItem(CustomFieldScopeType.TestCaseTemplate, secondCaseTemplateId)]);
+
+        Assert.Equal(2, definition.Scopes.Count);
+        Assert.Contains(firstValues, field => field.FieldDefinitionId == fieldId);
+        Assert.Contains(secondValues, field => field.FieldDefinitionId == fieldId);
     }
 
     private static ServiceProvider CreateServiceProvider(string databasePath, string? attachmentRootPath = null)

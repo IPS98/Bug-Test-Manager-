@@ -15,7 +15,8 @@ public sealed class FieldDefinitionItemViewModel
         Guid? scopeEntityId,
         string scopeDisplayName,
         bool isActive,
-        IReadOnlyList<string> options)
+        IReadOnlyList<string> options,
+        IReadOnlyList<FieldScopeOption> scopes)
     {
         Id = id;
         TargetEntityType = targetEntityType;
@@ -28,6 +29,7 @@ public sealed class FieldDefinitionItemViewModel
         ScopeDisplayName = scopeDisplayName;
         IsActive = isActive;
         Options = options;
+        Scopes = scopes;
     }
 
     public Guid Id { get; }
@@ -51,6 +53,8 @@ public sealed class FieldDefinitionItemViewModel
     public bool IsActive { get; }
 
     public IReadOnlyList<string> Options { get; }
+
+    public IReadOnlyList<FieldScopeOption> Scopes { get; }
 
     public string TargetDisplay => FieldDisplayNames.ForTarget(TargetEntityType);
 

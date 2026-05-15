@@ -5,7 +5,7 @@ namespace BugTestManager.Application.Abstractions;
 
 public interface ITestSessionService
 {
-    IReadOnlyList<TestSessionSummaryItem> GetSessions();
+    IReadOnlyList<TestSessionSummaryItem> GetSessions(Guid? projectId = null);
 
     TestSessionDetailsItem GetSession(Guid testSessionId);
 
@@ -22,4 +22,6 @@ public interface ITestSessionService
     void UpdateTestCaseResult(UpdateTestCaseResultRequest request);
 
     void UpdateTestStepResult(UpdateTestStepResultRequest request);
+
+    void DeleteSession(Guid testSessionId);
 }

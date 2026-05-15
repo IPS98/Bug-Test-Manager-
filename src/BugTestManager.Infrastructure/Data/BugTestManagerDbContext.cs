@@ -5,6 +5,8 @@ namespace BugTestManager.Infrastructure.Data;
 
 public sealed class BugTestManagerDbContext(DbContextOptions<BugTestManagerDbContext> options) : DbContext(options)
 {
+    public DbSet<ProjectRecord> Projects => Set<ProjectRecord>();
+
     public DbSet<TestSuiteRecord> TestSuites => Set<TestSuiteRecord>();
 
     public DbSet<TestSuiteRevisionRecord> TestSuiteRevisions => Set<TestSuiteRevisionRecord>();
@@ -16,6 +18,8 @@ public sealed class BugTestManagerDbContext(DbContextOptions<BugTestManagerDbCon
     public DbSet<TestStepTemplateRecord> TestStepTemplates => Set<TestStepTemplateRecord>();
 
     public DbSet<CustomFieldDefinitionRecord> CustomFieldDefinitions => Set<CustomFieldDefinitionRecord>();
+
+    public DbSet<CustomFieldDefinitionScopeRecord> CustomFieldDefinitionScopes => Set<CustomFieldDefinitionScopeRecord>();
 
     public DbSet<CustomFieldValueRecord> CustomFieldValues => Set<CustomFieldValueRecord>();
 
@@ -33,15 +37,27 @@ public sealed class BugTestManagerDbContext(DbContextOptions<BugTestManagerDbCon
 
     public DbSet<DiscussionCommentRecord> DiscussionComments => Set<DiscussionCommentRecord>();
 
+    public DbSet<DiscussionReadStateRecord> DiscussionReadStates => Set<DiscussionReadStateRecord>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<ProjectRecord>(entity =>
+        {
+            entity.ToTable("Projects");
+            entity.HasKey(project => project.Id);
+            entity.Property(project => project.Name).HasMaxLength(200).IsRequired();
+            entity.Property(project => project.Description).HasMaxLength(2000).IsRequired();
+            entity.HasIndex(project => project.Name).IsUnique();
+        });
+
         modelBuilder.Entity<TestSuiteRecord>(entity =>
         {
             entity.ToTable("TestSuites");
             entity.HasKey(testSuite => testSuite.Id);
+            entity.Property(testSuite => testSuite.ProjectId).IsRequired();
             entity.Property(testSuite => testSuite.Name).HasMaxLength(200).IsRequired();
             entity.Property(testSuite => testSuite.Description).HasMaxLength(2000).IsRequired();
-            entity.HasIndex(testSuite => testSuite.Name).IsUnique();
+            entity.HasIndex(testSuite => new { testSuite.ProjectId, testSuite.Name }).IsUnique();
         });
 
         modelBuilder.Entity<TestSuiteRevisionRecord>(entity =>
@@ -100,10 +116,23 @@ public sealed class BugTestManagerDbContext(DbContextOptions<BugTestManagerDbCon
         {
             entity.ToTable("CustomFieldDefinitions");
             entity.HasKey(field => field.Id);
+            entity.Property(field => field.ProjectId).IsRequired();
             entity.Property(field => field.Name).HasMaxLength(200).IsRequired();
             entity.Property(field => field.ScopeDisplayName).HasMaxLength(500).IsRequired();
             entity.Property(field => field.OptionsJson).HasMaxLength(4000).IsRequired();
-            entity.HasIndex(field => new { field.TargetEntityType, field.ScopeType, field.ScopeEntityId, field.Name });
+            entity.HasIndex(field => new { field.ProjectId, field.TargetEntityType, field.ScopeType, field.ScopeEntityId, field.Name });
+        });
+
+        modelBuilder.Entity<CustomFieldDefinitionScopeRecord>(entity =>
+        {
+            entity.ToTable("CustomFieldDefinitionScopes");
+            entity.HasKey(scope => scope.Id);
+            entity.Property(scope => scope.ScopeDisplayName).HasMaxLength(500).IsRequired();
+            entity.HasIndex(scope => new { scope.FieldDefinitionId, scope.ScopeType, scope.ScopeEntityId }).IsUnique();
+            entity.HasOne(scope => scope.FieldDefinition)
+                .WithMany(field => field.Scopes)
+                .HasForeignKey(scope => scope.FieldDefinitionId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<CustomFieldValueRecord>(entity =>
@@ -124,6 +153,7 @@ public sealed class BugTestManagerDbContext(DbContextOptions<BugTestManagerDbCon
         {
             entity.ToTable("TestSessions");
             entity.HasKey(session => session.Id);
+            entity.Property(session => session.ProjectId).IsRequired();
             entity.Property(session => session.Name).HasMaxLength(300).IsRequired();
             entity.Property(session => session.IsManual).IsRequired();
             entity.Property(session => session.TestSuiteName).HasMaxLength(200).IsRequired();
@@ -188,6 +218,7 @@ public sealed class BugTestManagerDbContext(DbContextOptions<BugTestManagerDbCon
         {
             entity.ToTable("BugReports");
             entity.HasKey(bug => bug.Id);
+            entity.Property(bug => bug.ProjectId).IsRequired();
             entity.Property(bug => bug.Title).HasMaxLength(300).IsRequired();
             entity.Property(bug => bug.Description).HasMaxLength(4000).IsRequired();
             entity.Property(bug => bug.Severity).HasMaxLength(100).IsRequired();
@@ -197,7 +228,7 @@ public sealed class BugTestManagerDbContext(DbContextOptions<BugTestManagerDbCon
             entity.Property(bug => bug.CreatedBy).HasMaxLength(200).IsRequired();
             entity.Property(bug => bug.UpdatedBy).HasMaxLength(200).IsRequired();
             entity.Property(bug => bug.LinkedEntityDisplayName).HasMaxLength(500).IsRequired();
-            entity.HasIndex(bug => new { bug.Status, bug.UpdatedAt });
+            entity.HasIndex(bug => new { bug.ProjectId, bug.Status, bug.UpdatedAt });
             entity.HasIndex(bug => new { bug.LinkedEntityType, bug.LinkedEntityId });
         });
 
@@ -209,6 +240,14 @@ public sealed class BugTestManagerDbContext(DbContextOptions<BugTestManagerDbCon
             entity.Property(comment => comment.CreatedBy).HasMaxLength(200).IsRequired();
             entity.Property(comment => comment.UpdatedBy).HasMaxLength(200).IsRequired();
             entity.HasIndex(comment => new { comment.EntityType, comment.EntityId, comment.CreatedAt });
+        });
+
+        modelBuilder.Entity<DiscussionReadStateRecord>(entity =>
+        {
+            entity.ToTable("DiscussionReadStates");
+            entity.HasKey(readState => readState.Id);
+            entity.Property(readState => readState.UserName).HasMaxLength(200).IsRequired();
+            entity.HasIndex(readState => new { readState.EntityType, readState.EntityId, readState.UserName }).IsUnique();
         });
     }
 }

@@ -1,4 +1,5 @@
 using BugTestManager.Application.Abstractions;
+using BugTestManager.Application.Defaults;
 using BugTestManager.Application.Exceptions;
 using BugTestManager.Application.ReadModels;
 using BugTestManager.Application.Requests;
@@ -11,12 +12,14 @@ namespace BugTestManager.Infrastructure.Data;
 public sealed class SqliteBugReportService(IDbContextFactory<BugTestManagerDbContext> dbContextFactory)
     : IBugReportService
 {
-    public IReadOnlyList<BugReportItem> GetBugs()
+    public IReadOnlyList<BugReportItem> GetBugs(Guid? projectId = null)
     {
         using var dbContext = dbContextFactory.CreateDbContext();
+        var resolvedProjectId = ResolveProjectId(projectId);
 
         return dbContext.BugReports
             .AsNoTracking()
+            .Where(bug => bug.ProjectId == resolvedProjectId)
             .ToList()
             .OrderByDescending(bug => bug.UpdatedAt)
             .Select(MapBug)
@@ -27,15 +30,17 @@ public sealed class SqliteBugReportService(IDbContextFactory<BugTestManagerDbCon
     {
         var title = Require(request.Title, "Title");
         var createdBy = Require(request.CreatedBy, "Created by");
+        var projectId = ResolveProjectId(request.ProjectId);
         using var dbContext = dbContextFactory.CreateDbContext();
 
-        EnsureUniqueTitle(dbContext, title, ignoredBugId: null);
+        EnsureUniqueTitle(dbContext, projectId, title, ignoredBugId: null);
 
         var now = DateTimeOffset.UtcNow;
         var bugId = Guid.NewGuid();
         var bug = new BugReportRecord
         {
             Id = bugId,
+            ProjectId = projectId,
             Title = title,
             Description = request.Description.Trim(),
             Status = BugStatus.Open,
@@ -67,7 +72,7 @@ public sealed class SqliteBugReportService(IDbContextFactory<BugTestManagerDbCon
         var bug = dbContext.BugReports.SingleOrDefault(item => item.Id == request.BugId)
             ?? throw new InvalidOperationException("Selected bug was not found.");
 
-        EnsureUniqueTitle(dbContext, title, bug.Id);
+        EnsureUniqueTitle(dbContext, bug.ProjectId, title, bug.Id);
 
         bug.Title = title;
         bug.Description = request.Description.Trim();
@@ -139,13 +144,14 @@ public sealed class SqliteBugReportService(IDbContextFactory<BugTestManagerDbCon
 
     private static void EnsureUniqueTitle(
         BugTestManagerDbContext dbContext,
+        Guid projectId,
         string title,
         Guid? ignoredBugId)
     {
         var normalizedTitle = NormalizeTitle(title);
         var titleAlreadyExists = dbContext.BugReports
             .AsNoTracking()
-            .Where(bug => ignoredBugId == null || bug.Id != ignoredBugId.Value)
+            .Where(bug => bug.ProjectId == projectId && (ignoredBugId == null || bug.Id != ignoredBugId.Value))
             .Select(bug => bug.Title)
             .ToList()
             .Any(existingTitle => NormalizeTitle(existingTitle) == normalizedTitle);
@@ -154,5 +160,10 @@ public sealed class SqliteBugReportService(IDbContextFactory<BugTestManagerDbCon
         {
             throw new DuplicateBugTitleException(title);
         }
+    }
+
+    private static Guid ResolveProjectId(Guid? projectId)
+    {
+        return projectId ?? ProjectDefaults.DefaultProjectId;
     }
 }

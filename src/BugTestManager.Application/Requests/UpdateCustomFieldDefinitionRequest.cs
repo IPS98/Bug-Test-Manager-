@@ -12,4 +12,5 @@ public sealed record UpdateCustomFieldDefinitionRequest(
     CustomFieldScopeType ScopeType,
     Guid? ScopeEntityId,
     string ScopeDisplayName,
-    IReadOnlyCollection<string> Options);
+    IReadOnlyCollection<string> Options,
+    IReadOnlyCollection<CustomFieldDefinitionScopeRequest>? Scopes = null);

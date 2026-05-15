@@ -1,4 +1,5 @@
 using BugTestManager.Application.Abstractions;
+using BugTestManager.Application.Defaults;
 using BugTestManager.Application.ReadModels;
 using BugTestManager.Application.Requests;
 using BugTestManager.Domain.Enums;
@@ -7,15 +8,21 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BugTestManager.Infrastructure.Data;
 
-public sealed class SqliteTestSessionService(IDbContextFactory<BugTestManagerDbContext> dbContextFactory)
+public sealed class SqliteTestSessionService(
+    IDbContextFactory<BugTestManagerDbContext> dbContextFactory,
+    string? attachmentRootPath = null)
     : ITestSessionService
 {
-    public IReadOnlyList<TestSessionSummaryItem> GetSessions()
+    private readonly string attachmentRootPath = attachmentRootPath ?? DatabasePaths.GetDefaultAttachmentRootPath();
+
+    public IReadOnlyList<TestSessionSummaryItem> GetSessions(Guid? projectId = null)
     {
         using var dbContext = dbContextFactory.CreateDbContext();
+        var resolvedProjectId = ResolveProjectId(projectId);
 
         return dbContext.TestSessions
             .AsNoTracking()
+            .Where(session => session.ProjectId == resolvedProjectId)
             .Include(session => session.Sections)
             .ThenInclude(section => section.TestCases)
             .ThenInclude(testCase => testCase.Steps)
@@ -96,6 +103,7 @@ public sealed class SqliteTestSessionService(IDbContextFactory<BugTestManagerDbC
     {
         var name = Require(request.Name, "Session name");
         var createdBy = Require(request.CreatedBy, "Created by");
+        var projectId = ResolveProjectId(request.ProjectId);
 
         using var dbContext = dbContextFactory.CreateDbContext();
         var testSuite = dbContext.TestSuites
@@ -104,7 +112,7 @@ public sealed class SqliteTestSessionService(IDbContextFactory<BugTestManagerDbC
             .Include(suite => suite.Sections)
             .ThenInclude(section => section.TestCases)
             .ThenInclude(testCase => testCase.Steps)
-            .SingleOrDefault(suite => suite.Id == request.TestSuiteId)
+            .SingleOrDefault(suite => suite.Id == request.TestSuiteId && suite.ProjectId == projectId)
             ?? throw new InvalidOperationException("Selected test suite was not found.");
 
         if (testSuite.RevisionIsRequired && request.TestSuiteRevisionId is null)
@@ -118,7 +126,9 @@ public sealed class SqliteTestSessionService(IDbContextFactory<BugTestManagerDbC
                 ?? throw new InvalidOperationException("Selected revision was not found.");
 
         var sections = testSuite.Sections
-            .Where(section => section.TestSuiteRevisionId == request.TestSuiteRevisionId)
+            .Where(section =>
+                !testSuite.RevisionIsRequired
+                || section.TestSuiteRevisionId == request.TestSuiteRevisionId)
             .OrderBy(section => section.SortOrder)
             .ToList();
 
@@ -126,6 +136,7 @@ public sealed class SqliteTestSessionService(IDbContextFactory<BugTestManagerDbC
         var session = new TestSessionRecord
         {
             Id = sessionId,
+            ProjectId = projectId,
             Name = name,
             TestSuiteId = testSuite.Id,
             TestSuiteRevisionId = request.TestSuiteRevisionId,
@@ -194,12 +205,14 @@ public sealed class SqliteTestSessionService(IDbContextFactory<BugTestManagerDbC
     {
         var name = Require(request.Name, "Session name");
         var createdBy = Require(request.CreatedBy, "Created by");
+        var projectId = ResolveProjectId(request.ProjectId);
         var sessionId = Guid.NewGuid();
 
         using var dbContext = dbContextFactory.CreateDbContext();
         dbContext.TestSessions.Add(new TestSessionRecord
         {
             Id = sessionId,
+            ProjectId = projectId,
             Name = name,
             TestSuiteId = Guid.Empty,
             TestSuiteRevisionId = null,
@@ -343,6 +356,47 @@ public sealed class SqliteTestSessionService(IDbContextFactory<BugTestManagerDbC
         dbContext.SaveChanges();
     }
 
+    public void DeleteSession(Guid testSessionId)
+    {
+        using var dbContext = dbContextFactory.CreateDbContext();
+        var session = dbContext.TestSessions.SingleOrDefault(item => item.Id == testSessionId)
+            ?? throw new InvalidOperationException("Selected test session was not found.");
+
+        var sectionIds = dbContext.TestSectionResults
+            .Where(section => section.TestSessionId == testSessionId)
+            .Select(section => section.Id)
+            .ToList();
+        var testCaseIds = dbContext.TestCaseResults
+            .Where(testCase => sectionIds.Contains(testCase.TestSectionResultId))
+            .Select(testCase => testCase.Id)
+            .ToList();
+        var stepIds = dbContext.TestStepResults
+            .Where(step => testCaseIds.Contains(step.TestCaseResultId))
+            .Select(step => step.Id)
+            .ToList();
+
+        DeleteEntitySideData(dbContext, EntityReferenceType.TestSession, [testSessionId]);
+        DeleteEntitySideData(dbContext, EntityReferenceType.TestSectionResult, sectionIds);
+        DeleteEntitySideData(dbContext, EntityReferenceType.TestCaseResult, testCaseIds);
+        DeleteEntitySideData(dbContext, EntityReferenceType.TestStepResult, stepIds);
+        ClearBugLinksToDeletedEntities(dbContext, EntityReferenceType.TestSession, [testSessionId]);
+        ClearBugLinksToDeletedEntities(dbContext, EntityReferenceType.TestSectionResult, sectionIds);
+        ClearBugLinksToDeletedEntities(dbContext, EntityReferenceType.TestCaseResult, testCaseIds);
+        ClearBugLinksToDeletedEntities(dbContext, EntityReferenceType.TestStepResult, stepIds);
+
+        dbContext.TestStepResults
+            .Where(step => stepIds.Contains(step.Id))
+            .ExecuteDelete();
+        dbContext.TestCaseResults
+            .Where(testCase => testCaseIds.Contains(testCase.Id))
+            .ExecuteDelete();
+        dbContext.TestSectionResults
+            .Where(section => sectionIds.Contains(section.Id))
+            .ExecuteDelete();
+        dbContext.TestSessions.Remove(session);
+        dbContext.SaveChanges();
+    }
+
     private static TestResultStatus CalculateStatusFromChecks(IReadOnlyCollection<TestStepResultRecord> checks)
     {
         if (checks.Count == 0)
@@ -381,5 +435,85 @@ public sealed class SqliteTestSessionService(IDbContextFactory<BugTestManagerDbC
         }
 
         return value.Trim();
+    }
+
+    private static Guid ResolveProjectId(Guid? projectId)
+    {
+        return projectId ?? ProjectDefaults.DefaultProjectId;
+    }
+
+    private void DeleteEntitySideData(
+        BugTestManagerDbContext dbContext,
+        EntityReferenceType entityType,
+        IReadOnlyCollection<Guid> entityIds)
+    {
+        if (entityIds.Count == 0)
+        {
+            return;
+        }
+
+        DeleteAttachmentFiles(dbContext, entityType, entityIds);
+        dbContext.DiscussionComments
+            .Where(comment => comment.EntityType == entityType && entityIds.Contains(comment.EntityId))
+            .ExecuteDelete();
+        dbContext.DiscussionReadStates
+            .Where(readState => readState.EntityType == entityType && entityIds.Contains(readState.EntityId))
+            .ExecuteDelete();
+        dbContext.CustomFieldValues
+            .Where(value => value.EntityType == entityType && entityIds.Contains(value.EntityId))
+            .ExecuteDelete();
+    }
+
+    private void DeleteAttachmentFiles(
+        BugTestManagerDbContext dbContext,
+        EntityReferenceType entityType,
+        IReadOnlyCollection<Guid> entityIds)
+    {
+        var attachments = dbContext.Attachments
+            .Where(attachment => attachment.EntityType == entityType && entityIds.Contains(attachment.EntityId))
+            .ToList();
+
+        foreach (var attachment in attachments)
+        {
+            var absolutePath = Path.Combine(attachmentRootPath, attachment.RelativePath);
+            if (File.Exists(absolutePath))
+            {
+                File.Delete(absolutePath);
+            }
+        }
+
+        dbContext.Attachments.RemoveRange(attachments);
+        dbContext.SaveChanges();
+    }
+
+    private static void ClearBugLinksToDeletedEntities(
+        BugTestManagerDbContext dbContext,
+        EntityReferenceType entityType,
+        IReadOnlyCollection<Guid> entityIds)
+    {
+        if (entityIds.Count == 0)
+        {
+            return;
+        }
+
+        var linkedBugs = dbContext.BugReports
+            .Where(bug =>
+                bug.LinkedEntityType == entityType
+                && bug.LinkedEntityId != null
+                && entityIds.Contains(bug.LinkedEntityId.Value))
+            .ToList();
+
+        foreach (var bug in linkedBugs)
+        {
+            bug.LinkedEntityType = null;
+            bug.LinkedEntityId = null;
+            bug.LinkedEntityDisplayName = "Deleted test item";
+            bug.UpdatedAt = DateTimeOffset.UtcNow;
+        }
+
+        if (linkedBugs.Count > 0)
+        {
+            dbContext.SaveChanges();
+        }
     }
 }

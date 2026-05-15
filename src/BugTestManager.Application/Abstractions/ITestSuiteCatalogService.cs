@@ -4,5 +4,5 @@ namespace BugTestManager.Application.Abstractions;
 
 public interface ITestSuiteCatalogService
 {
-    IReadOnlyList<TestSuiteCatalogItem> GetCatalog();
+    IReadOnlyList<TestSuiteCatalogItem> GetCatalog(Guid? projectId = null);
 }

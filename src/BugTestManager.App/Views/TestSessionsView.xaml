@@ -28,93 +28,32 @@
     <Grid>
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="340" />
-                <ColumnDefinition Width="16" />
                 <ColumnDefinition Width="320" />
                 <ColumnDefinition Width="16" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <Border Padding="18"
-                    Background="White"
-                    CornerRadius="8">
-                <StackPanel>
-                    <TextBlock FontSize="18"
-                               FontWeight="SemiBold"
-                               Foreground="#172033"
-                               Text="New Test Session" />
-
-                    <TextBlock Margin="0,18,0,6"
-                               Foreground="#64748B"
-                               Text="Template source" />
-                    <ComboBox MinHeight="34"
-                              DisplayMemberPath="Name"
-                              ItemsSource="{Binding TestSuites}"
-                              SelectedItem="{Binding SelectedTestSuite}" />
-
-                    <StackPanel Visibility="{Binding RevisionPickerVisibility}">
-                        <TextBlock Margin="0,14,0,6"
-                                   Foreground="#64748B"
-                                   Text="Revision" />
-                        <ComboBox MinHeight="34"
-                                  DisplayMemberPath="Name"
-                                  ItemsSource="{Binding Revisions}"
-                                  SelectedItem="{Binding SelectedRevision}" />
-                    </StackPanel>
-
-                    <TextBlock Margin="0,14,0,6"
-                               Foreground="#64748B"
-                               Text="Session name" />
-                    <TextBox MinHeight="34"
-                             VerticalContentAlignment="Center"
-                             Text="{Binding NewSessionName, UpdateSourceTrigger=PropertyChanged}" />
-
-                    <TextBlock Margin="0,14,0,6"
-                               Foreground="#64748B"
-                               Text="Tested version" />
-                    <TextBox MinHeight="34"
-                             VerticalContentAlignment="Center"
-                             Text="{Binding TestedVersion, UpdateSourceTrigger=PropertyChanged}" />
-
-                    <TextBlock Margin="0,14,0,6"
-                               Foreground="#64748B"
-                               Text="Build number" />
-                    <TextBox MinHeight="34"
-                             VerticalContentAlignment="Center"
-                             Text="{Binding BuildNumber, UpdateSourceTrigger=PropertyChanged}" />
-
-                    <TextBlock Margin="0,14,0,6"
-                               Foreground="#64748B"
-                               Text="Notes" />
-                    <TextBox MinHeight="78"
-                             AcceptsReturn="True"
-                             Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}"
-                             TextWrapping="Wrap" />
-
-                    <Button Margin="0,18,0,0"
-                            MinHeight="36"
-                            HorizontalAlignment="Stretch"
-                            Command="{Binding CreateSessionCommand}"
-                            Content="Create Session" />
-
-                    <TextBlock Margin="0,14,0,0"
-                               Foreground="#64748B"
-                               Text="{Binding StatusMessage}"
-                               TextWrapping="Wrap" />
-                </StackPanel>
-            </Border>
-
-            <Border Grid.Column="2"
+            <Border Grid.Column="0"
                     Padding="18"
                     Background="White"
                     CornerRadius="8">
                 <DockPanel>
-                    <TextBlock DockPanel.Dock="Top"
-                               Margin="0,0,0,14"
-                               FontSize="18"
-                               FontWeight="SemiBold"
-                               Foreground="#172033"
-                               Text="Created Sessions" />
+                    <Grid DockPanel.Dock="Top"
+                          Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock VerticalAlignment="Center"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Foreground="#172033"
+                                   Text="Created Sessions" />
+                        <Button Grid.Column="1"
+                                Command="{Binding ShowNewSessionDialogCommand}"
+                                Content="New Test Session"
+                                Style="{StaticResource SmallActionButtonStyle}" />
+                    </Grid>
 
                     <ListBox ItemsSource="{Binding Sessions}"
                              SelectedItem="{Binding SelectedSession}"
@@ -124,9 +63,18 @@
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Margin="0,4,0,12">
-                                    <TextBlock FontWeight="SemiBold"
-                                               Text="{Binding Name}"
-                                               TextWrapping="Wrap" />
+                                    <DockPanel LastChildFill="True">
+                                        <Button DockPanel.Dock="Right"
+                                                Margin="10,0,0,0"
+                                                Command="{Binding DataContext.ShowDeleteSessionDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"
+                                                Content="Delete"
+                                                Foreground="#B91C1C"
+                                                Style="{StaticResource SmallActionButtonStyle}" />
+                                        <TextBlock FontWeight="SemiBold"
+                                                   Text="{Binding Name}"
+                                                   TextWrapping="Wrap" />
+                                    </DockPanel>
                                     <TextBlock Margin="0,4,0,0"
                                                Foreground="#64748B"
                                                Text="{Binding TestSuiteName}"
@@ -149,7 +97,7 @@
                 </DockPanel>
             </Border>
 
-            <Border Grid.Column="4"
+            <Border Grid.Column="2"
                     Padding="18"
                     Background="White"
                     CornerRadius="8">
@@ -279,8 +227,21 @@
                                                             Margin="12,0,0,0"
                                                             Command="{Binding DataContext.ShowTestCaseDiscussionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                             CommandParameter="{Binding}"
-                                                            Content="Chat"
-                                                            Style="{StaticResource SmallActionButtonStyle}" />
+                                                            Style="{StaticResource SmallActionButtonStyle}">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Text="Chat" />
+                                                            <Border Margin="6,0,0,0"
+                                                                    Padding="5,1"
+                                                                    Background="#DC2626"
+                                                                    CornerRadius="6"
+                                                                    Visibility="{Binding DiscussionBadgeVisibility}">
+                                                                <TextBlock FontSize="10"
+                                                                           FontWeight="SemiBold"
+                                                                           Foreground="White"
+                                                                           Text="{Binding DiscussionBadgeText}" />
+                                                            </Border>
+                                                        </StackPanel>
+                                                    </Button>
                                                     <Border DockPanel.Dock="Right"
                                                             Padding="8,3"
                                                             Background="{Binding StatusBackground}"
@@ -344,8 +305,21 @@
                                                                                 <Button DockPanel.Dock="Right"
                                                                                         Command="{Binding DataContext.ShowTestStepDiscussionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                                         CommandParameter="{Binding}"
-                                                                                        Content="Chat"
-                                                                                        Style="{StaticResource CheckActionButtonStyle}" />
+                                                                                        Style="{StaticResource CheckActionButtonStyle}">
+                                                                                    <StackPanel Orientation="Horizontal">
+                                                                                        <TextBlock Text="Chat" />
+                                                                                        <Border Margin="6,0,0,0"
+                                                                                                Padding="5,1"
+                                                                                                Background="#DC2626"
+                                                                                                CornerRadius="6"
+                                                                                                Visibility="{Binding DiscussionBadgeVisibility}">
+                                                                                            <TextBlock FontSize="10"
+                                                                                                       FontWeight="SemiBold"
+                                                                                                       Foreground="White"
+                                                                                                       Text="{Binding DiscussionBadgeText}" />
+                                                                                        </Border>
+                                                                                    </StackPanel>
+                                                                                </Button>
                                                                                 <Border DockPanel.Dock="Right"
                                                                                         Padding="8,3"
                                                                                         Background="{Binding StatusBackground}"
@@ -383,6 +357,148 @@
                 </DockPanel>
             </Border>
         </Grid>
+
+        <Border Background="#990F172A"
+                Visibility="{Binding NewSessionDialogVisibility}">
+            <Border Width="540"
+                    Padding="24"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Background="White"
+                    CornerRadius="8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="18" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock FontSize="20"
+                               FontWeight="SemiBold"
+                               Foreground="#172033"
+                               Text="New Test Session" />
+
+                    <ScrollViewer Grid.Row="2"
+                                  MaxHeight="500"
+                                  VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Foreground="#64748B"
+                                       Text="Template source" />
+                            <ComboBox Margin="0,6,0,14"
+                                      MinHeight="34"
+                                      DisplayMemberPath="Name"
+                                      ItemsSource="{Binding TestSuites}"
+                                      SelectedItem="{Binding SelectedTestSuite}" />
+
+                            <StackPanel Visibility="{Binding RevisionPickerVisibility}">
+                                <TextBlock Foreground="#64748B"
+                                           Text="Revision" />
+                                <ComboBox Margin="0,6,0,14"
+                                          MinHeight="34"
+                                          DisplayMemberPath="Name"
+                                          ItemsSource="{Binding Revisions}"
+                                          SelectedItem="{Binding SelectedRevision}" />
+                            </StackPanel>
+
+                            <TextBlock Foreground="#64748B"
+                                       Text="Session name" />
+                            <TextBox Margin="0,6,0,14"
+                                     MinHeight="34"
+                                     VerticalContentAlignment="Center"
+                                     Text="{Binding NewSessionName, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <TextBlock Foreground="#64748B"
+                                       Text="Tested version" />
+                            <TextBox Margin="0,6,0,14"
+                                     MinHeight="34"
+                                     VerticalContentAlignment="Center"
+                                     Text="{Binding TestedVersion, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <TextBlock Foreground="#64748B"
+                                       Text="Build number" />
+                            <TextBox Margin="0,6,0,14"
+                                     MinHeight="34"
+                                     VerticalContentAlignment="Center"
+                                     Text="{Binding BuildNumber, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <TextBlock Foreground="#64748B"
+                                       Text="Notes" />
+                            <TextBox Margin="0,6,0,0"
+                                     MinHeight="90"
+                                     AcceptsReturn="True"
+                                     Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}"
+                                     TextWrapping="Wrap" />
+                            <TextBlock Margin="0,12,0,0"
+                                       Foreground="#64748B"
+                                       Text="{Binding StatusMessage}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <StackPanel Grid.Row="3"
+                                Margin="0,18,0,0"
+                                HorizontalAlignment="Right"
+                                Orientation="Horizontal">
+                        <Button MinWidth="92"
+                                MinHeight="34"
+                                Margin="0,0,10,0"
+                                Command="{Binding CloseNewSessionDialogCommand}"
+                                Content="Cancel" />
+                        <Button MinWidth="120"
+                                MinHeight="34"
+                                Command="{Binding CreateSessionCommand}"
+                                Content="Create Session" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Border>
+
+        <Border Background="#990F172A"
+                Visibility="{Binding DeleteSessionDialogVisibility}">
+            <Border Width="500"
+                    Padding="24"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Background="White"
+                    CornerRadius="8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="14" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="18" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock FontSize="20"
+                               FontWeight="SemiBold"
+                               Foreground="#172033"
+                               Text="{Binding DeleteSessionTitle}"
+                               TextWrapping="Wrap" />
+
+                    <TextBlock Grid.Row="2"
+                               Foreground="#64748B"
+                               Text="{Binding DeleteSessionWarning}"
+                               TextWrapping="Wrap" />
+
+                    <StackPanel Grid.Row="4"
+                                HorizontalAlignment="Right"
+                                Orientation="Horizontal">
+                        <Button MinWidth="92"
+                                MinHeight="34"
+                                Margin="0,0,10,0"
+                                Command="{Binding CloseDeleteSessionDialogCommand}"
+                                Content="Cancel" />
+                        <Button MinWidth="120"
+                                MinHeight="34"
+                                Command="{Binding ConfirmDeleteSessionCommand}"
+                                Content="Delete Session"
+                                Foreground="#B91C1C" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Border>
 
         <Border Background="#990F172A"
                 Visibility="{Binding ManualDialogOverlayVisibility}">

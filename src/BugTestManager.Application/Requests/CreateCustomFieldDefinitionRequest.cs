@@ -11,4 +11,6 @@ public sealed record CreateCustomFieldDefinitionRequest(
     CustomFieldScopeType ScopeType,
     Guid? ScopeEntityId,
     string ScopeDisplayName,
-    IReadOnlyCollection<string> Options);
+    IReadOnlyCollection<string> Options,
+    Guid? ProjectId = null,
+    IReadOnlyCollection<CustomFieldDefinitionScopeRequest>? Scopes = null);

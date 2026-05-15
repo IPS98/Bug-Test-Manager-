@@ -1,9 +1,11 @@
+using System.Windows;
 using System.Windows.Media;
 using BugTestManager.Domain.Enums;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace BugTestManager.App.ViewModels;
 
-public sealed class TestStepResultViewModel
+public sealed class TestStepResultViewModel : ObservableObject
 {
     public TestStepResultViewModel(
         Guid id,
@@ -46,4 +48,27 @@ public sealed class TestStepResultViewModel
     public Brush StatusForeground => TestResultStatusDisplayNames.ForegroundForStatus(Status);
 
     public string CommentDisplay => string.IsNullOrWhiteSpace(Comment) ? "No comment yet" : Comment;
+
+    private int unreadDiscussionCount;
+
+    public int UnreadDiscussionCount
+    {
+        get => unreadDiscussionCount;
+        set
+        {
+            if (SetProperty(ref unreadDiscussionCount, value))
+            {
+                OnPropertyChanged(nameof(DiscussionBadgeVisibility));
+                OnPropertyChanged(nameof(DiscussionBadgeText));
+            }
+        }
+    }
+
+    public Visibility DiscussionBadgeVisibility => UnreadDiscussionCount > 0
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public string DiscussionBadgeText => UnreadDiscussionCount > 99
+        ? "99+"
+        : UnreadDiscussionCount.ToString();
 }

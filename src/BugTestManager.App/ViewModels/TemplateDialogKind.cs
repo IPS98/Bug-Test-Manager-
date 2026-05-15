@@ -5,6 +5,8 @@ public enum TemplateDialogKind
     None,
     TestSuite,
     EditTestSuite,
+    Revision,
+    EditRevision,
     Section,
     EditSection,
     TestCase,

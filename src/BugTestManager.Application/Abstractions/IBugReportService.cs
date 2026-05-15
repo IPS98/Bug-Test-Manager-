@@ -5,7 +5,7 @@ namespace BugTestManager.Application.Abstractions;
 
 public interface IBugReportService
 {
-    IReadOnlyList<BugReportItem> GetBugs();
+    IReadOnlyList<BugReportItem> GetBugs(Guid? projectId = null);
 
     Guid CreateBug(CreateBugReportRequest request);
 

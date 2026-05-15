@@ -109,6 +109,15 @@ Status: implementation in progress after approved architecture and skeleton setu
 - Custom field values can be saved for test case and check results.
 - Scoped custom fields appear for matching test suites, sections, and test cases.
 - A shared WPF custom field editor is used by bug details and test result dialogs.
+- Projects now separate templates, sessions, bugs, and custom fields into workspaces.
+- Test suite names are unique only inside one project, so different projects can reuse the same template name.
+- Whole projects can be deleted after a dangerous-action confirmation, including related templates, sessions, bugs, fields, attachments, and discussions.
+- Test sessions can be deleted after confirmation, including related result data, custom field values, attachments, and discussions.
+- New Test Session creation now opens in a popup dialog instead of permanently occupying the Test Sessions screen.
+- Test suite revisions can be created, renamed, and copied from an existing revision without modifying the original revision.
+- Test suite revision requirement can be disabled again while editing a test suite.
+- Custom fields can be bound to multiple selected scopes/targets without duplicating the same field definition.
+- Discussion unread indicators were added for bug, test case, and check chat buttons.
 
 ## Product Goal
 
@@ -182,6 +191,8 @@ These are still important, but they do not block the first skeleton:
 - Keep business logic ready for a future web UI by avoiding WPF dependencies outside the App project.
 - Later, add a dedicated navigation/view composition layer: `NavigationService`, optional `ViewModelFactory`, app-level service registration extensions, and possibly a `ViewLocator` so view-model-to-view mapping stays modular and easy to replace.
 - Later, add an analytics/dashboard screen with a table and charts for filtering test and bug data by date range, status, version, build, owner, and other report fields.
+- Later, add application logging for important user actions and errors.
+- Later, add an activity/event panel for visible app events such as template creation, status changes, project deletion, and important errors.
 
 ## Proposed Technology
 
@@ -445,4 +456,4 @@ Milestone 5 has started with bug creation, duplicate-title validation, status up
 
 ## Next Step
 
-Add copy-from-previous-session workflow so a previous manual run can be reused for a new tested version or build.
+Manually test the new project/session/revision/field workflows in the WPF app, then continue with copy-from-previous-session and report/dashboard planning.

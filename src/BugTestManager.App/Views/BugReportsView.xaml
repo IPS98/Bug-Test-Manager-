@@ -231,11 +231,24 @@
                                                        Foreground="#64748B"
                                                        Text="{Binding UpdatedDisplay}"
                                                        TextWrapping="Wrap" />
-                                            <Button Grid.Column="1"
-                                                    Command="{Binding DataContext.OpenBugDiscussionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    CommandParameter="{Binding}"
-                                                    Content="Chat"
-                                                    Style="{StaticResource SmallActionButtonStyle}" />
+                                             <Button Grid.Column="1"
+                                                     Command="{Binding DataContext.OpenBugDiscussionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                     CommandParameter="{Binding}"
+                                                     Style="{StaticResource SmallActionButtonStyle}">
+                                                 <StackPanel Orientation="Horizontal">
+                                                     <TextBlock Text="Chat" />
+                                                     <Border Margin="6,0,0,0"
+                                                             Padding="5,1"
+                                                             Background="#DC2626"
+                                                             CornerRadius="6"
+                                                             Visibility="{Binding DiscussionBadgeVisibility}">
+                                                         <TextBlock FontSize="10"
+                                                                    FontWeight="SemiBold"
+                                                                    Foreground="White"
+                                                                    Text="{Binding DiscussionBadgeText}" />
+                                                     </Border>
+                                                 </StackPanel>
+                                             </Button>
                                             <Button Grid.Column="3"
                                                     Command="{Binding DataContext.OpenBugDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}"
@@ -370,10 +383,23 @@
                                         Command="{Binding AddBugAttachmentCommand}"
                                         Content="Add File"
                                         Style="{StaticResource SmallActionButtonStyle}" />
-                                <Button Grid.Column="3"
-                                        Command="{Binding OpenBugDiscussionCommand}"
-                                        Content="Chat"
-                                        Style="{StaticResource SmallActionButtonStyle}" />
+                                 <Button Grid.Column="3"
+                                         Command="{Binding OpenBugDiscussionCommand}"
+                                         Style="{StaticResource SmallActionButtonStyle}">
+                                     <StackPanel Orientation="Horizontal">
+                                         <TextBlock Text="Chat" />
+                                         <Border Margin="6,0,0,0"
+                                                 Padding="5,1"
+                                                 Background="#DC2626"
+                                                 CornerRadius="6"
+                                                 Visibility="{Binding SelectedBug.DiscussionBadgeVisibility}">
+                                             <TextBlock FontSize="10"
+                                                        FontWeight="SemiBold"
+                                                        Foreground="White"
+                                                        Text="{Binding SelectedBug.DiscussionBadgeText}" />
+                                         </Border>
+                                     </StackPanel>
+                                 </Button>
                             </Grid>
 
                             <ItemsControl ItemsSource="{Binding BugAttachments}">

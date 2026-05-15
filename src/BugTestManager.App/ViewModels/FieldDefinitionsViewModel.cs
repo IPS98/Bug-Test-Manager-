@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Windows;
+using BugTestManager.App.Services;
 using BugTestManager.Application.Abstractions;
 using BugTestManager.Application.ReadModels;
 using BugTestManager.Application.Requests;
@@ -13,31 +14,29 @@ public sealed partial class FieldDefinitionsViewModel : ObservableObject
 {
     private readonly ICustomFieldDefinitionService fieldDefinitionService;
     private readonly ITestSuiteCatalogService testSuiteCatalogService;
+    private readonly IProjectContext projectContext;
 
     public FieldDefinitionsViewModel(
         ICustomFieldDefinitionService fieldDefinitionService,
-        ITestSuiteCatalogService testSuiteCatalogService)
+        ITestSuiteCatalogService testSuiteCatalogService,
+        IProjectContext projectContext)
     {
         this.fieldDefinitionService = fieldDefinitionService;
         this.testSuiteCatalogService = testSuiteCatalogService;
+        this.projectContext = projectContext;
         Fields = [];
         ScopeOptions = [];
+        EditScopeOptions = [];
         TargetEntityTypes =
         [
-            CreateTargetOption(EntityReferenceType.TestSuite),
-            CreateTargetOption(EntityReferenceType.TestSuiteRevision),
-            CreateTargetOption(EntityReferenceType.TemplateSection),
-            CreateTargetOption(EntityReferenceType.TestCaseTemplate),
-            CreateTargetOption(EntityReferenceType.TestStepTemplate),
-            CreateTargetOption(EntityReferenceType.TestSession),
-            CreateTargetOption(EntityReferenceType.TestCaseResult),
-            CreateTargetOption(EntityReferenceType.TestStepResult),
-            CreateTargetOption(EntityReferenceType.BugReport)
+            new SelectionOption<EntityReferenceType>(EntityReferenceType.TestCaseResult, "Test case fields"),
+            new SelectionOption<EntityReferenceType>(EntityReferenceType.TestStepResult, "Check fields"),
+            new SelectionOption<EntityReferenceType>(EntityReferenceType.BugReport, "Bug fields")
         ];
         FieldTypes = Enum.GetValues<FieldType>()
             .Select(CreateFieldTypeOption)
             .ToList();
-        SelectedTargetEntityType = TargetEntityTypes.Single(option => option.Value == EntityReferenceType.TestCaseTemplate);
+        SelectedTargetEntityType = TargetEntityTypes.Single(option => option.Value == EntityReferenceType.TestCaseResult);
         SelectedFieldType = FieldTypes.Single(option => option.Value == FieldType.Text);
         Refresh();
     }
@@ -45,6 +44,8 @@ public sealed partial class FieldDefinitionsViewModel : ObservableObject
     public ObservableCollection<FieldDefinitionItemViewModel> Fields { get; }
 
     public ObservableCollection<FieldScopeOption> ScopeOptions { get; }
+
+    public ObservableCollection<FieldScopeOption> EditScopeOptions { get; }
 
     public IReadOnlyList<SelectionOption<EntityReferenceType>> TargetEntityTypes { get; }
 
@@ -55,9 +56,6 @@ public sealed partial class FieldDefinitionsViewModel : ObservableObject
 
     [ObservableProperty]
     private SelectionOption<FieldType>? selectedFieldType;
-
-    [ObservableProperty]
-    private FieldScopeOption? selectedScopeOption;
 
     [ObservableProperty]
     private string newFieldName = string.Empty;
@@ -82,9 +80,6 @@ public sealed partial class FieldDefinitionsViewModel : ObservableObject
 
     [ObservableProperty]
     private SelectionOption<FieldType>? editFieldType;
-
-    [ObservableProperty]
-    private FieldScopeOption? editScopeOption;
 
     [ObservableProperty]
     private string editFieldName = string.Empty;
@@ -118,11 +113,6 @@ public sealed partial class FieldDefinitionsViewModel : ObservableObject
         CreateFieldCommand.NotifyCanExecuteChanged();
     }
 
-    partial void OnSelectedScopeOptionChanged(FieldScopeOption? value)
-    {
-        CreateFieldCommand.NotifyCanExecuteChanged();
-    }
-
     partial void OnEditFieldNameChanged(string value)
     {
         UpdateFieldCommand.NotifyCanExecuteChanged();
@@ -134,11 +124,6 @@ public sealed partial class FieldDefinitionsViewModel : ObservableObject
     }
 
     partial void OnEditFieldTypeChanged(SelectionOption<FieldType>? value)
-    {
-        UpdateFieldCommand.NotifyCanExecuteChanged();
-    }
-
-    partial void OnEditScopeOptionChanged(FieldScopeOption? value)
     {
         UpdateFieldCommand.NotifyCanExecuteChanged();
     }
@@ -160,10 +145,12 @@ public sealed partial class FieldDefinitionsViewModel : ObservableObject
                 SelectedFieldType!.Value,
                 NewFieldIsRequired,
                 NewFieldSortOrder,
-                SelectedScopeOption!.ScopeType,
-                SelectedScopeOption.ScopeEntityId,
-                SelectedScopeOption.DisplayName,
-                ParseOptions(NewFieldOptionsText)));
+                CustomFieldScopeType.Global,
+                null,
+                "Whole project",
+                ParseOptions(NewFieldOptionsText),
+                projectContext.CurrentProjectId,
+                BuildSelectedScopeRequests(ScopeOptions)));
 
             NewFieldName = string.Empty;
             NewFieldIsRequired = false;
@@ -187,11 +174,10 @@ public sealed partial class FieldDefinitionsViewModel : ObservableObject
         }
 
         EditingField = field;
-        EditTargetEntityType = TargetEntityTypes.Single(option => option.Value == field.TargetEntityType);
+        EditTargetEntityType = TargetEntityTypes.FirstOrDefault(option => option.Value == field.TargetEntityType)
+            ?? TargetEntityTypes.FirstOrDefault();
         EditFieldType = FieldTypes.Single(option => option.Value == field.FieldType);
-        EditScopeOption = ScopeOptions.FirstOrDefault(option =>
-            option.ScopeType == field.ScopeType && option.ScopeEntityId == field.ScopeEntityId)
-            ?? ScopeOptions.FirstOrDefault();
+        LoadEditScopeOptions(field.Scopes);
         EditFieldName = field.Name;
         EditFieldIsRequired = field.IsRequired;
         EditFieldSortOrder = field.SortOrder;
@@ -211,14 +197,14 @@ public sealed partial class FieldDefinitionsViewModel : ObservableObject
         EditFieldOptionsText = string.Empty;
         EditTargetEntityType = TargetEntityTypes.FirstOrDefault();
         EditFieldType = FieldTypes.FirstOrDefault();
-        EditScopeOption = ScopeOptions.FirstOrDefault();
+        EditScopeOptions.Clear();
         UpdateFieldCommand.NotifyCanExecuteChanged();
     }
 
     [RelayCommand(CanExecute = nameof(CanUpdateField))]
     private void UpdateField()
     {
-        if (EditingField is null || EditTargetEntityType is null || EditFieldType is null || EditScopeOption is null)
+        if (EditingField is null || EditTargetEntityType is null || EditFieldType is null)
         {
             return;
         }
@@ -232,10 +218,11 @@ public sealed partial class FieldDefinitionsViewModel : ObservableObject
                 EditFieldType.Value,
                 EditFieldIsRequired,
                 EditFieldSortOrder,
-                EditScopeOption.ScopeType,
-                EditScopeOption.ScopeEntityId,
-                EditScopeOption.DisplayName,
-                ParseOptions(EditFieldOptionsText)));
+                CustomFieldScopeType.Global,
+                null,
+                "Whole project",
+                ParseOptions(EditFieldOptionsText),
+                BuildSelectedScopeRequests(EditScopeOptions)));
 
             var fieldId = EditingField.Id;
             CloseEditFieldDialog();
@@ -317,7 +304,7 @@ public sealed partial class FieldDefinitionsViewModel : ObservableObject
     {
         return SelectedTargetEntityType is not null
             && SelectedFieldType is not null
-            && SelectedScopeOption is not null
+            && ScopeOptions.Any(option => option.IsSelected)
             && !string.IsNullOrWhiteSpace(NewFieldName);
     }
 
@@ -326,31 +313,25 @@ public sealed partial class FieldDefinitionsViewModel : ObservableObject
         return EditingField is not null
             && EditTargetEntityType is not null
             && EditFieldType is not null
-            && EditScopeOption is not null
+            && EditScopeOptions.Any(option => option.IsSelected)
             && !string.IsNullOrWhiteSpace(EditFieldName);
     }
 
     private void LoadScopeOptions()
     {
-        var selectedScope = SelectedScopeOption;
         var options = BuildScopeOptions();
 
         ScopeOptions.Clear();
         foreach (var option in options)
         {
+            option.PropertyChanged += (_, _) => CreateFieldCommand.NotifyCanExecuteChanged();
             ScopeOptions.Add(option);
         }
-
-        SelectedScopeOption = selectedScope is null
-            ? ScopeOptions.FirstOrDefault()
-            : ScopeOptions.FirstOrDefault(option =>
-                option.ScopeType == selectedScope.ScopeType && option.ScopeEntityId == selectedScope.ScopeEntityId)
-                ?? ScopeOptions.FirstOrDefault();
     }
 
     private void LoadFields(Guid? selectedFieldId = null)
     {
-        var fields = fieldDefinitionService.GetDefinitions()
+        var fields = fieldDefinitionService.GetDefinitions(projectContext.CurrentProjectId)
             .Select(MapField)
             .ToList();
 
@@ -382,22 +363,29 @@ public sealed partial class FieldDefinitionsViewModel : ObservableObject
             field.ScopeEntityId,
             field.ScopeDisplayName,
             field.IsActive,
-            field.Options);
+            field.Options,
+            field.Scopes
+                .Select(scope => new FieldScopeOption(
+                    scope.ScopeType,
+                    scope.ScopeEntityId,
+                    scope.DisplayName,
+                    isSelected: true))
+                .ToList());
     }
 
     private IReadOnlyList<FieldScopeOption> BuildScopeOptions()
     {
         var options = new List<FieldScopeOption>
         {
-            new(CustomFieldScopeType.Global, null, "All matching items")
+            new(CustomFieldScopeType.Global, null, "Whole project", isSelected: true)
         };
 
-        foreach (var testSuite in testSuiteCatalogService.GetCatalog())
+        foreach (var testSuite in testSuiteCatalogService.GetCatalog(projectContext.CurrentProjectId))
         {
             options.Add(new FieldScopeOption(
                 CustomFieldScopeType.TestSuite,
                 testSuite.Id,
-                $"Test suite: {testSuite.Name}"));
+                $"Whole test suite: {testSuite.Name}"));
 
             foreach (var revision in testSuite.Revisions)
             {
@@ -420,6 +408,30 @@ public sealed partial class FieldDefinitionsViewModel : ObservableObject
         }
 
         return options;
+    }
+
+    private void LoadEditScopeOptions(IReadOnlyList<FieldScopeOption> selectedScopes)
+    {
+        EditScopeOptions.Clear();
+        foreach (var option in BuildScopeOptions())
+        {
+            option.IsSelected = selectedScopes.Any(scope =>
+                scope.ScopeType == option.ScopeType && scope.ScopeEntityId == option.ScopeEntityId);
+            option.PropertyChanged += (_, _) => UpdateFieldCommand.NotifyCanExecuteChanged();
+            EditScopeOptions.Add(option);
+        }
+    }
+
+    private static IReadOnlyCollection<CustomFieldDefinitionScopeRequest> BuildSelectedScopeRequests(
+        IEnumerable<FieldScopeOption> options)
+    {
+        return options
+            .Where(option => option.IsSelected)
+            .Select(option => new CustomFieldDefinitionScopeRequest(
+                option.ScopeType,
+                option.ScopeEntityId,
+                option.DisplayName))
+            .ToList();
     }
 
     private static SelectionOption<EntityReferenceType> CreateTargetOption(EntityReferenceType targetEntityType)

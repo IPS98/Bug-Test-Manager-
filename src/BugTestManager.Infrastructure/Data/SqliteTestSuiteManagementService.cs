@@ -1,4 +1,5 @@
 using BugTestManager.Application.Abstractions;
+using BugTestManager.Application.Defaults;
 using BugTestManager.Application.Requests;
 using BugTestManager.Application.Results;
 using BugTestManager.Infrastructure.Data.Entities;
@@ -14,6 +15,7 @@ public sealed class SqliteTestSuiteManagementService(IDbContextFactory<BugTestMa
         var name = Require(request.Name, "Test suite name");
         var description = request.Description.Trim();
         var initialRevisionName = request.InitialRevisionName?.Trim();
+        var projectId = ResolveProjectId(request.ProjectId);
 
         if (request.RevisionIsRequired && string.IsNullOrWhiteSpace(initialRevisionName))
         {
@@ -22,7 +24,7 @@ public sealed class SqliteTestSuiteManagementService(IDbContextFactory<BugTestMa
 
         using var dbContext = dbContextFactory.CreateDbContext();
 
-        if (dbContext.TestSuites.Any(testSuite => testSuite.Name.ToUpper() == name.ToUpper()))
+        if (dbContext.TestSuites.Any(testSuite => testSuite.ProjectId == projectId && testSuite.Name.ToUpper() == name.ToUpper()))
         {
             throw new InvalidOperationException($"Test suite '{name}' already exists.");
         }
@@ -31,6 +33,7 @@ public sealed class SqliteTestSuiteManagementService(IDbContextFactory<BugTestMa
         var testSuiteRecord = new TestSuiteRecord
         {
             Id = testSuiteId,
+            ProjectId = projectId,
             Name = name,
             Description = description,
             RevisionIsRequired = request.RevisionIsRequired,
@@ -55,6 +58,55 @@ public sealed class SqliteTestSuiteManagementService(IDbContextFactory<BugTestMa
         dbContext.SaveChanges();
 
         return new CreateTestSuiteResult(testSuiteId, revisionId);
+    }
+
+    public Guid CreateRevision(CreateTestSuiteRevisionRequest request)
+    {
+        var name = Require(request.Name, "Revision name");
+
+        using var dbContext = dbContextFactory.CreateDbContext();
+        var testSuite = dbContext.TestSuites
+            .Include(suite => suite.Revisions)
+            .Include(suite => suite.Sections)
+            .ThenInclude(section => section.TestCases)
+            .ThenInclude(testCase => testCase.Steps)
+            .SingleOrDefault(suite => suite.Id == request.TestSuiteId)
+            ?? throw new InvalidOperationException("Selected test suite was not found.");
+
+        if (testSuite.Revisions.Any(revision => revision.Name.ToUpper() == name.ToUpper()))
+        {
+            throw new InvalidOperationException($"Revision '{name}' already exists.");
+        }
+
+        var revisionId = Guid.NewGuid();
+        var nextSortOrder = testSuite.Revisions
+            .Select(revision => revision.SortOrder)
+            .DefaultIfEmpty(0)
+            .Max() + 1;
+
+        dbContext.TestSuiteRevisions.Add(new TestSuiteRevisionRecord
+        {
+            Id = revisionId,
+            TestSuiteId = testSuite.Id,
+            Name = name,
+            SortOrder = nextSortOrder
+        });
+
+        if (request.SourceRevisionId is { } sourceRevisionId && sourceRevisionId != Guid.Empty)
+        {
+            var sourceRevisionExists = testSuite.Revisions.Any(revision => revision.Id == sourceRevisionId);
+            if (!sourceRevisionExists)
+            {
+                throw new InvalidOperationException("Source revision was not found.");
+            }
+
+            CopyRevisionSections(dbContext, testSuite.Sections
+                .Where(section => section.TestSuiteRevisionId == sourceRevisionId)
+                .OrderBy(section => section.SortOrder), testSuite.Id, revisionId);
+        }
+
+        dbContext.SaveChanges();
+        return revisionId;
     }
 
     public Guid CreateSection(CreateTemplateSectionRequest request)
@@ -174,16 +226,50 @@ public sealed class SqliteTestSuiteManagementService(IDbContextFactory<BugTestMa
         var description = request.Description.Trim();
 
         using var dbContext = dbContextFactory.CreateDbContext();
-        var testSuite = dbContext.TestSuites.SingleOrDefault(suite => suite.Id == request.TestSuiteId)
+        var testSuite = dbContext.TestSuites
+            .Include(suite => suite.Revisions)
+            .Include(suite => suite.Sections)
+            .SingleOrDefault(suite => suite.Id == request.TestSuiteId)
             ?? throw new InvalidOperationException("Selected test suite was not found.");
 
-        if (dbContext.TestSuites.Any(suite => suite.Id != request.TestSuiteId && suite.Name.ToUpper() == name.ToUpper()))
+        if (dbContext.TestSuites.Any(suite =>
+                suite.Id != request.TestSuiteId
+                && suite.ProjectId == testSuite.ProjectId
+                && suite.Name.ToUpper() == name.ToUpper()))
         {
             throw new InvalidOperationException($"Test suite '{name}' already exists.");
         }
 
         testSuite.Name = name;
         testSuite.Description = description;
+        testSuite.RevisionIsRequired = request.RevisionIsRequired;
+
+        if (request.RevisionIsRequired)
+        {
+            EnsureRevisionExistsForRequiredSuite(dbContext, testSuite, request.InitialRevisionName);
+        }
+
+        dbContext.SaveChanges();
+    }
+
+    public void UpdateRevision(UpdateTestSuiteRevisionRequest request)
+    {
+        var name = Require(request.Name, "Revision name");
+
+        using var dbContext = dbContextFactory.CreateDbContext();
+        var revision = dbContext.TestSuiteRevisions.SingleOrDefault(item => item.Id == request.TestSuiteRevisionId)
+            ?? throw new InvalidOperationException("Selected revision was not found.");
+
+        var duplicateExists = dbContext.TestSuiteRevisions.Any(item =>
+            item.Id != request.TestSuiteRevisionId
+            && item.TestSuiteId == revision.TestSuiteId
+            && item.Name.ToUpper() == name.ToUpper());
+        if (duplicateExists)
+        {
+            throw new InvalidOperationException($"Revision '{name}' already exists.");
+        }
+
+        revision.Name = name;
         dbContext.SaveChanges();
     }
 
@@ -277,5 +363,96 @@ public sealed class SqliteTestSuiteManagementService(IDbContextFactory<BugTestMa
         }
 
         return value.Trim();
+    }
+
+    private static Guid ResolveProjectId(Guid? projectId)
+    {
+        return projectId ?? ProjectDefaults.DefaultProjectId;
+    }
+
+    private static void EnsureRevisionExistsForRequiredSuite(
+        BugTestManagerDbContext dbContext,
+        TestSuiteRecord testSuite,
+        string? initialRevisionName)
+    {
+        if (testSuite.Revisions.Count > 0)
+        {
+            var firstRevisionId = testSuite.Revisions
+                .OrderBy(revision => revision.SortOrder)
+                .First()
+                .Id;
+
+            foreach (var section in testSuite.Sections.Where(section => section.TestSuiteRevisionId is null))
+            {
+                section.TestSuiteRevisionId = firstRevisionId;
+            }
+
+            return;
+        }
+
+        var name = Require(initialRevisionName ?? string.Empty, "Initial revision name");
+        var revisionId = Guid.NewGuid();
+        dbContext.TestSuiteRevisions.Add(new TestSuiteRevisionRecord
+        {
+            Id = revisionId,
+            TestSuiteId = testSuite.Id,
+            Name = name,
+            SortOrder = 1
+        });
+
+        foreach (var section in testSuite.Sections)
+        {
+            section.TestSuiteRevisionId = revisionId;
+        }
+    }
+
+    private static void CopyRevisionSections(
+        BugTestManagerDbContext dbContext,
+        IEnumerable<TemplateSectionRecord> sourceSections,
+        Guid testSuiteId,
+        Guid targetRevisionId)
+    {
+        foreach (var sourceSection in sourceSections)
+        {
+            var sectionId = Guid.NewGuid();
+            var section = new TemplateSectionRecord
+            {
+                Id = sectionId,
+                TestSuiteId = testSuiteId,
+                TestSuiteRevisionId = targetRevisionId,
+                Name = sourceSection.Name,
+                Category = sourceSection.Category,
+                SortOrder = sourceSection.SortOrder
+            };
+
+            foreach (var sourceTestCase in sourceSection.TestCases.OrderBy(testCase => testCase.SortOrder))
+            {
+                var testCaseId = Guid.NewGuid();
+                var testCase = new TestCaseTemplateRecord
+                {
+                    Id = testCaseId,
+                    TemplateSectionId = sectionId,
+                    Title = sourceTestCase.Title,
+                    ExpectedResult = sourceTestCase.ExpectedResult,
+                    SortOrder = sourceTestCase.SortOrder
+                };
+
+                foreach (var sourceStep in sourceTestCase.Steps.OrderBy(step => step.SortOrder))
+                {
+                    testCase.Steps.Add(new TestStepTemplateRecord
+                    {
+                        Id = Guid.NewGuid(),
+                        TestCaseTemplateId = testCaseId,
+                        StepText = sourceStep.StepText,
+                        ExpectedResult = sourceStep.ExpectedResult,
+                        SortOrder = sourceStep.SortOrder
+                    });
+                }
+
+                section.TestCases.Add(testCase);
+            }
+
+            dbContext.TemplateSections.Add(section);
+        }
     }
 }

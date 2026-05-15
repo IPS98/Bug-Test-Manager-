@@ -23,6 +23,7 @@ public sealed partial class BugReportsViewModel : ObservableObject
     private readonly IFilePickerService filePickerService;
     private readonly IFileLauncherService fileLauncherService;
     private readonly IErrorDialogService errorDialogService;
+    private readonly IProjectContext projectContext;
     private readonly IUserContext userContext;
 
     private EntityReferenceType discussionEntityType;
@@ -37,6 +38,7 @@ public sealed partial class BugReportsViewModel : ObservableObject
         IFilePickerService filePickerService,
         IFileLauncherService fileLauncherService,
         IErrorDialogService errorDialogService,
+        IProjectContext projectContext,
         IUserContext userContext)
     {
         this.bugReportService = bugReportService;
@@ -46,6 +48,7 @@ public sealed partial class BugReportsViewModel : ObservableObject
         this.filePickerService = filePickerService;
         this.fileLauncherService = fileLauncherService;
         this.errorDialogService = errorDialogService;
+        this.projectContext = projectContext;
         this.userContext = userContext;
         Bugs = [];
         BugAttachments = [];
@@ -243,7 +246,8 @@ public sealed partial class BugReportsViewModel : ObservableObject
                 NewBugPriority,
                 NewBugFoundInVersion,
                 NewBugBuildNumber,
-                userContext.UserName));
+                userContext.UserName,
+                ProjectId: projectContext.CurrentProjectId));
 
             SaveCustomFields(NewBugCustomFields, bugId);
             NewBugTitle = string.Empty;
@@ -396,7 +400,9 @@ public sealed partial class BugReportsViewModel : ObservableObject
 
             DiscussionMessage = string.Empty;
             ClearDiscussionEdit();
+            discussionService.MarkRead(discussionEntityType, discussionEntityId, userContext.UserName);
             LoadDiscussionComments();
+            LoadBugs(SelectedBug?.Id);
             StatusMessage = "Discussion saved.";
         }
         catch (Exception ex)
@@ -440,6 +446,7 @@ public sealed partial class BugReportsViewModel : ObservableObject
         {
             discussionService.DeleteComment(comment.Id);
             LoadDiscussionComments();
+            LoadBugs(SelectedBug?.Id);
             StatusMessage = "Discussion message deleted.";
         }
         catch (Exception ex)
@@ -556,7 +563,7 @@ public sealed partial class BugReportsViewModel : ObservableObject
 
     private void LoadBugs(Guid? selectedBugId = null)
     {
-        allBugs = bugReportService.GetBugs()
+        allBugs = bugReportService.GetBugs(projectContext.CurrentProjectId)
             .Select(MapBug)
             .ToList();
 
@@ -658,7 +665,7 @@ public sealed partial class BugReportsViewModel : ObservableObject
         BugCustomFields.Clear();
 
         foreach (var field in customFieldValueService
-                     .GetValues(EntityReferenceType.BugReport, bugId, [])
+                     .GetValues(EntityReferenceType.BugReport, bugId, [], projectContext.CurrentProjectId)
                      .Select(MapCustomField))
         {
             BugCustomFields.Add(field);
@@ -670,7 +677,7 @@ public sealed partial class BugReportsViewModel : ObservableObject
         NewBugCustomFields.Clear();
 
         foreach (var field in customFieldValueService
-                     .GetValues(EntityReferenceType.BugReport, Guid.Empty, [])
+                     .GetValues(EntityReferenceType.BugReport, Guid.Empty, [], projectContext.CurrentProjectId)
                      .Select(MapCustomField))
         {
             NewBugCustomFields.Add(field);
@@ -708,7 +715,9 @@ public sealed partial class BugReportsViewModel : ObservableObject
         DiscussionTitle = title;
         DiscussionMessage = string.Empty;
         ClearDiscussionEdit();
+        discussionService.MarkRead(entityType, entityId, userContext.UserName);
         LoadDiscussionComments();
+        LoadBugs(entityId);
         DiscussionDrawerVisibility = Visibility.Visible;
         SaveDiscussionMessageCommand.NotifyCanExecuteChanged();
     }
@@ -747,7 +756,7 @@ public sealed partial class BugReportsViewModel : ObservableObject
         errorDialogService.ShowError(title, exception.Message);
     }
 
-    private static BugReportItemViewModel MapBug(BugReportItem bug)
+    private BugReportItemViewModel MapBug(BugReportItem bug)
     {
         return new BugReportItemViewModel(
             bug.Id,
@@ -764,7 +773,11 @@ public sealed partial class BugReportsViewModel : ObservableObject
             bug.UpdatedAt,
             bug.LinkedEntityType,
             bug.LinkedEntityId,
-            bug.LinkedEntityDisplayName);
+            bug.LinkedEntityDisplayName,
+            discussionService.GetUnreadCount(
+                EntityReferenceType.BugReport,
+                bug.Id,
+                userContext.UserName));
     }
 
     private static DiscussionCommentItemViewModel MapComment(DiscussionCommentItem comment)

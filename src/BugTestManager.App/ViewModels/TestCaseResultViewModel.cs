@@ -1,10 +1,12 @@
 using System.Collections.ObjectModel;
+using System.Windows;
 using System.Windows.Media;
 using BugTestManager.Domain.Enums;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace BugTestManager.App.ViewModels;
 
-public sealed class TestCaseResultViewModel
+public sealed class TestCaseResultViewModel : ObservableObject
 {
     public TestCaseResultViewModel(
         Guid id,
@@ -42,6 +44,21 @@ public sealed class TestCaseResultViewModel
 
     public ObservableCollection<TestStepResultViewModel> Steps { get; }
 
+    private int unreadDiscussionCount;
+
+    public int UnreadDiscussionCount
+    {
+        get => unreadDiscussionCount;
+        set
+        {
+            if (SetProperty(ref unreadDiscussionCount, value))
+            {
+                OnPropertyChanged(nameof(DiscussionBadgeVisibility));
+                OnPropertyChanged(nameof(DiscussionBadgeText));
+            }
+        }
+    }
+
     public string StatusDisplay => TestResultStatusDisplayNames.ForStatus(Status);
 
     public Brush StatusBackground => TestResultStatusDisplayNames.BackgroundForStatus(Status);
@@ -51,4 +68,12 @@ public sealed class TestCaseResultViewModel
     public string CommentDisplay => string.IsNullOrWhiteSpace(Comment) ? "No comment yet" : Comment;
 
     public string CheckCountDisplay => $"{Steps.Count} checks";
+
+    public Visibility DiscussionBadgeVisibility => UnreadDiscussionCount > 0
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public string DiscussionBadgeText => UnreadDiscussionCount > 99
+        ? "99+"
+        : UnreadDiscussionCount.ToString();
 }

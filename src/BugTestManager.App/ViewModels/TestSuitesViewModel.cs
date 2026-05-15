@@ -1,8 +1,10 @@
 using System.Collections.ObjectModel;
 using System.Windows;
+using BugTestManager.App.Services;
 using BugTestManager.Application.Abstractions;
 using BugTestManager.Application.ReadModels;
 using BugTestManager.Application.Requests;
+using BugTestManager.Domain.Enums;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -12,19 +14,35 @@ public sealed partial class TestSuitesViewModel : ObservableObject
 {
     private readonly ITestSuiteCatalogService catalogService;
     private readonly ITestSuiteManagementService testSuiteManagementService;
+    private readonly ICustomFieldDefinitionService fieldDefinitionService;
+    private readonly IProjectContext projectContext;
 
     public TestSuitesViewModel(
         ITestSuiteCatalogService catalogService,
-        ITestSuiteManagementService testSuiteManagementService)
+        ITestSuiteManagementService testSuiteManagementService,
+        ICustomFieldDefinitionService fieldDefinitionService,
+        IProjectContext projectContext)
     {
         this.catalogService = catalogService;
         this.testSuiteManagementService = testSuiteManagementService;
+        this.fieldDefinitionService = fieldDefinitionService;
+        this.projectContext = projectContext;
 
         TestSuites = [];
+        LinkedFields = [];
+        RevisionCopySources = [];
         LoadCatalog();
     }
 
     public ObservableCollection<TestSuiteItemViewModel> TestSuites { get; }
+
+    public ObservableCollection<FieldDefinitionItemViewModel> LinkedFields { get; }
+
+    public ObservableCollection<RevisionCopySourceOption> RevisionCopySources { get; }
+
+    public Visibility LinkedFieldsVisibility => LinkedFields.Count == 0
+        ? Visibility.Collapsed
+        : Visibility.Visible;
 
     [ObservableProperty]
     private TestSuiteItemViewModel? selectedTestSuite;
@@ -81,6 +99,12 @@ public sealed partial class TestSuitesViewModel : ObservableObject
     private string newTestSuiteInitialRevisionName = string.Empty;
 
     [ObservableProperty]
+    private string newRevisionName = string.Empty;
+
+    [ObservableProperty]
+    private RevisionCopySourceOption? selectedRevisionCopySource;
+
+    [ObservableProperty]
     private string newSectionName = string.Empty;
 
     [ObservableProperty]
@@ -106,16 +130,20 @@ public sealed partial class TestSuitesViewModel : ObservableObject
         SelectedRevision = value?.Revisions.FirstOrDefault();
         UpdateRevisionColumn(value);
         ShowDeleteTestSuiteDialogCommand.NotifyCanExecuteChanged();
+        ShowCreateRevisionDialogCommand.NotifyCanExecuteChanged();
         ShowCreateSectionDialogCommand.NotifyCanExecuteChanged();
         CreateSectionCommand.NotifyCanExecuteChanged();
+        RefreshLinkedFields();
     }
 
     partial void OnSelectedRevisionChanged(TestSuiteRevisionItemViewModel? value)
     {
         SelectedSection = value?.Sections.FirstOrDefault();
         ShowDeleteSectionDialogCommand.NotifyCanExecuteChanged();
+        ShowEditRevisionDialogCommand.NotifyCanExecuteChanged();
         ShowCreateSectionDialogCommand.NotifyCanExecuteChanged();
         CreateSectionCommand.NotifyCanExecuteChanged();
+        RefreshLinkedFields();
     }
 
     partial void OnSelectedSectionChanged(TemplateSectionItemViewModel? value)
@@ -125,6 +153,7 @@ public sealed partial class TestSuitesViewModel : ObservableObject
         ShowCreateTestCaseDialogCommand.NotifyCanExecuteChanged();
         ShowDeleteTestCaseDialogCommand.NotifyCanExecuteChanged();
         CreateTestCaseCommand.NotifyCanExecuteChanged();
+        RefreshLinkedFields();
     }
 
     partial void OnSelectedTestCaseChanged(TestCaseTemplateItemViewModel? value)
@@ -134,11 +163,18 @@ public sealed partial class TestSuitesViewModel : ObservableObject
         ShowCreateTestStepDialogCommand.NotifyCanExecuteChanged();
         ShowDeleteTestStepDialogCommand.NotifyCanExecuteChanged();
         CreateTestStepCommand.NotifyCanExecuteChanged();
+        RefreshLinkedFields();
     }
 
     partial void OnSelectedStepChanged(TestStepTemplateItemViewModel? value)
     {
         ShowDeleteTestStepDialogCommand.NotifyCanExecuteChanged();
+        RefreshLinkedFields();
+    }
+
+    public void Refresh()
+    {
+        LoadCatalog();
     }
 
     partial void OnActiveDialogChanged(TemplateDialogKind value)
@@ -151,6 +187,8 @@ public sealed partial class TestSuitesViewModel : ObservableObject
         {
             TemplateDialogKind.TestSuite => "Add Test Suite",
             TemplateDialogKind.EditTestSuite => "Edit Test Suite",
+            TemplateDialogKind.Revision => "Add Revision",
+            TemplateDialogKind.EditRevision => "Edit Revision",
             TemplateDialogKind.Section => "Add Section",
             TemplateDialogKind.EditSection => "Edit Section",
             TemplateDialogKind.TestCase => "Add Test Case",
@@ -162,6 +200,7 @@ public sealed partial class TestSuitesViewModel : ObservableObject
         };
 
         SaveEditCommand.NotifyCanExecuteChanged();
+        CreateRevisionCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnEditingItemIdChanged(Guid value)
@@ -188,11 +227,19 @@ public sealed partial class TestSuitesViewModel : ObservableObject
     partial void OnNewTestSuiteRevisionIsRequiredChanged(bool value)
     {
         CreateTestSuiteCommand.NotifyCanExecuteChanged();
+        SaveEditCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnNewTestSuiteInitialRevisionNameChanged(string value)
     {
         CreateTestSuiteCommand.NotifyCanExecuteChanged();
+        SaveEditCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnNewRevisionNameChanged(string value)
+    {
+        CreateRevisionCommand.NotifyCanExecuteChanged();
+        SaveEditCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnNewSectionNameChanged(string value)
@@ -222,6 +269,20 @@ public sealed partial class TestSuitesViewModel : ObservableObject
         NewTestSuiteInitialRevisionName = string.Empty;
         StatusMessage = "Ready";
         ActiveDialog = TemplateDialogKind.TestSuite;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanShowCreateRevisionDialog))]
+    private void ShowCreateRevisionDialog()
+    {
+        if (SelectedTestSuite is null)
+        {
+            return;
+        }
+
+        NewRevisionName = string.Empty;
+        LoadRevisionCopySources();
+        StatusMessage = "Ready";
+        ActiveDialog = TemplateDialogKind.Revision;
     }
 
     [RelayCommand(CanExecute = nameof(CanShowCreateSectionDialog))]
@@ -275,6 +336,21 @@ public sealed partial class TestSuitesViewModel : ObservableObject
         NewTestSuiteInitialRevisionName = string.Empty;
         StatusMessage = "Ready";
         ActiveDialog = TemplateDialogKind.EditTestSuite;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanShowEditRevisionDialog))]
+    private void ShowEditRevisionDialog(TestSuiteRevisionItemViewModel? revision)
+    {
+        if (revision is null || revision.Id == Guid.Empty)
+        {
+            return;
+        }
+
+        SelectedRevision = revision;
+        EditingItemId = revision.Id;
+        NewRevisionName = revision.Name;
+        StatusMessage = "Ready";
+        ActiveDialog = TemplateDialogKind.EditRevision;
     }
 
     [RelayCommand(CanExecute = nameof(CanShowEditSectionDialog))]
@@ -394,7 +470,8 @@ public sealed partial class TestSuitesViewModel : ObservableObject
                 NewTestSuiteName,
                 NewTestSuiteDescription,
                 NewTestSuiteRevisionIsRequired,
-                NewTestSuiteInitialRevisionName));
+                NewTestSuiteInitialRevisionName,
+                projectContext.CurrentProjectId));
 
             NewTestSuiteName = string.Empty;
             NewTestSuiteDescription = string.Empty;
@@ -403,6 +480,32 @@ public sealed partial class TestSuitesViewModel : ObservableObject
 
             LoadCatalog(result.TestSuiteId, result.InitialRevisionId);
             StatusMessage = "Test suite created.";
+            ActiveDialog = TemplateDialogKind.None;
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = ex.Message;
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanCreateRevision))]
+    private void CreateRevision()
+    {
+        if (SelectedTestSuite is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var revisionId = testSuiteManagementService.CreateRevision(new CreateTestSuiteRevisionRequest(
+                SelectedTestSuite.Id,
+                NewRevisionName,
+                SelectedRevisionCopySource?.Id));
+
+            NewRevisionName = string.Empty;
+            LoadCatalog(SelectedTestSuite.Id, revisionId);
+            StatusMessage = "Revision created.";
             ActiveDialog = TemplateDialogKind.None;
         }
         catch (Exception ex)
@@ -568,9 +671,18 @@ public sealed partial class TestSuitesViewModel : ObservableObject
                     testSuiteManagementService.UpdateTestSuite(new UpdateTestSuiteRequest(
                         EditingItemId,
                         NewTestSuiteName,
-                        NewTestSuiteDescription));
+                        NewTestSuiteDescription,
+                        NewTestSuiteRevisionIsRequired,
+                        NewTestSuiteInitialRevisionName));
                     LoadCatalog(EditingItemId, revisionId);
                     StatusMessage = "Test suite updated.";
+                    break;
+                case TemplateDialogKind.EditRevision:
+                    testSuiteManagementService.UpdateRevision(new UpdateTestSuiteRevisionRequest(
+                        EditingItemId,
+                        NewRevisionName));
+                    LoadCatalog(testSuiteId, EditingItemId);
+                    StatusMessage = "Revision updated.";
                     break;
                 case TemplateDialogKind.EditSection:
                     testSuiteManagementService.UpdateSection(new UpdateTemplateSectionRequest(
@@ -615,6 +727,11 @@ public sealed partial class TestSuitesViewModel : ObservableObject
             && (!NewTestSuiteRevisionIsRequired || !string.IsNullOrWhiteSpace(NewTestSuiteInitialRevisionName));
     }
 
+    private bool CanCreateRevision()
+    {
+        return SelectedTestSuite is not null && !string.IsNullOrWhiteSpace(NewRevisionName);
+    }
+
     private bool CanCreateSection()
     {
         if (SelectedTestSuite is null || string.IsNullOrWhiteSpace(NewSectionName))
@@ -647,6 +764,11 @@ public sealed partial class TestSuitesViewModel : ObservableObject
             || (SelectedRevision is not null && SelectedRevision.Id != Guid.Empty);
     }
 
+    private bool CanShowCreateRevisionDialog()
+    {
+        return SelectedTestSuite is not null && SelectedTestSuite.RevisionIsRequired;
+    }
+
     private bool CanShowCreateTestCaseDialog()
     {
         return SelectedSection is not null;
@@ -665,6 +787,11 @@ public sealed partial class TestSuitesViewModel : ObservableObject
     private bool CanShowEditSectionDialog(TemplateSectionItemViewModel? section)
     {
         return section is not null;
+    }
+
+    private bool CanShowEditRevisionDialog(TestSuiteRevisionItemViewModel? revision)
+    {
+        return revision is not null && revision.Id != Guid.Empty;
     }
 
     private bool CanShowEditTestCaseDialog(TestCaseTemplateItemViewModel? testCase)
@@ -711,12 +838,26 @@ public sealed partial class TestSuitesViewModel : ObservableObject
 
         return ActiveDialog switch
         {
-            TemplateDialogKind.EditTestSuite => !string.IsNullOrWhiteSpace(NewTestSuiteName),
+            TemplateDialogKind.EditTestSuite => CanSaveTestSuiteEdit(),
+            TemplateDialogKind.EditRevision => !string.IsNullOrWhiteSpace(NewRevisionName),
             TemplateDialogKind.EditSection => !string.IsNullOrWhiteSpace(NewSectionName),
             TemplateDialogKind.EditTestCase => !string.IsNullOrWhiteSpace(NewTestCaseTitle),
             TemplateDialogKind.EditStep => !string.IsNullOrWhiteSpace(NewStepText),
             _ => false
         };
+    }
+
+    private bool CanSaveTestSuiteEdit()
+    {
+        if (string.IsNullOrWhiteSpace(NewTestSuiteName))
+        {
+            return false;
+        }
+
+        var hasPersistedRevision = SelectedTestSuite?.Revisions.Any(revision => revision.Id != Guid.Empty) == true;
+        return !NewTestSuiteRevisionIsRequired
+            || hasPersistedRevision
+            || !string.IsNullOrWhiteSpace(NewTestSuiteInitialRevisionName);
     }
 
     private void ShowDeleteConfirmation(TemplateDeleteTarget target, Guid id, string message)
@@ -738,6 +879,9 @@ public sealed partial class TestSuitesViewModel : ObservableObject
     private void ClearEditing()
     {
         EditingItemId = Guid.Empty;
+        NewRevisionName = string.Empty;
+        RevisionCopySources.Clear();
+        SelectedRevisionCopySource = null;
     }
 
     private void UpdateRevisionColumn(TestSuiteItemViewModel? selectedSuite)
@@ -766,7 +910,7 @@ public sealed partial class TestSuitesViewModel : ObservableObject
         Guid? selectedTestCaseId = null,
         Guid? selectedStepId = null)
     {
-        var testSuites = catalogService.GetCatalog()
+        var testSuites = catalogService.GetCatalog(projectContext.CurrentProjectId)
             .Select(MapTestSuite)
             .ToList();
 
@@ -799,6 +943,83 @@ public sealed partial class TestSuitesViewModel : ObservableObject
             ? SelectedTestCase?.Steps.FirstOrDefault()
             : SelectedTestCase?.Steps.FirstOrDefault(step => step.Id == selectedStepId)
                 ?? SelectedTestCase?.Steps.FirstOrDefault();
+
+        RefreshLinkedFields();
+    }
+
+    private void RefreshLinkedFields()
+    {
+        var scopeItems = BuildSelectedFieldScopes();
+        var fields = fieldDefinitionService.GetDefinitions(projectContext.CurrentProjectId)
+            .Where(field =>
+                field.TargetEntityType is EntityReferenceType.TestCaseResult or EntityReferenceType.TestStepResult
+                && scopeItems.Any(scope =>
+                    field.Scopes.Any(fieldScope =>
+                        fieldScope.ScopeType == scope.ScopeType
+                        && fieldScope.ScopeEntityId == scope.ScopeEntityId)))
+            .Select(MapField)
+            .ToList();
+
+        LinkedFields.Clear();
+        foreach (var field in fields)
+        {
+            LinkedFields.Add(field);
+        }
+
+        OnPropertyChanged(nameof(LinkedFieldsVisibility));
+    }
+
+    private IReadOnlyCollection<FieldScopeOption> BuildSelectedFieldScopes()
+    {
+        var scopes = new List<FieldScopeOption>
+        {
+            new(CustomFieldScopeType.Global, null, "Whole project")
+        };
+
+        if (SelectedTestSuite is not null)
+        {
+            scopes.Add(new FieldScopeOption(
+                CustomFieldScopeType.TestSuite,
+                SelectedTestSuite.Id,
+                $"Test suite: {SelectedTestSuite.Name}"));
+        }
+
+        if (SelectedSection is not null)
+        {
+            scopes.Add(new FieldScopeOption(
+                CustomFieldScopeType.TemplateSection,
+                SelectedSection.Id,
+                $"Section: {SelectedSection.Name}"));
+        }
+
+        if (SelectedTestCase is not null)
+        {
+            scopes.Add(new FieldScopeOption(
+                CustomFieldScopeType.TestCaseTemplate,
+                SelectedTestCase.Id,
+                $"Test case: {SelectedTestCase.Title}"));
+        }
+
+        return scopes;
+    }
+
+    private void LoadRevisionCopySources()
+    {
+        RevisionCopySources.Clear();
+        RevisionCopySources.Add(new RevisionCopySourceOption(null, "Start empty"));
+
+        if (SelectedTestSuite is not null)
+        {
+            foreach (var revision in SelectedTestSuite.Revisions.Where(revision => revision.Id != Guid.Empty))
+            {
+                RevisionCopySources.Add(new RevisionCopySourceOption(
+                    revision.Id,
+                    $"Copy from {revision.Name}"));
+            }
+        }
+
+        SelectedRevisionCopySource = RevisionCopySources.FirstOrDefault(source => source.Id == SelectedRevision?.Id)
+            ?? RevisionCopySources.FirstOrDefault();
     }
 
     private static TestSuiteItemViewModel MapTestSuite(TestSuiteCatalogItem testSuite)
@@ -853,5 +1074,28 @@ public sealed partial class TestSuitesViewModel : ObservableObject
             step.StepText,
             step.ExpectedResult,
             step.SortOrder);
+    }
+
+    private static FieldDefinitionItemViewModel MapField(CustomFieldDefinitionItem field)
+    {
+        return new FieldDefinitionItemViewModel(
+            field.Id,
+            field.TargetEntityType,
+            field.Name,
+            field.FieldType,
+            field.IsRequired,
+            field.SortOrder,
+            field.ScopeType,
+            field.ScopeEntityId,
+            field.ScopeDisplayName,
+            field.IsActive,
+            field.Options,
+            field.Scopes
+                .Select(scope => new FieldScopeOption(
+                    scope.ScopeType,
+                    scope.ScopeEntityId,
+                    scope.DisplayName,
+                    isSelected: true))
+                .ToList());
     }
 }

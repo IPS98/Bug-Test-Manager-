@@ -1,5 +1,6 @@
 using BugTestManager.Infrastructure.Data.Entities;
 using BugTestManager.Infrastructure.SampleData;
+using BugTestManager.Application.Defaults;
 using Microsoft.EntityFrameworkCore;
 
 namespace BugTestManager.Infrastructure.Data;
@@ -10,12 +11,18 @@ public sealed class SqliteDatabaseInitializer(IDbContextFactory<BugTestManagerDb
     {
         using var dbContext = dbContextFactory.CreateDbContext();
         dbContext.Database.EnsureCreated();
+        EnsureProjectTable(dbContext);
+        EnsureDefaultProject(dbContext);
+        EnsureTestSuiteProjectColumn(dbContext);
+        EnsureTestSuiteIndexes(dbContext);
         EnsureCustomFieldDefinitionTable(dbContext);
+        EnsureCustomFieldDefinitionScopeTable(dbContext);
         EnsureCustomFieldValueTable(dbContext);
         EnsureTestSessionTables(dbContext);
         EnsureAttachmentTable(dbContext);
         EnsureBugReportTable(dbContext);
         EnsureDiscussionCommentTable(dbContext);
+        EnsureDiscussionReadStateTable(dbContext);
 
         if (dbContext.TestSuites.Any())
         {
@@ -32,6 +39,7 @@ public sealed class SqliteDatabaseInitializer(IDbContextFactory<BugTestManagerDb
             var testSuiteRecord = new TestSuiteRecord
             {
                 Id = testSuite.Id,
+                ProjectId = ProjectDefaults.DefaultProjectId,
                 Name = testSuite.Name,
                 Description = testSuite.Description,
                 RevisionIsRequired = testSuite.RevisionIsRequired,
@@ -106,12 +114,69 @@ public sealed class SqliteDatabaseInitializer(IDbContextFactory<BugTestManagerDb
         dbContext.SaveChanges();
     }
 
+    private static void EnsureProjectTable(BugTestManagerDbContext dbContext)
+    {
+        dbContext.Database.ExecuteSqlRaw(
+            """
+            CREATE TABLE IF NOT EXISTS "Projects" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_Projects" PRIMARY KEY,
+                "Name" TEXT NOT NULL,
+                "Description" TEXT NOT NULL,
+                "CreatedAt" TEXT NOT NULL
+            );
+            """);
+
+        dbContext.Database.ExecuteSqlRaw(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_Projects_Name"
+            ON "Projects" ("Name");
+            """);
+    }
+
+    private static void EnsureDefaultProject(BugTestManagerDbContext dbContext)
+    {
+        var defaultProjectExists = dbContext.Projects.Any(project => project.Id == ProjectDefaults.DefaultProjectId);
+        if (defaultProjectExists)
+        {
+            return;
+        }
+
+        dbContext.Projects.Add(new ProjectRecord
+        {
+            Id = ProjectDefaults.DefaultProjectId,
+            Name = ProjectDefaults.DefaultProjectName,
+            Description = "Default workspace for existing templates, sessions, bugs, and fields.",
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+        dbContext.SaveChanges();
+    }
+
+    private static void EnsureTestSuiteProjectColumn(BugTestManagerDbContext dbContext)
+    {
+        EnsureColumn(
+            dbContext,
+            "TestSuites",
+            "ProjectId",
+            "\"ProjectId\" TEXT NOT NULL DEFAULT '11111111-2222-3333-4444-555555555555'");
+    }
+
+    private static void EnsureTestSuiteIndexes(BugTestManagerDbContext dbContext)
+    {
+        dbContext.Database.ExecuteSqlRaw("""DROP INDEX IF EXISTS "IX_TestSuites_Name";""");
+        dbContext.Database.ExecuteSqlRaw(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_TestSuites_ProjectId_Name"
+            ON "TestSuites" ("ProjectId", "Name");
+            """);
+    }
+
     private static void EnsureCustomFieldDefinitionTable(BugTestManagerDbContext dbContext)
     {
         dbContext.Database.ExecuteSqlRaw(
             """
             CREATE TABLE IF NOT EXISTS "CustomFieldDefinitions" (
                 "Id" TEXT NOT NULL CONSTRAINT "PK_CustomFieldDefinitions" PRIMARY KEY,
+                "ProjectId" TEXT NOT NULL DEFAULT '11111111-2222-3333-4444-555555555555',
                 "TargetEntityType" INTEGER NOT NULL,
                 "Name" TEXT NOT NULL,
                 "FieldType" INTEGER NOT NULL,
@@ -125,6 +190,11 @@ public sealed class SqliteDatabaseInitializer(IDbContextFactory<BugTestManagerDb
             );
             """);
 
+        EnsureColumn(
+            dbContext,
+            "CustomFieldDefinitions",
+            "ProjectId",
+            "\"ProjectId\" TEXT NOT NULL DEFAULT '11111111-2222-3333-4444-555555555555'");
         EnsureColumn(dbContext, "CustomFieldDefinitions", "ScopeType", "\"ScopeType\" INTEGER NOT NULL DEFAULT 0");
         EnsureColumn(dbContext, "CustomFieldDefinitions", "ScopeEntityId", "\"ScopeEntityId\" TEXT NULL");
         EnsureColumn(
@@ -136,13 +206,13 @@ public sealed class SqliteDatabaseInitializer(IDbContextFactory<BugTestManagerDb
         dbContext.Database.ExecuteSqlRaw(
             """
             CREATE INDEX IF NOT EXISTS "IX_CustomFieldDefinitions_TargetEntityType_Name"
-            ON "CustomFieldDefinitions" ("TargetEntityType", "Name");
+            ON "CustomFieldDefinitions" ("ProjectId", "TargetEntityType", "Name");
             """);
 
         dbContext.Database.ExecuteSqlRaw(
             """
             CREATE INDEX IF NOT EXISTS "IX_CustomFieldDefinitions_TargetEntityType_ScopeType_ScopeEntityId_Name"
-            ON "CustomFieldDefinitions" ("TargetEntityType", "ScopeType", "ScopeEntityId", "Name");
+            ON "CustomFieldDefinitions" ("ProjectId", "TargetEntityType", "ScopeType", "ScopeEntityId", "Name");
             """);
     }
 
@@ -152,6 +222,7 @@ public sealed class SqliteDatabaseInitializer(IDbContextFactory<BugTestManagerDb
             """
             CREATE TABLE IF NOT EXISTS "TestSessions" (
                 "Id" TEXT NOT NULL CONSTRAINT "PK_TestSessions" PRIMARY KEY,
+                "ProjectId" TEXT NOT NULL DEFAULT '11111111-2222-3333-4444-555555555555',
                 "Name" TEXT NOT NULL,
                 "TestSuiteId" TEXT NOT NULL,
                 "TestSuiteRevisionId" TEXT NULL,
@@ -166,6 +237,11 @@ public sealed class SqliteDatabaseInitializer(IDbContextFactory<BugTestManagerDb
             );
             """);
 
+        EnsureColumn(
+            dbContext,
+            "TestSessions",
+            "ProjectId",
+            "\"ProjectId\" TEXT NOT NULL DEFAULT '11111111-2222-3333-4444-555555555555'");
         EnsureColumn(dbContext, "TestSessions", "IsManual", "\"IsManual\" INTEGER NOT NULL DEFAULT 0");
 
         dbContext.Database.ExecuteSqlRaw(
@@ -261,6 +337,52 @@ public sealed class SqliteDatabaseInitializer(IDbContextFactory<BugTestManagerDb
             """);
     }
 
+    private static void EnsureCustomFieldDefinitionScopeTable(BugTestManagerDbContext dbContext)
+    {
+        dbContext.Database.ExecuteSqlRaw(
+            """
+            CREATE TABLE IF NOT EXISTS "CustomFieldDefinitionScopes" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_CustomFieldDefinitionScopes" PRIMARY KEY,
+                "FieldDefinitionId" TEXT NOT NULL,
+                "ScopeType" INTEGER NOT NULL,
+                "ScopeEntityId" TEXT NULL,
+                "ScopeDisplayName" TEXT NOT NULL,
+                CONSTRAINT "FK_CustomFieldDefinitionScopes_CustomFieldDefinitions_FieldDefinitionId"
+                    FOREIGN KEY ("FieldDefinitionId") REFERENCES "CustomFieldDefinitions" ("Id") ON DELETE CASCADE
+            );
+            """);
+
+        dbContext.Database.ExecuteSqlRaw(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_CustomFieldDefinitionScopes_FieldDefinitionId_ScopeType_ScopeEntityId"
+            ON "CustomFieldDefinitionScopes" ("FieldDefinitionId", "ScopeType", "ScopeEntityId");
+            """);
+
+        var fieldIdsWithScopes = dbContext.CustomFieldDefinitionScopes
+            .Select(scope => scope.FieldDefinitionId)
+            .ToHashSet();
+        var fieldsMissingScopes = dbContext.CustomFieldDefinitions
+            .Where(field => !fieldIdsWithScopes.Contains(field.Id))
+            .ToList();
+
+        foreach (var field in fieldsMissingScopes)
+        {
+            dbContext.CustomFieldDefinitionScopes.Add(new CustomFieldDefinitionScopeRecord
+            {
+                Id = Guid.NewGuid(),
+                FieldDefinitionId = field.Id,
+                ScopeType = field.ScopeType,
+                ScopeEntityId = field.ScopeEntityId,
+                ScopeDisplayName = field.ScopeDisplayName
+            });
+        }
+
+        if (fieldsMissingScopes.Count > 0)
+        {
+            dbContext.SaveChanges();
+        }
+    }
+
     private static void EnsureAttachmentTable(BugTestManagerDbContext dbContext)
     {
         dbContext.Database.ExecuteSqlRaw(
@@ -292,6 +414,7 @@ public sealed class SqliteDatabaseInitializer(IDbContextFactory<BugTestManagerDb
             """
             CREATE TABLE IF NOT EXISTS "BugReports" (
                 "Id" TEXT NOT NULL CONSTRAINT "PK_BugReports" PRIMARY KEY,
+                "ProjectId" TEXT NOT NULL DEFAULT '11111111-2222-3333-4444-555555555555',
                 "Title" TEXT NOT NULL,
                 "Description" TEXT NOT NULL,
                 "Status" INTEGER NOT NULL,
@@ -309,6 +432,11 @@ public sealed class SqliteDatabaseInitializer(IDbContextFactory<BugTestManagerDb
             );
             """);
 
+        EnsureColumn(
+            dbContext,
+            "BugReports",
+            "ProjectId",
+            "\"ProjectId\" TEXT NOT NULL DEFAULT '11111111-2222-3333-4444-555555555555'");
         EnsureColumn(dbContext, "BugReports", "LinkedEntityType", "\"LinkedEntityType\" INTEGER NULL");
         EnsureColumn(dbContext, "BugReports", "LinkedEntityId", "\"LinkedEntityId\" TEXT NULL");
         EnsureColumn(
@@ -350,6 +478,26 @@ public sealed class SqliteDatabaseInitializer(IDbContextFactory<BugTestManagerDb
             """
             CREATE INDEX IF NOT EXISTS "IX_DiscussionComments_EntityType_EntityId_CreatedAt"
             ON "DiscussionComments" ("EntityType", "EntityId", "CreatedAt");
+            """);
+    }
+
+    private static void EnsureDiscussionReadStateTable(BugTestManagerDbContext dbContext)
+    {
+        dbContext.Database.ExecuteSqlRaw(
+            """
+            CREATE TABLE IF NOT EXISTS "DiscussionReadStates" (
+                "Id" TEXT NOT NULL CONSTRAINT "PK_DiscussionReadStates" PRIMARY KEY,
+                "EntityType" INTEGER NOT NULL,
+                "EntityId" TEXT NOT NULL,
+                "UserName" TEXT NOT NULL,
+                "LastReadAt" TEXT NOT NULL
+            );
+            """);
+
+        dbContext.Database.ExecuteSqlRaw(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_DiscussionReadStates_EntityType_EntityId_UserName"
+            ON "DiscussionReadStates" ("EntityType", "EntityId", "UserName");
             """);
     }
 

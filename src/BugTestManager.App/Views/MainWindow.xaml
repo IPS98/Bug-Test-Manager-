@@ -49,9 +49,43 @@
                     <TextBlock Margin="0,8,0,0"
                                Foreground="#B8C2D6"
                                Text="{Binding CurrentUserDisplay}" />
+
+                    <TextBlock Margin="0,24,0,6"
+                               FontWeight="SemiBold"
+                               Foreground="#D5DCEB"
+                               Text="Project" />
+                    <ComboBox MinHeight="32"
+                              DisplayMemberPath="DisplayName"
+                              ItemsSource="{Binding Projects}"
+                              SelectedItem="{Binding SelectedProject}" />
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox MinHeight="30"
+                                 VerticalContentAlignment="Center"
+                                 Text="{Binding NewProjectName, UpdateSourceTrigger=PropertyChanged}" />
+                        <Button Grid.Column="2"
+                                MinWidth="54"
+                                MinHeight="30"
+                                Command="{Binding CreateProjectCommand}"
+                                Content="+ Add" />
+                    </Grid>
+                    <TextBlock Margin="0,6,0,0"
+                               Foreground="#B8C2D6"
+                               Text="{Binding ProjectStatusMessage}"
+                               TextWrapping="Wrap" />
+                    <Button Margin="0,8,0,0"
+                            MinHeight="30"
+                            HorizontalAlignment="Stretch"
+                            Command="{Binding ShowDeleteProjectDialogCommand}"
+                            Content="Delete Project"
+                            Foreground="#FCA5A5" />
                 </StackPanel>
 
-                <ItemsControl Margin="0,34,0,0"
+                <ItemsControl Margin="0,24,0,0"
                               ItemsSource="{Binding Modules}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
@@ -128,5 +162,53 @@
                             Margin="0,22,0,0"
                             Content="{Binding CurrentPage}" />
         </Grid>
+
+        <Border Grid.ColumnSpan="2"
+                Panel.ZIndex="20"
+                Background="#990F172A"
+                Visibility="{Binding ProjectDeleteDialogVisibility}">
+            <Border Width="500"
+                    Padding="24"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Background="White"
+                    CornerRadius="8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="14" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="18" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock FontSize="20"
+                               FontWeight="SemiBold"
+                               Foreground="#172033"
+                               Text="{Binding ProjectDeleteTitle}"
+                               TextWrapping="Wrap" />
+
+                    <TextBlock Grid.Row="2"
+                               Foreground="#64748B"
+                               Text="{Binding ProjectDeleteWarning}"
+                               TextWrapping="Wrap" />
+
+                    <StackPanel Grid.Row="4"
+                                HorizontalAlignment="Right"
+                                Orientation="Horizontal">
+                        <Button MinWidth="92"
+                                MinHeight="34"
+                                Margin="0,0,10,0"
+                                Command="{Binding CloseDeleteProjectDialogCommand}"
+                                Content="Cancel" />
+                        <Button MinWidth="110"
+                                MinHeight="34"
+                                Command="{Binding ConfirmDeleteProjectCommand}"
+                                Content="Delete Project"
+                                Foreground="#B91C1C" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Border>
     </Grid>
 </mah:MetroWindow>

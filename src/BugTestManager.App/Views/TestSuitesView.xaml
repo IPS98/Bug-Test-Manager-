@@ -60,6 +60,37 @@
                                 Content="+ Add" />
                     </Grid>
 
+                    <Border DockPanel.Dock="Bottom"
+                            Margin="0,12,0,0"
+                            Padding="10"
+                            Background="#F8FAFC"
+                            BorderBrush="#E2E8F0"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Visibility="{Binding LinkedFieldsVisibility}">
+                        <StackPanel>
+                            <TextBlock FontWeight="SemiBold"
+                                       Foreground="#172033"
+                                       Text="Linked Fields" />
+                            <ItemsControl Margin="0,8,0,0"
+                                          ItemsSource="{Binding LinkedFields}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Margin="0,0,0,8">
+                                            <TextBlock FontWeight="SemiBold"
+                                                       Text="{Binding Name}"
+                                                       TextWrapping="Wrap" />
+                                            <TextBlock Margin="0,3,0,0"
+                                                       Foreground="#64748B"
+                                                       Text="{Binding ScopeDisplayName}"
+                                                       TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
                     <ListBox ItemsSource="{Binding TestSuites}"
                              SelectedItem="{Binding SelectedTestSuite}"
                              ItemContainerStyle="{StaticResource FullWidthListBoxItemStyle}"
@@ -104,12 +135,23 @@
                     CornerRadius="8"
                     Visibility="{Binding RevisionColumnVisibility}">
                 <DockPanel>
-                    <TextBlock DockPanel.Dock="Top"
-                               Margin="0,0,0,12"
-                               FontSize="16"
-                               FontWeight="SemiBold"
-                               Foreground="#172033"
-                               Text="Revisions" />
+                    <Grid DockPanel.Dock="Top"
+                          Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock VerticalAlignment="Center"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Foreground="#172033"
+                                   Text="Revisions" />
+                        <Button Grid.Column="1"
+                                MinWidth="72"
+                                MinHeight="30"
+                                Command="{Binding ShowCreateRevisionDialogCommand}"
+                                Content="+ Add" />
+                    </Grid>
 
                     <ListBox ItemsSource="{Binding SelectedTestSuite.Revisions}"
                              SelectedItem="{Binding SelectedRevision}"
@@ -136,6 +178,12 @@
                                             </Style>
                                         </TextBlock.Style>
                                     </TextBlock>
+                                    <StackPanel Style="{StaticResource RowActionsStyle}">
+                                        <Button Command="{Binding DataContext.ShowEditRevisionDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"
+                                                Content="Edit"
+                                                Style="{StaticResource RowActionButtonStyle}" />
+                                    </StackPanel>
                                 </StackPanel>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
@@ -397,6 +445,9 @@
                                             <DataTrigger Binding="{Binding ActiveDialog}" Value="{x:Static viewModels:TemplateDialogKind.TestSuite}">
                                                 <Setter Property="Visibility" Value="Visible" />
                                             </DataTrigger>
+                                            <DataTrigger Binding="{Binding ActiveDialog}" Value="{x:Static viewModels:TemplateDialogKind.EditTestSuite}">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </StackPanel.Style>
@@ -411,6 +462,48 @@
                                          IsEnabled="{Binding NewTestSuiteRevisionIsRequired}"
                                          VerticalContentAlignment="Center"
                                          Text="{Binding NewTestSuiteInitialRevisionName, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <StackPanel>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ActiveDialog}" Value="{x:Static viewModels:TemplateDialogKind.Revision}">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding ActiveDialog}" Value="{x:Static viewModels:TemplateDialogKind.EditRevision}">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+
+                            <TextBlock Foreground="#64748B" Text="Revision name" />
+                            <TextBox Margin="0,6,0,14"
+                                     MinHeight="34"
+                                     VerticalContentAlignment="Center"
+                                     Text="{Binding NewRevisionName, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <StackPanel>
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ActiveDialog}" Value="{x:Static viewModels:TemplateDialogKind.Revision}">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+
+                                <TextBlock Foreground="#64748B" Text="Copy tests from" />
+                                <ComboBox Margin="0,6,0,0"
+                                          MinHeight="34"
+                                          DisplayMemberPath="Name"
+                                          ItemsSource="{Binding RevisionCopySources}"
+                                          SelectedItem="{Binding SelectedRevisionCopySource}" />
                             </StackPanel>
                         </StackPanel>
 
@@ -555,6 +648,23 @@
 
                         <Button MinWidth="92"
                                 MinHeight="34"
+                                Command="{Binding CreateRevisionCommand}"
+                                Content="Create"
+                                IsDefault="True">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ActiveDialog}" Value="{x:Static viewModels:TemplateDialogKind.Revision}">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+
+                        <Button MinWidth="92"
+                                MinHeight="34"
                                 Command="{Binding CreateSectionCommand}"
                                 Content="Create"
                                 IsDefault="True">
@@ -614,6 +724,9 @@
                                     <Setter Property="Visibility" Value="Collapsed" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding ActiveDialog}" Value="{x:Static viewModels:TemplateDialogKind.EditTestSuite}">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding ActiveDialog}" Value="{x:Static viewModels:TemplateDialogKind.EditRevision}">
                                             <Setter Property="Visibility" Value="Visible" />
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding ActiveDialog}" Value="{x:Static viewModels:TemplateDialogKind.EditSection}">

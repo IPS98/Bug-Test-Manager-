@@ -5,7 +5,7 @@ namespace BugTestManager.Infrastructure.SampleData;
 
 public sealed class SampleTestSuiteCatalogService : ITestSuiteCatalogService
 {
-    public IReadOnlyList<TestSuiteCatalogItem> GetCatalog()
+    public IReadOnlyList<TestSuiteCatalogItem> GetCatalog(Guid? projectId = null)
     {
         return SampleTestSuiteCatalogSource.GetCatalog();
     }

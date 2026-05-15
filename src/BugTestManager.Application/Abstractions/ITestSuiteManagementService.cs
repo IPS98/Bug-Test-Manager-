@@ -7,6 +7,8 @@ public interface ITestSuiteManagementService
 {
     CreateTestSuiteResult CreateTestSuite(CreateTestSuiteRequest request);
 
+    Guid CreateRevision(CreateTestSuiteRevisionRequest request);
+
     Guid CreateSection(CreateTemplateSectionRequest request);
 
     Guid CreateTestCase(CreateTestCaseTemplateRequest request);
@@ -14,6 +16,8 @@ public interface ITestSuiteManagementService
     Guid CreateTestStep(CreateTestStepTemplateRequest request);
 
     void UpdateTestSuite(UpdateTestSuiteRequest request);
+
+    void UpdateRevision(UpdateTestSuiteRevisionRequest request);
 
     void UpdateSection(UpdateTemplateSectionRequest request);
 
