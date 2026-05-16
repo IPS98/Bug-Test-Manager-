@@ -130,6 +130,9 @@ Status: implementation in progress after approved architecture and skeleton setu
 - Templates screen refreshes its catalog when the user opens it, so synced/created templates are visible.
 - Test case and check results store a read-only Last Status Change Date.
 - Last Status Change Date updates only when the result status actually changes, not when only comments change.
+- Required result custom fields are highlighted in the test result dialog when they are empty.
+- Saving a test case/check result is blocked with a clear popup when required custom fields are missing.
+- Existing test sessions pick up newly added matching required custom fields when a result is opened.
 - Test suite revisions can be created, renamed, and copied from an existing revision without modifying the original revision.
 - Test suite revision requirement can be disabled again while editing a test suite.
 - Custom fields can be bound to multiple selected scopes/targets without duplicating the same field definition.
@@ -212,8 +215,9 @@ These are still important, but they do not block the first skeleton:
 - Later, add full theme support with Dark Mode, a theme switcher, and saved theme preference.
 - Continue extending session-to-template sync workflows beyond the first safe structure-only version.
 - Later, extend session-to-template sync to include supported custom field definition changes when field editing becomes available inside the testing workflow.
-- Later, add mandatory-field sync behavior for existing sessions when new required fields are created.
+- Later, add an optional bulk sync/review action for required fields added after sessions already exist.
 - Later, add Created Date and Last Modified Date to session result items.
+- Later, support report date formatting without time when the report only needs a calendar date.
 - Later, support multi-session reports and full-project/program reports with image attachments embedded in the PDF.
 
 ## Proposed Technology
@@ -446,6 +450,7 @@ History:
 - Generate bug report PDF.
 - Generate summary/sign-off report if required.
 - Include images, metadata, dates, statuses, custom fields, and summary tables.
+- Format report-only dates without time unless the field is explicitly date/time.
 - Add multi-session report export.
 - Add project/program-level report export.
 - Embed image attachments safely with scaling and missing-file handling.

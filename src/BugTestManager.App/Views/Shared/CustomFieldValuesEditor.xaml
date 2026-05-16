@@ -17,7 +17,7 @@
         <TextBlock Margin="0,0,0,8"
                    FontSize="16"
                    FontWeight="SemiBold"
-                   Foreground="#172033"
+                   Foreground="{StaticResource AppTextBrush}"
                    Text="Custom Fields" />
 
         <ItemsControl ItemsSource="{Binding}">
@@ -25,17 +25,27 @@
                 <DataTemplate>
                     <Border Margin="0,0,0,10"
                             Padding="10"
-                            Background="#F8FAFC"
-                            BorderBrush="#E2E8F0"
                             BorderThickness="1"
                             CornerRadius="6">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="{StaticResource AppSubtleSurfaceBrush}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource AppBorderBrush}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsMissingRequiredValue}" Value="True">
+                                        <Setter Property="Background" Value="{StaticResource AppDangerHoverBackgroundBrush}" />
+                                        <Setter Property="BorderBrush" Value="{StaticResource AppDangerHoverBorderBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
                         <StackPanel>
                             <DockPanel Margin="0,0,0,6">
                                 <TextBlock DockPanel.Dock="Right"
-                                           Foreground="#94A3B8"
+                                           Foreground="{StaticResource AppMutedTextBrush}"
                                            Text="{Binding FieldTypeDisplay}" />
                                 <TextBlock FontWeight="SemiBold"
-                                           Foreground="#172033"
+                                           Foreground="{StaticResource AppTextBrush}"
                                            Text="{Binding HeaderDisplay}"
                                            TextWrapping="Wrap" />
                             </DockPanel>
@@ -95,10 +105,16 @@
                             </CheckBox>
 
                             <TextBlock Margin="0,6,0,0"
-                                       Foreground="#64748B"
+                                       Foreground="{StaticResource AppMutedTextBrush}"
                                        Text="{Binding OptionsDisplay}"
                                        TextWrapping="Wrap"
                                        Visibility="{Binding OptionsVisibility}" />
+                            <TextBlock Margin="0,6,0,0"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource AppDangerForegroundBrush}"
+                                       Text="{Binding MissingRequiredMessage}"
+                                       TextWrapping="Wrap"
+                                       Visibility="{Binding MissingRequiredVisibility}" />
                         </StackPanel>
                     </Border>
                 </DataTemplate>

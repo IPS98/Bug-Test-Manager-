@@ -61,8 +61,21 @@ public sealed partial class CustomFieldValueItemViewModel : ObservableObject
 
     public Visibility OptionsVisibility => Options.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
 
+    public bool IsMissingRequiredValue => IsRequired && string.IsNullOrWhiteSpace(Value);
+
+    public Visibility MissingRequiredVisibility => IsMissingRequiredValue
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public string MissingRequiredMessage => IsMissingRequiredValue
+        ? "Required field is empty."
+        : string.Empty;
+
     partial void OnValueChanged(string value)
     {
         OnPropertyChanged(nameof(BoolValue));
+        OnPropertyChanged(nameof(IsMissingRequiredValue));
+        OnPropertyChanged(nameof(MissingRequiredVisibility));
+        OnPropertyChanged(nameof(MissingRequiredMessage));
     }
 }

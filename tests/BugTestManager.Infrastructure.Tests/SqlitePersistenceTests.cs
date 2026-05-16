@@ -663,6 +663,89 @@ public sealed class SqlitePersistenceTests
     }
 
     [Fact]
+    public void CustomFieldValueService_ReturnsRequiredFieldAddedAfterSessionStart()
+    {
+        var databasePath = CreateTempDatabasePath();
+        using var serviceProvider = CreateServiceProvider(databasePath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var managementService = serviceProvider.GetRequiredService<ITestSuiteManagementService>();
+        var testSuite = managementService.CreateTestSuite(new CreateTestSuiteRequest(
+            "Late Field Suite",
+            "Used to verify fields added after a session starts.",
+            RevisionIsRequired: false,
+            InitialRevisionName: null));
+        var sectionId = managementService.CreateSection(new CreateTemplateSectionRequest(
+            testSuite.TestSuiteId,
+            TestSuiteRevisionId: null,
+            "Power Controls",
+            "UI"));
+        var testCaseTemplateId = managementService.CreateTestCase(new CreateTestCaseTemplateRequest(
+            sectionId,
+            "ON/OFF button",
+            "Button toggles output."));
+
+        var sessionService = serviceProvider.GetRequiredService<ITestSessionService>();
+        var sessionId = sessionService.CreateSession(new CreateTestSessionRequest(
+            "Late field run",
+            testSuite.TestSuiteId,
+            TestSuiteRevisionId: null,
+            TestedVersion: "2.1.0",
+            BuildNumber: "1100",
+            Notes: "",
+            CreatedBy: "tester"));
+        var testCase = sessionService.GetSession(sessionId)
+            .Sections
+            .SelectMany(section => section.TestCases)
+            .Single();
+
+        var fieldService = serviceProvider.GetRequiredService<ICustomFieldDefinitionService>();
+        var fieldId = fieldService.CreateDefinition(new CreateCustomFieldDefinitionRequest(
+            EntityReferenceType.TestCaseResult,
+            "Firmware date",
+            FieldType.Date,
+            IsRequired: true,
+            SortOrder: 1,
+            ScopeType: CustomFieldScopeType.TestCaseTemplate,
+            ScopeEntityId: testCaseTemplateId,
+            ScopeDisplayName: "Test case: ON/OFF button",
+            Options: []));
+
+        var valueService = serviceProvider.GetRequiredService<ICustomFieldValueService>();
+        var values = valueService.GetValues(
+            EntityReferenceType.TestCaseResult,
+            testCase.Id,
+            [new CustomFieldValueScopeItem(CustomFieldScopeType.TestCaseTemplate, testCaseTemplateId)]);
+        var field = values.Single(value => value.FieldDefinitionId == fieldId);
+
+        Assert.True(field.IsRequired);
+        Assert.Equal(string.Empty, field.Value);
+
+        var error = Assert.Throws<InvalidOperationException>(() => valueService.SaveValue(new SaveCustomFieldValueRequest(
+            fieldId,
+            EntityReferenceType.TestCaseResult,
+            testCase.Id,
+            "",
+            "tester")));
+        Assert.Contains("Firmware date", error.Message);
+
+        valueService.SaveValue(new SaveCustomFieldValueRequest(
+            fieldId,
+            EntityReferenceType.TestCaseResult,
+            testCase.Id,
+            "2026-05-16",
+            "tester"));
+
+        var savedField = valueService
+            .GetValues(
+                EntityReferenceType.TestCaseResult,
+                testCase.Id,
+                [new CustomFieldValueScopeItem(CustomFieldScopeType.TestCaseTemplate, testCaseTemplateId)])
+            .Single(value => value.FieldDefinitionId == fieldId);
+        Assert.Equal("2026-05-16", savedField.Value);
+    }
+
+    [Fact]
     public void TestSessionService_CreatesSessionFromTemplate()
     {
         var databasePath = CreateTempDatabasePath();

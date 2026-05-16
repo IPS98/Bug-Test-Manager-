@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Windows;
 using BugTestManager.App.Services;
 using BugTestManager.Application.Abstractions;
@@ -67,6 +69,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         ResultAttachments = [];
         ResultCustomFields = [];
         ResultLinkedBugs = [];
+        ResultCustomFields.CollectionChanged += OnResultCustomFieldsChanged;
         DiscussionComments = [];
         ResultLinkedBugs.CollectionChanged += (_, _) => NotifyResultLinkedBugPropertiesChanged();
         ResultStatuses = Enum.GetValues<TestResultStatus>()
@@ -155,6 +158,18 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         TestSessionResultTargetKind.Step when SelectedStep is not null => SelectedStep.LastStatusChangedAtDisplay,
         _ => "Not changed yet"
     };
+
+    public int MissingRequiredResultFieldCount => ResultCustomFields.Count(field => field.IsMissingRequiredValue);
+
+    public Visibility MissingRequiredResultFieldsVisibility => MissingRequiredResultFieldCount > 0
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public string MissingRequiredResultFieldsMessage => MissingRequiredResultFieldCount == 0
+        ? string.Empty
+        : MissingRequiredResultFieldCount == 1
+            ? "1 required custom field is empty."
+            : $"{MissingRequiredResultFieldCount} required custom fields are empty.";
 
     public Visibility TemplateSyncUpdateVisibility => TemplateSyncPreview?.CanUpdateOriginalTemplate == true
         ? Visibility.Visible
@@ -1158,6 +1173,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
 
         try
         {
+            EnsureRequiredResultFieldsAreFilled();
             SaveResultCustomFields();
 
             switch (EditingResultTarget)
@@ -1186,6 +1202,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            errorDialogService.ShowError("Result Save Error", ex.Message);
             StatusMessage = ex.Message;
         }
     }
@@ -1523,6 +1540,8 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         {
             ResultLinkedBugs.Add(linkedBug);
         }
+
+        NotifyResultCustomFieldValidationPropertiesChanged();
     }
 
     private void SaveResultCustomFields()
@@ -1536,6 +1555,22 @@ public sealed partial class TestSessionsViewModel : ObservableObject
                 field.Value,
                 userContext.UserName));
         }
+    }
+
+    private void EnsureRequiredResultFieldsAreFilled()
+    {
+        var missingFields = ResultCustomFields
+            .Where(field => field.IsMissingRequiredValue)
+            .Select(field => field.Name)
+            .ToList();
+
+        if (missingFields.Count == 0)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(
+            $"Required custom fields must be filled before saving: {string.Join(", ", missingFields)}.");
     }
 
     private IReadOnlyCollection<CustomFieldValueScopeItem> BuildCurrentResultScopes()
@@ -1765,5 +1800,42 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         OnPropertyChanged(nameof(ResultLinkedBugBadgeVisibility));
         OnPropertyChanged(nameof(ResultLinkedBugButtonText));
         OnPropertyChanged(nameof(CreateLinkedBugButtonText));
+    }
+
+    private void OnResultCustomFieldsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.OldItems is not null)
+        {
+            foreach (CustomFieldValueItemViewModel field in e.OldItems)
+            {
+                field.PropertyChanged -= OnResultCustomFieldPropertyChanged;
+            }
+        }
+
+        if (e.NewItems is not null)
+        {
+            foreach (CustomFieldValueItemViewModel field in e.NewItems)
+            {
+                field.PropertyChanged += OnResultCustomFieldPropertyChanged;
+            }
+        }
+
+        NotifyResultCustomFieldValidationPropertiesChanged();
+    }
+
+    private void OnResultCustomFieldPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(CustomFieldValueItemViewModel.Value)
+            or nameof(CustomFieldValueItemViewModel.IsMissingRequiredValue))
+        {
+            NotifyResultCustomFieldValidationPropertiesChanged();
+        }
+    }
+
+    private void NotifyResultCustomFieldValidationPropertiesChanged()
+    {
+        OnPropertyChanged(nameof(MissingRequiredResultFieldCount));
+        OnPropertyChanged(nameof(MissingRequiredResultFieldsVisibility));
+        OnPropertyChanged(nameof(MissingRequiredResultFieldsMessage));
     }
 }

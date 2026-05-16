@@ -556,6 +556,25 @@
                                      Text="{Binding ResultComment, UpdateSourceTrigger=PropertyChanged}"
                                      TextWrapping="Wrap" />
 
+                            <Border Margin="0,12,0,0"
+                                    Padding="10"
+                                    Background="{StaticResource AppDangerHoverBackgroundBrush}"
+                                    BorderBrush="{StaticResource AppDangerHoverBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Visibility="{Binding MissingRequiredResultFieldsVisibility}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock FontFamily="Segoe MDL2 Assets"
+                                               Margin="0,0,8,0"
+                                               Foreground="{StaticResource AppDangerForegroundBrush}"
+                                               Text="&#xE7BA;" />
+                                    <TextBlock FontWeight="SemiBold"
+                                               Foreground="{StaticResource AppDangerForegroundBrush}"
+                                               Text="{Binding MissingRequiredResultFieldsMessage}"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+
                             <shared:CustomFieldValuesEditor DataContext="{Binding ResultCustomFields}" />
 
                             <Grid Margin="0,18,0,8">
