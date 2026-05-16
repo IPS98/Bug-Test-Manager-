@@ -919,6 +919,142 @@ public sealed class SqlitePersistenceTests
     }
 
     [Fact]
+    public void TemplateSyncService_UpdatesOriginalTemplateWithManualSessionItems()
+    {
+        var databasePath = CreateTempDatabasePath();
+        using var serviceProvider = CreateServiceProvider(databasePath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var managementService = serviceProvider.GetRequiredService<ITestSuiteManagementService>();
+        var testSuite = managementService.CreateTestSuite(new CreateTestSuiteRequest(
+            "Template Sync Source",
+            "Original reusable template.",
+            RevisionIsRequired: false,
+            InitialRevisionName: null));
+        var sectionId = managementService.CreateSection(new CreateTemplateSectionRequest(
+            testSuite.TestSuiteId,
+            TestSuiteRevisionId: null,
+            "Main Window",
+            "UI"));
+        var testCaseTemplateId = managementService.CreateTestCase(new CreateTestCaseTemplateRequest(
+            sectionId,
+            "Navigation panel",
+            "Navigation panel is visible."));
+        managementService.CreateTestStep(new CreateTestStepTemplateRequest(
+            testCaseTemplateId,
+            "Open the application.",
+            "Main window opens."));
+
+        var sessionService = serviceProvider.GetRequiredService<ITestSessionService>();
+        var sessionId = sessionService.CreateSession(new CreateTestSessionRequest(
+            "Template sync run",
+            testSuite.TestSuiteId,
+            TestSuiteRevisionId: null,
+            TestedVersion: "2.0.0",
+            BuildNumber: "1001",
+            Notes: "",
+            CreatedBy: "tester"));
+        var session = sessionService.GetSession(sessionId);
+        var existingCase = session.Sections.Single().TestCases.Single();
+
+        var manualCheckId = sessionService.CreateManualCheck(new CreateManualTestCheckRequest(
+            existingCase.Id,
+            "Tooltip is visible.",
+            "Tooltip explains the navigation action."));
+        var manualSectionId = sessionService.CreateManualSection(new CreateManualTestSectionRequest(
+            sessionId,
+            "Reports",
+            "Export"));
+        var manualCaseId = sessionService.CreateManualTestCase(new CreateManualTestCaseRequest(
+            manualSectionId,
+            "PDF report",
+            "PDF report is created."));
+        sessionService.CreateManualCheck(new CreateManualTestCheckRequest(
+            manualCaseId,
+            "Export report.",
+            "PDF file exists."));
+
+        var syncService = serviceProvider.GetRequiredService<ITestSessionTemplateSyncService>();
+        var preview = syncService.GetPreview(sessionId);
+
+        Assert.True(preview.CanUpdateOriginalTemplate);
+        Assert.Equal(1, preview.NewSectionCount);
+        Assert.Equal(1, preview.NewTestCaseCount);
+        Assert.Equal(2, preview.NewCheckCount);
+
+        var result = syncService.UpdateOriginalTemplate(new UpdateTemplateFromSessionRequest(sessionId));
+        var updatedSuite = serviceProvider
+            .GetRequiredService<ITestSuiteCatalogService>()
+            .GetCatalog()
+            .Single(suite => suite.Id == testSuite.TestSuiteId);
+        var allCases = updatedSuite.Revisions.Single().Sections.SelectMany(section => section.TestCases).ToList();
+        var refreshedSession = sessionService.GetSession(sessionId);
+        var refreshedManualCheck = refreshedSession.Sections
+            .SelectMany(section => section.TestCases)
+            .SelectMany(testCase => testCase.Steps)
+            .Single(check => check.Id == manualCheckId);
+
+        Assert.Equal(1, result.AddedSections);
+        Assert.Equal(1, result.AddedTestCases);
+        Assert.Equal(2, result.AddedChecks);
+        Assert.Contains(updatedSuite.Revisions.Single().Sections, section => section.Name == "Reports");
+        Assert.Contains(allCases, testCase => testCase.Title == "PDF report");
+        Assert.NotEqual(Guid.Empty, refreshedManualCheck.TestStepTemplateId);
+    }
+
+    [Fact]
+    public void TemplateSyncService_CreatesNewTemplateFromManualSession()
+    {
+        var databasePath = CreateTempDatabasePath();
+        using var serviceProvider = CreateServiceProvider(databasePath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var sessionService = serviceProvider.GetRequiredService<ITestSessionService>();
+        var sessionId = sessionService.CreateManualSession(new CreateManualTestSessionRequest(
+            "Manual firmware smoke",
+            "2.0.0",
+            "1001",
+            "Manual structure should become a template.",
+            "tester"));
+        var sectionId = sessionService.CreateManualSection(new CreateManualTestSectionRequest(
+            sessionId,
+            "Power Controls",
+            "UI"));
+        var testCaseId = sessionService.CreateManualTestCase(new CreateManualTestCaseRequest(
+            sectionId,
+            "ON/OFF button",
+            "Button toggles output."));
+        sessionService.CreateManualCheck(new CreateManualTestCheckRequest(
+            testCaseId,
+            "Check tooltip.",
+            "Tooltip is visible."));
+
+        var syncService = serviceProvider.GetRequiredService<ITestSessionTemplateSyncService>();
+        var preview = syncService.GetPreview(sessionId);
+
+        Assert.False(preview.CanUpdateOriginalTemplate);
+
+        var result = syncService.CreateTemplateFromSession(new CreateTemplateFromSessionRequest(
+            sessionId,
+            "Manual Firmware Smoke Template",
+            "Created from a manual session."));
+        var createdSuite = serviceProvider
+            .GetRequiredService<ITestSuiteCatalogService>()
+            .GetCatalog()
+            .Single(suite => suite.Id == result.TestSuiteId);
+
+        Assert.False(createdSuite.RevisionIsRequired);
+        Assert.Equal("Manual Firmware Smoke Template", createdSuite.Name);
+        Assert.Contains(createdSuite.Revisions.Single().Sections, section => section.Name == "Power Controls");
+        Assert.Contains(
+            createdSuite.Revisions.Single().Sections.SelectMany(section => section.TestCases),
+            testCase => testCase.Title == "ON/OFF button");
+        Assert.Equal(1, result.AddedSections);
+        Assert.Equal(1, result.AddedTestCases);
+        Assert.Equal(1, result.AddedChecks);
+    }
+
+    [Fact]
     public void ReportDataService_BuildsTestSessionReportData()
     {
         var databasePath = CreateTempDatabasePath();

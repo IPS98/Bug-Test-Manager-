@@ -17,6 +17,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     private static readonly Guid CopyPreviousSessionTemplateOptionId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 
     private readonly ITestSessionService testSessionService;
+    private readonly ITestSessionTemplateSyncService templateSyncService;
     private readonly ITestSuiteCatalogService testSuiteCatalogService;
     private readonly IAttachmentService attachmentService;
     private readonly ICustomFieldValueService customFieldValueService;
@@ -30,6 +31,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
 
     public TestSessionsViewModel(
         ITestSessionService testSessionService,
+        ITestSessionTemplateSyncService templateSyncService,
         ITestSuiteCatalogService testSuiteCatalogService,
         IAttachmentService attachmentService,
         ICustomFieldValueService customFieldValueService,
@@ -42,6 +44,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         IUserContext userContext)
     {
         this.testSessionService = testSessionService;
+        this.templateSyncService = templateSyncService;
         this.testSuiteCatalogService = testSuiteCatalogService;
         this.attachmentService = attachmentService;
         this.customFieldValueService = customFieldValueService;
@@ -143,6 +146,36 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         ? "Create Bug"
         : "Create Another Bug";
 
+    public Visibility TemplateSyncUpdateVisibility => TemplateSyncPreview?.CanUpdateOriginalTemplate == true
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public Visibility TemplateSyncCreateOnlyVisibility => TemplateSyncPreview?.CanUpdateOriginalTemplate == true
+        ? Visibility.Collapsed
+        : Visibility.Visible;
+
+    public string TemplateSyncOriginalDisplay => TemplateSyncPreview is null
+        ? "No session selected."
+        : TemplateSyncPreview.CanUpdateOriginalTemplate
+            ? $"{TemplateSyncPreview.OriginalTemplateName}{BuildRevisionSuffix(TemplateSyncPreview.OriginalRevisionName)}"
+            : "This session was created without an original template.";
+
+    public string TemplateSyncTotalsDisplay => TemplateSyncPreview is null
+        ? string.Empty
+        : $"{TemplateSyncPreview.TotalSections} sections, {TemplateSyncPreview.TotalTestCases} cases, {TemplateSyncPreview.TotalChecks} checks in this session.";
+
+    public string TemplateSyncNewItemsDisplay => TemplateSyncPreview is null
+        ? string.Empty
+        : $"{TemplateSyncPreview.NewSectionCount} new sections, {TemplateSyncPreview.NewTestCaseCount} new cases, {TemplateSyncPreview.NewCheckCount} new checks can be appended to the original template.";
+
+    public string TemplateSyncUpdateButtonText => TemplateSyncPreview is null
+        ? "Update Existing Template"
+        : TemplateSyncPreview.NewSectionCount == 0
+            && TemplateSyncPreview.NewTestCaseCount == 0
+            && TemplateSyncPreview.NewCheckCount == 0
+                ? "No New Structure"
+                : "Update Existing Template";
+
     [ObservableProperty]
     private TestSessionSuiteOption? selectedTestSuite;
 
@@ -241,6 +274,21 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     private Visibility linkedBugDialogVisibility = Visibility.Collapsed;
 
     [ObservableProperty]
+    private Visibility templateSyncDialogVisibility = Visibility.Collapsed;
+
+    [ObservableProperty]
+    private TestSessionTemplateSyncPreview? templateSyncPreview;
+
+    [ObservableProperty]
+    private string templateSyncNewTemplateName = string.Empty;
+
+    [ObservableProperty]
+    private string templateSyncDescription = string.Empty;
+
+    [ObservableProperty]
+    private string templateSyncStatusMessage = string.Empty;
+
+    [ObservableProperty]
     private Visibility discussionDrawerVisibility = Visibility.Collapsed;
 
     [ObservableProperty]
@@ -316,6 +364,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         LoadSelectedSession(value?.Id);
         ShowCreateManualSectionDialogCommand.NotifyCanExecuteChanged();
         ShowDeleteSessionDialogCommand.NotifyCanExecuteChanged();
+        ShowTemplateSyncDialogCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnCopySourceSessionChanged(TestSessionSummaryViewModel? value)
@@ -385,6 +434,23 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     partial void OnLinkedBugTitleChanged(string value)
     {
         CreateLinkedBugCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnTemplateSyncPreviewChanged(TestSessionTemplateSyncPreview? value)
+    {
+        OnPropertyChanged(nameof(TemplateSyncUpdateVisibility));
+        OnPropertyChanged(nameof(TemplateSyncCreateOnlyVisibility));
+        OnPropertyChanged(nameof(TemplateSyncOriginalDisplay));
+        OnPropertyChanged(nameof(TemplateSyncTotalsDisplay));
+        OnPropertyChanged(nameof(TemplateSyncNewItemsDisplay));
+        OnPropertyChanged(nameof(TemplateSyncUpdateButtonText));
+        UpdateOriginalTemplateFromSessionCommand.NotifyCanExecuteChanged();
+        CreateTemplateFromSessionCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnTemplateSyncNewTemplateNameChanged(string value)
+    {
+        CreateTemplateFromSessionCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnDiscussionMessageChanged(string value)
@@ -554,6 +620,97 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            StatusMessage = ex.Message;
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanShowTemplateSyncDialog))]
+    private void ShowTemplateSyncDialog()
+    {
+        if (SelectedSession is null)
+        {
+            return;
+        }
+
+        try
+        {
+            TemplateSyncPreview = templateSyncService.GetPreview(
+                SelectedSession.Id,
+                projectContext.CurrentProjectId);
+            TemplateSyncNewTemplateName = BuildDefaultTemplateName(SelectedSession);
+            TemplateSyncDescription = $"Created from test session '{SelectedSession.Name}'.";
+            TemplateSyncStatusMessage = "Review the template update before saving changes.";
+            TemplateSyncDialogVisibility = Visibility.Visible;
+        }
+        catch (Exception ex)
+        {
+            errorDialogService.ShowError("Template Sync Error", ex.Message);
+            StatusMessage = ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private void CloseTemplateSyncDialog()
+    {
+        TemplateSyncDialogVisibility = Visibility.Collapsed;
+        TemplateSyncPreview = null;
+        TemplateSyncNewTemplateName = string.Empty;
+        TemplateSyncDescription = string.Empty;
+        TemplateSyncStatusMessage = string.Empty;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanUpdateOriginalTemplateFromSession))]
+    private void UpdateOriginalTemplateFromSession()
+    {
+        if (SelectedSession is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var result = templateSyncService.UpdateOriginalTemplate(new UpdateTemplateFromSessionRequest(
+                SelectedSession.Id,
+                projectContext.CurrentProjectId));
+
+            var selectedSessionId = SelectedSession.Id;
+            LoadTestSuites();
+            LoadSessions(selectedSessionId);
+            CloseTemplateSyncDialog();
+            StatusMessage = $"Template updated: {result.AddedSections} sections, {result.AddedTestCases} cases, {result.AddedChecks} checks added.";
+        }
+        catch (Exception ex)
+        {
+            errorDialogService.ShowError("Template Sync Error", ex.Message);
+            TemplateSyncStatusMessage = ex.Message;
+            StatusMessage = ex.Message;
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanCreateTemplateFromSession))]
+    private void CreateTemplateFromSession()
+    {
+        if (SelectedSession is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var result = templateSyncService.CreateTemplateFromSession(new CreateTemplateFromSessionRequest(
+                SelectedSession.Id,
+                TemplateSyncNewTemplateName,
+                TemplateSyncDescription,
+                projectContext.CurrentProjectId));
+
+            LoadTestSuites();
+            CloseTemplateSyncDialog();
+            StatusMessage = $"Template created: {result.TestSuiteName}.";
+        }
+        catch (Exception ex)
+        {
+            errorDialogService.ShowError("Template Sync Error", ex.Message);
+            TemplateSyncStatusMessage = ex.Message;
             StatusMessage = ex.Message;
         }
     }
@@ -1033,6 +1190,25 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     private bool CanConfirmDeleteSession()
     {
         return pendingDeleteSessionId != Guid.Empty;
+    }
+
+    private bool CanShowTemplateSyncDialog()
+    {
+        return SelectedSession is not null;
+    }
+
+    private bool CanUpdateOriginalTemplateFromSession()
+    {
+        return TemplateSyncPreview?.CanUpdateOriginalTemplate == true
+            && (TemplateSyncPreview.NewSectionCount > 0
+                || TemplateSyncPreview.NewTestCaseCount > 0
+                || TemplateSyncPreview.NewCheckCount > 0);
+    }
+
+    private bool CanCreateTemplateFromSession()
+    {
+        return TemplateSyncPreview is not null
+            && !string.IsNullOrWhiteSpace(TemplateSyncNewTemplateName);
     }
 
     private bool CanShowEditTestCaseResult(TestCaseResultViewModel? testCase)
@@ -1548,6 +1724,18 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         return string.IsNullOrWhiteSpace(expectedResult)
             ? "Created from a test result."
             : $"Expected result: {expectedResult}";
+    }
+
+    private static string BuildDefaultTemplateName(TestSessionSummaryViewModel session)
+    {
+        return $"{session.Name} Template";
+    }
+
+    private static string BuildRevisionSuffix(string? revisionName)
+    {
+        return string.IsNullOrWhiteSpace(revisionName)
+            ? string.Empty
+            : $" / {revisionName}";
     }
 
     private void NotifyResultLinkedBugPropertiesChanged()

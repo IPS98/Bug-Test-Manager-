@@ -37,6 +37,7 @@ public static class InfrastructureServiceCollectionExtensions
             new SqliteTestSessionService(
                 provider.GetRequiredService<IDbContextFactory<BugTestManagerDbContext>>(),
                 attachmentRootPath));
+        services.AddSingleton<ITestSessionTemplateSyncService, SqliteTestSessionTemplateSyncService>();
         services.AddSingleton<IBugReportService, SqliteBugReportService>();
         services.AddSingleton<IDiscussionService, SqliteDiscussionService>();
         services.AddSingleton<IReportDataService>(provider =>

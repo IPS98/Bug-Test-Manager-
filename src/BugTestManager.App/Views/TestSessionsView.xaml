@@ -62,6 +62,8 @@
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="8" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
                         <StackPanel>
@@ -95,13 +97,22 @@
                             </StackPanel>
                         </Button>
                         <Button Grid.Column="5"
+                                Command="{Binding ShowTemplateSyncDialogCommand}"
+                                Style="{StaticResource ActionButtonStyle}"
+                                ToolTip="Save session structure changes back to a template">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE74E;" />
+                                <TextBlock Text="Save Template" />
+                            </StackPanel>
+                        </Button>
+                        <Button Grid.Column="7"
                                 Command="{Binding ShowDeleteSessionDialogCommand}"
                                 Content="&#xE74D;"
                                 Style="{StaticResource DangerIconActionButtonStyle}"
                                 ToolTip="Delete selected test session" />
 
                         <WrapPanel Grid.Row="1"
-                                   Grid.ColumnSpan="6"
+                                   Grid.ColumnSpan="8"
                                    Margin="0,10,0,0"
                                    Visibility="{Binding SessionWorkspaceVisibility}">
                             <Border Style="{StaticResource SessionMetaChipStyle}">
@@ -766,6 +777,193 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xEBE8;" />
                                 <TextBlock Text="{Binding CreateLinkedBugButtonText}" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Border>
+
+        <Border Panel.ZIndex="23"
+                Background="#990F172A"
+                Visibility="{Binding TemplateSyncDialogVisibility}">
+            <Border Width="620"
+                    Padding="24"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Background="White"
+                    CornerRadius="8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="18" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right"
+                                Command="{Binding CloseTemplateSyncDialogCommand}"
+                                Content="&#xE8BB;"
+                                Style="{StaticResource IconActionButtonStyle}"
+                                ToolTip="Close template save dialog" />
+                        <StackPanel>
+                            <TextBlock FontSize="20"
+                                       FontWeight="SemiBold"
+                                       Foreground="#172033"
+                                       Text="Save Session to Template" />
+                            <TextBlock Margin="0,5,0,0"
+                                       Foreground="#64748B"
+                                       Text="{Binding TemplateSyncOriginalDisplay}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <ScrollViewer Grid.Row="2"
+                                  MaxHeight="520"
+                                  VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <Border Padding="12"
+                                    Background="{StaticResource AppSubtleSurfaceBrush}"
+                                    BorderBrush="{StaticResource AppBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="7">
+                                <StackPanel>
+                                    <TextBlock FontWeight="SemiBold"
+                                               Foreground="{StaticResource AppTextBrush}"
+                                               Text="Preview" />
+                                    <TextBlock Margin="0,7,0,0"
+                                               Foreground="{StaticResource AppMutedTextBrush}"
+                                               Text="{Binding TemplateSyncTotalsDisplay}"
+                                               TextWrapping="Wrap" />
+                                    <TextBlock Margin="0,5,0,0"
+                                               Foreground="{StaticResource AppMutedTextBrush}"
+                                               Text="{Binding TemplateSyncNewItemsDisplay}"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+
+                            <ItemsControl Margin="0,12,0,0"
+                                          ItemsSource="{Binding TemplateSyncPreview.Notes}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,0,0,7">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="24" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock FontFamily="Segoe MDL2 Assets"
+                                                       Foreground="#256D5A"
+                                                       Text="&#xE946;" />
+                                            <TextBlock Grid.Column="1"
+                                                       Foreground="#475569"
+                                                       Text="{Binding}"
+                                                       TextWrapping="Wrap" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <Border Margin="0,14,0,0"
+                                    Padding="12"
+                                    Background="#ECFDF5"
+                                    BorderBrush="#A7F3D0"
+                                    BorderThickness="1"
+                                    CornerRadius="7"
+                                    Visibility="{Binding TemplateSyncUpdateVisibility}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock FontWeight="SemiBold"
+                                                   Foreground="#14532D"
+                                                   Text="Update existing template" />
+                                        <TextBlock Margin="0,5,0,0"
+                                                   Foreground="#256D5A"
+                                                   Text="Append new manual structure to the original template. Existing sessions are not changed."
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <Button Grid.Column="1"
+                                            Margin="14,0,0,0"
+                                            Command="{Binding UpdateOriginalTemplateFromSessionCommand}"
+                                            Style="{StaticResource PrimaryActionButtonStyle}"
+                                            ToolTip="Append new manual sections, cases, and checks to the original template">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE74E;" />
+                                            <TextBlock Text="{Binding TemplateSyncUpdateButtonText}" />
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+                            </Border>
+
+                            <Border Margin="0,14,0,0"
+                                    Padding="12"
+                                    Background="{StaticResource AppSubtleSurfaceBrush}"
+                                    BorderBrush="{StaticResource AppBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="7">
+                                <StackPanel>
+                                    <TextBlock FontWeight="SemiBold"
+                                               Foreground="{StaticResource AppTextBrush}"
+                                               Text="Create new template" />
+                                    <TextBlock Margin="0,5,0,10"
+                                               Foreground="{StaticResource AppMutedTextBrush}"
+                                               Text="Create a separate reusable template from the current session structure."
+                                               TextWrapping="Wrap" />
+                                    <TextBlock Foreground="{StaticResource AppMutedTextBrush}"
+                                               Text="Template name" />
+                                    <TextBox Margin="0,6,0,10"
+                                             MinHeight="34"
+                                             VerticalContentAlignment="Center"
+                                             Text="{Binding TemplateSyncNewTemplateName, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBlock Foreground="{StaticResource AppMutedTextBrush}"
+                                               Text="Description" />
+                                    <TextBox Margin="0,6,0,0"
+                                             MinHeight="76"
+                                             AcceptsReturn="True"
+                                             Text="{Binding TemplateSyncDescription, UpdateSourceTrigger=PropertyChanged}"
+                                             TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+
+                            <Border Margin="0,14,0,0"
+                                    Padding="10"
+                                    Background="{StaticResource AppSubtleSurfaceBrush}"
+                                    BorderBrush="{StaticResource AppBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Visibility="{Binding TemplateSyncCreateOnlyVisibility}">
+                                <TextBlock Foreground="{StaticResource AppMutedTextBrush}"
+                                           Text="This session does not have an original template, so only Create New Template is available."
+                                           TextWrapping="Wrap" />
+                            </Border>
+
+                            <TextBlock Margin="0,12,0,0"
+                                       Foreground="#64748B"
+                                       Text="{Binding TemplateSyncStatusMessage}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <StackPanel Grid.Row="3"
+                                Margin="0,18,0,0"
+                                HorizontalAlignment="Right"
+                                Orientation="Horizontal">
+                        <Button MinWidth="92"
+                                Margin="0,0,10,0"
+                                Command="{Binding CloseTemplateSyncDialogCommand}"
+                                Content="Cancel"
+                                Style="{StaticResource ActionButtonStyle}"
+                                ToolTip="Cancel without changing templates" />
+                        <Button MinWidth="150"
+                                Command="{Binding CreateTemplateFromSessionCommand}"
+                                Style="{StaticResource PrimaryActionButtonStyle}"
+                                ToolTip="Create a new template from this test session">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE710;" />
+                                <TextBlock Text="Create New Template" />
                             </StackPanel>
                         </Button>
                     </StackPanel>

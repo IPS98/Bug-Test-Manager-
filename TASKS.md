@@ -123,6 +123,9 @@ Status: implementation in progress after approved architecture and skeleton setu
 - Test case and check result cards show linked bug indicators when bugs already exist.
 - Linked bug modal shows existing linked bugs before creating another linked bug.
 - Selectable cards started moving to a shared selectable style with visible background, hover, and selected states.
+- Test Sessions page can preview saving session structure back to a template.
+- Test Sessions page can append manual sections, cases, and checks back to the original template after explicit user action.
+- Test Sessions page can create a new template from the current session structure.
 - Test suite revisions can be created, renamed, and copied from an existing revision without modifying the original revision.
 - Test suite revision requirement can be disabled again while editing a test suite.
 - Custom fields can be bound to multiple selected scopes/targets without duplicating the same field definition.
@@ -203,7 +206,8 @@ These are still important, but they do not block the first skeleton:
 - Later, add application logging for important user actions and errors.
 - Later, add an activity/event panel for visible app events such as template creation, status changes, project deletion, and important errors.
 - Later, add full theme support with Dark Mode, a theme switcher, and saved theme preference.
-- Later, add session-to-template sync workflows: update original template from a session and create a new template from a session, both with preview and confirmation.
+- Continue extending session-to-template sync workflows beyond the first safe structure-only version.
+- Later, extend session-to-template sync to include supported custom field definition changes when field editing becomes available inside the testing workflow.
 - Later, add mandatory-field sync behavior for existing sessions when new required fields are created.
 - Later, add Created Date, Last Modified Date, and Last Status Change Date to session result items.
 - Later, support multi-session reports and full-project/program reports with image attachments embedded in the PDF.
