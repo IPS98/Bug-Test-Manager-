@@ -147,7 +147,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         CurrentPageDescription = module.Description;
         CurrentPage = module.PageKey switch
         {
-            AppPageKey.Templates => testSuitesViewModel,
+            AppPageKey.Templates => GetTestSuitesViewModel(),
             AppPageKey.Fields => GetFieldDefinitionsViewModel(),
             AppPageKey.TestSessions => GetTestSessionsViewModel(),
             AppPageKey.Bugs => GetBugReportsViewModel(),
@@ -222,6 +222,12 @@ public sealed partial class MainWindowViewModel : ObservableObject
         {
             ProjectStatusMessage = ex.Message;
         }
+    }
+
+    private TestSuitesViewModel GetTestSuitesViewModel()
+    {
+        testSuitesViewModel.Refresh();
+        return testSuitesViewModel;
     }
 
     private FieldDefinitionsViewModel GetFieldDefinitionsViewModel()

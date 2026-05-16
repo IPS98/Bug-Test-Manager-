@@ -26,6 +26,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     private readonly IFilePickerService filePickerService;
     private readonly IFileLauncherService fileLauncherService;
     private readonly IErrorDialogService errorDialogService;
+    private readonly INotificationDialogService notificationDialogService;
     private readonly IProjectContext projectContext;
     private readonly IUserContext userContext;
 
@@ -40,6 +41,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         IFilePickerService filePickerService,
         IFileLauncherService fileLauncherService,
         IErrorDialogService errorDialogService,
+        INotificationDialogService notificationDialogService,
         IProjectContext projectContext,
         IUserContext userContext)
     {
@@ -53,6 +55,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         this.filePickerService = filePickerService;
         this.fileLauncherService = fileLauncherService;
         this.errorDialogService = errorDialogService;
+        this.notificationDialogService = notificationDialogService;
         this.projectContext = projectContext;
         this.userContext = userContext;
         TestSuites = [];
@@ -677,7 +680,9 @@ public sealed partial class TestSessionsViewModel : ObservableObject
             LoadTestSuites();
             LoadSessions(selectedSessionId);
             CloseTemplateSyncDialog();
-            StatusMessage = $"Template updated: {result.AddedSections} sections, {result.AddedTestCases} cases, {result.AddedChecks} checks added.";
+            var message = $"Template '{result.TestSuiteName}' was updated successfully. Added {result.AddedSections} sections, {result.AddedTestCases} cases, and {result.AddedChecks} checks.";
+            StatusMessage = message;
+            notificationDialogService.ShowInfo("Template Saved", message);
         }
         catch (Exception ex)
         {
@@ -705,7 +710,9 @@ public sealed partial class TestSessionsViewModel : ObservableObject
 
             LoadTestSuites();
             CloseTemplateSyncDialog();
-            StatusMessage = $"Template created: {result.TestSuiteName}.";
+            var message = $"Template '{result.TestSuiteName}' was created successfully with {result.AddedSections} sections, {result.AddedTestCases} cases, and {result.AddedChecks} checks.";
+            StatusMessage = message;
+            notificationDialogService.ShowInfo("Template Created", message);
         }
         catch (Exception ex)
         {

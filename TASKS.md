@@ -126,6 +126,8 @@ Status: implementation in progress after approved architecture and skeleton setu
 - Test Sessions page can preview saving session structure back to a template.
 - Test Sessions page can append manual sections, cases, and checks back to the original template after explicit user action.
 - Test Sessions page can create a new template from the current session structure.
+- Template sync actions show a success confirmation dialog after saving.
+- Templates screen refreshes its catalog when the user opens it, so synced/created templates are visible.
 - Test suite revisions can be created, renamed, and copied from an existing revision without modifying the original revision.
 - Test suite revision requirement can be disabled again while editing a test suite.
 - Custom fields can be bound to multiple selected scopes/targets without duplicating the same field definition.
