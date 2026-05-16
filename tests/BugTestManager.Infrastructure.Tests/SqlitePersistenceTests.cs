@@ -762,6 +762,9 @@ public sealed class SqlitePersistenceTests
             .First(item => item.Steps.Count > 0);
         var step = testCase.Steps.First();
 
+        Assert.Null(testCase.LastStatusChangedAt);
+        Assert.Null(step.LastStatusChangedAt);
+
         sessionService.UpdateTestCaseResult(new UpdateTestCaseResultRequest(
             testCase.Id,
             TestResultStatus.Pass,
@@ -774,7 +777,23 @@ public sealed class SqlitePersistenceTests
 
         Assert.Equal(TestResultStatus.Pass, passedCase.Status);
         Assert.Equal("The full case passed.", passedCase.Comment);
+        Assert.NotNull(passedCase.LastStatusChangedAt);
         Assert.All(passedCase.Steps, item => Assert.Equal(TestResultStatus.Pass, item.Status));
+        Assert.All(passedCase.Steps, item => Assert.NotNull(item.LastStatusChangedAt));
+
+        var passedCaseStatusChangedAt = passedCase.LastStatusChangedAt;
+        sessionService.UpdateTestCaseResult(new UpdateTestCaseResultRequest(
+            testCase.Id,
+            TestResultStatus.Pass,
+            "Only the comment changed."));
+
+        var commentOnlySession = sessionService.GetSession(sessionId);
+        var commentOnlyCase = commentOnlySession.Sections
+            .SelectMany(section => section.TestCases)
+            .Single(item => item.Id == testCase.Id);
+
+        Assert.Equal("Only the comment changed.", commentOnlyCase.Comment);
+        Assert.Equal(passedCaseStatusChangedAt, commentOnlyCase.LastStatusChangedAt);
 
         sessionService.UpdateTestStepResult(new UpdateTestStepResultRequest(
             step.Id,
@@ -788,9 +807,11 @@ public sealed class SqlitePersistenceTests
         var updatedStep = updatedCase.Steps.Single(item => item.Id == step.Id);
 
         Assert.Equal(TestResultStatus.Fail, updatedCase.Status);
-        Assert.Equal("The full case passed.", updatedCase.Comment);
+        Assert.Equal("Only the comment changed.", updatedCase.Comment);
+        Assert.NotNull(updatedCase.LastStatusChangedAt);
         Assert.Equal(TestResultStatus.Fail, updatedStep.Status);
         Assert.Equal("Tooltip text is missing.", updatedStep.Comment);
+        Assert.NotNull(updatedStep.LastStatusChangedAt);
     }
 
     [Fact]

@@ -149,6 +149,13 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         ? "Create Bug"
         : "Create Another Bug";
 
+    public string CurrentResultLastStatusChangeDisplay => EditingResultTarget switch
+    {
+        TestSessionResultTargetKind.TestCase when SelectedTestCase is not null => SelectedTestCase.LastStatusChangedAtDisplay,
+        TestSessionResultTargetKind.Step when SelectedStep is not null => SelectedStep.LastStatusChangedAtDisplay,
+        _ => "Not changed yet"
+    };
+
     public Visibility TemplateSyncUpdateVisibility => TemplateSyncPreview?.CanUpdateOriginalTemplate == true
         ? Visibility.Visible
         : Visibility.Collapsed;
@@ -387,12 +394,14 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         ShowEditTestCaseResultCommand.NotifyCanExecuteChanged();
         ShowTestCaseDiscussionCommand.NotifyCanExecuteChanged();
         ShowCreateManualCheckDialogCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(CurrentResultLastStatusChangeDisplay));
     }
 
     partial void OnSelectedStepChanged(TestStepResultViewModel? value)
     {
         ShowEditTestStepResultCommand.NotifyCanExecuteChanged();
         ShowTestStepDiscussionCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(CurrentResultLastStatusChangeDisplay));
     }
 
     partial void OnNewSessionNameChanged(string value)
@@ -418,6 +427,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         CreateLinkedBugCommand.NotifyCanExecuteChanged();
         ShowLinkedBugDialogCommand.NotifyCanExecuteChanged();
         ShowCurrentResultDiscussionCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(CurrentResultLastStatusChangeDisplay));
     }
 
     partial void OnEditingResultIdChanged(Guid value)
@@ -427,6 +437,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         CreateLinkedBugCommand.NotifyCanExecuteChanged();
         ShowLinkedBugDialogCommand.NotifyCanExecuteChanged();
         ShowCurrentResultDiscussionCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(CurrentResultLastStatusChangeDisplay));
     }
 
     partial void OnSelectedResultStatusChanged(SelectionOption<TestResultStatus>? value)
@@ -1656,6 +1667,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
             testCase.ExpectedResult,
             testCase.SortOrder,
             testCase.Status,
+            testCase.LastStatusChangedAt,
             testCase.Comment,
             testCase.LinkedBugs.Select(MapLinkedBug),
             testCase.Steps
@@ -1672,6 +1684,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
             step.ExpectedResult,
             step.SortOrder,
             step.Status,
+            step.LastStatusChangedAt,
             step.Comment,
             step.LinkedBugs.Select(MapLinkedBug));
     }

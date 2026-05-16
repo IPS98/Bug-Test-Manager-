@@ -268,6 +268,7 @@ public sealed class SqliteDatabaseInitializer(IDbContextFactory<BugTestManagerDb
                 "ExpectedResult" TEXT NOT NULL,
                 "SortOrder" INTEGER NOT NULL,
                 "Status" INTEGER NOT NULL,
+                "LastStatusChangedAt" TEXT NULL,
                 "Comment" TEXT NOT NULL,
                 CONSTRAINT "FK_TestCaseResults_TestSectionResults_TestSectionResultId"
                     FOREIGN KEY ("TestSectionResultId") REFERENCES "TestSectionResults" ("Id") ON DELETE CASCADE
@@ -284,11 +285,15 @@ public sealed class SqliteDatabaseInitializer(IDbContextFactory<BugTestManagerDb
                 "ExpectedResult" TEXT NOT NULL,
                 "SortOrder" INTEGER NOT NULL,
                 "Status" INTEGER NOT NULL,
+                "LastStatusChangedAt" TEXT NULL,
                 "Comment" TEXT NOT NULL,
                 CONSTRAINT "FK_TestStepResults_TestCaseResults_TestCaseResultId"
                     FOREIGN KEY ("TestCaseResultId") REFERENCES "TestCaseResults" ("Id") ON DELETE CASCADE
             );
             """);
+
+        EnsureColumn(dbContext, "TestCaseResults", "LastStatusChangedAt", "\"LastStatusChangedAt\" TEXT NULL");
+        EnsureColumn(dbContext, "TestStepResults", "LastStatusChangedAt", "\"LastStatusChangedAt\" TEXT NULL");
 
         dbContext.Database.ExecuteSqlRaw(
             """

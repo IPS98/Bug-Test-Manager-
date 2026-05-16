@@ -44,6 +44,7 @@ public sealed record TestCaseResultItem(
     string ExpectedResult,
     int SortOrder,
     TestResultStatus Status,
+    DateTimeOffset? LastStatusChangedAt,
     string Comment,
     IReadOnlyList<LinkedBugSummaryItem> LinkedBugs,
     IReadOnlyList<TestStepResultItem> Steps);
@@ -55,6 +56,7 @@ public sealed record TestStepResultItem(
     string ExpectedResult,
     int SortOrder,
     TestResultStatus Status,
+    DateTimeOffset? LastStatusChangedAt,
     string Comment,
     IReadOnlyList<LinkedBugSummaryItem> LinkedBugs);
 

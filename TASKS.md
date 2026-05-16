@@ -128,6 +128,8 @@ Status: implementation in progress after approved architecture and skeleton setu
 - Test Sessions page can create a new template from the current session structure.
 - Template sync actions show a success confirmation dialog after saving.
 - Templates screen refreshes its catalog when the user opens it, so synced/created templates are visible.
+- Test case and check results store a read-only Last Status Change Date.
+- Last Status Change Date updates only when the result status actually changes, not when only comments change.
 - Test suite revisions can be created, renamed, and copied from an existing revision without modifying the original revision.
 - Test suite revision requirement can be disabled again while editing a test suite.
 - Custom fields can be bound to multiple selected scopes/targets without duplicating the same field definition.
@@ -211,7 +213,7 @@ These are still important, but they do not block the first skeleton:
 - Continue extending session-to-template sync workflows beyond the first safe structure-only version.
 - Later, extend session-to-template sync to include supported custom field definition changes when field editing becomes available inside the testing workflow.
 - Later, add mandatory-field sync behavior for existing sessions when new required fields are created.
-- Later, add Created Date, Last Modified Date, and Last Status Change Date to session result items.
+- Later, add Created Date and Last Modified Date to session result items.
 - Later, support multi-session reports and full-project/program reports with image attachments embedded in the PDF.
 
 ## Proposed Technology

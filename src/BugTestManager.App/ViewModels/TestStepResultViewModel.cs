@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
 using BugTestManager.Domain.Enums;
@@ -15,6 +16,7 @@ public sealed class TestStepResultViewModel : ObservableObject
         string expectedResult,
         int sortOrder,
         TestResultStatus status,
+        DateTimeOffset? lastStatusChangedAt,
         string comment,
         IEnumerable<LinkedBugSummaryViewModel> linkedBugs)
     {
@@ -24,6 +26,7 @@ public sealed class TestStepResultViewModel : ObservableObject
         ExpectedResult = expectedResult;
         SortOrder = sortOrder;
         Status = status;
+        LastStatusChangedAt = lastStatusChangedAt;
         Comment = comment;
         LinkedBugs = new ObservableCollection<LinkedBugSummaryViewModel>(linkedBugs);
     }
@@ -42,6 +45,8 @@ public sealed class TestStepResultViewModel : ObservableObject
 
     public TestResultStatus Status { get; }
 
+    public DateTimeOffset? LastStatusChangedAt { get; }
+
     public string Comment { get; }
 
     public ObservableCollection<LinkedBugSummaryViewModel> LinkedBugs { get; }
@@ -53,6 +58,16 @@ public sealed class TestStepResultViewModel : ObservableObject
     public Brush StatusForeground => TestResultStatusDisplayNames.ForegroundForStatus(Status);
 
     public string CommentDisplay => string.IsNullOrWhiteSpace(Comment) ? "No comment yet" : Comment;
+
+    public string LastStatusChangedAtDisplay => LastStatusChangedAt is null
+        ? "Not changed yet"
+        : LastStatusChangedAt.Value
+            .ToLocalTime()
+            .ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+
+    public Visibility LastStatusChangedAtVisibility => LastStatusChangedAt is null
+        ? Visibility.Collapsed
+        : Visibility.Visible;
 
     public Visibility LinkedBugBadgeVisibility => LinkedBugs.Count > 0
         ? Visibility.Visible

@@ -18,6 +18,8 @@ public sealed class TestCaseResultRecord
 
     public TestResultStatus Status { get; set; }
 
+    public DateTimeOffset? LastStatusChangedAt { get; set; }
+
     public string Comment { get; set; } = string.Empty;
 
     public TestSectionResultRecord? TestSectionResult { get; set; }

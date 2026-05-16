@@ -85,6 +85,7 @@ public sealed class SqliteTestSessionService(
                             testCase.ExpectedResult,
                             testCase.SortOrder,
                             testCase.Status,
+                            testCase.LastStatusChangedAt,
                             testCase.Comment,
                             GetLinkedBugs(
                                 linkedBugLookup,
@@ -99,6 +100,7 @@ public sealed class SqliteTestSessionService(
                                     step.ExpectedResult,
                                     step.SortOrder,
                                     step.Status,
+                                    step.LastStatusChangedAt,
                                     step.Comment,
                                     GetLinkedBugs(
                                         linkedBugLookup,
@@ -417,14 +419,24 @@ public sealed class SqliteTestSessionService(
             .SingleOrDefault(item => item.Id == request.TestCaseResultId)
             ?? throw new InvalidOperationException("Selected test case result was not found.");
 
-        testCase.Status = request.Status;
+        var now = DateTimeOffset.UtcNow;
+        if (testCase.Status != request.Status)
+        {
+            testCase.Status = request.Status;
+            testCase.LastStatusChangedAt = now;
+        }
+
         testCase.Comment = request.Comment.Trim();
 
         if (request.Status is not TestResultStatus.Fail)
         {
             foreach (var step in testCase.Steps)
             {
-                step.Status = request.Status;
+                if (step.Status != request.Status)
+                {
+                    step.Status = request.Status;
+                    step.LastStatusChangedAt = now;
+                }
             }
         }
 
@@ -440,12 +452,23 @@ public sealed class SqliteTestSessionService(
             .SingleOrDefault(item => item.Id == request.TestStepResultId)
             ?? throw new InvalidOperationException("Selected test step result was not found.");
 
-        step.Status = request.Status;
+        var now = DateTimeOffset.UtcNow;
+        if (step.Status != request.Status)
+        {
+            step.Status = request.Status;
+            step.LastStatusChangedAt = now;
+        }
+
         step.Comment = request.Comment.Trim();
 
         var testCase = step.TestCaseResult
             ?? throw new InvalidOperationException("Parent test case result was not found.");
-        testCase.Status = CalculateStatusFromChecks(testCase.Steps);
+        var calculatedStatus = CalculateStatusFromChecks(testCase.Steps);
+        if (testCase.Status != calculatedStatus)
+        {
+            testCase.Status = calculatedStatus;
+            testCase.LastStatusChangedAt = now;
+        }
 
         dbContext.SaveChanges();
     }
