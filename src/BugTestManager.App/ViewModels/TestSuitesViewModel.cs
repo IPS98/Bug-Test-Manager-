@@ -141,6 +141,7 @@ public sealed partial class TestSuitesViewModel : ObservableObject
         SelectedSection = value?.Sections.FirstOrDefault();
         ShowDeleteSectionDialogCommand.NotifyCanExecuteChanged();
         ShowEditRevisionDialogCommand.NotifyCanExecuteChanged();
+        ShowDeleteRevisionDialogCommand.NotifyCanExecuteChanged();
         ShowCreateSectionDialogCommand.NotifyCanExecuteChanged();
         CreateSectionCommand.NotifyCanExecuteChanged();
         RefreshLinkedFields();
@@ -416,6 +417,21 @@ public sealed partial class TestSuitesViewModel : ObservableObject
             $"Delete all of test suite \"{testSuite.Name}\"? This will also delete its revisions, sections, test cases, and checks.");
     }
 
+    [RelayCommand(CanExecute = nameof(CanShowDeleteRevisionDialog))]
+    private void ShowDeleteRevisionDialog(TestSuiteRevisionItemViewModel? revision)
+    {
+        if (revision is null || revision.Id == Guid.Empty)
+        {
+            return;
+        }
+
+        SelectedRevision = revision;
+        ShowDeleteConfirmation(
+            TemplateDeleteTarget.Revision,
+            revision.Id,
+            $"Delete revision \"{revision.Name}\"? This will also delete its sections, test cases, and checks.");
+    }
+
     [RelayCommand(CanExecute = nameof(CanShowDeleteSectionDialog))]
     private void ShowDeleteSectionDialog(TemplateSectionItemViewModel? section)
     {
@@ -626,6 +642,11 @@ public sealed partial class TestSuitesViewModel : ObservableObject
                     LoadCatalog();
                     StatusMessage = "Test suite deleted.";
                     break;
+                case TemplateDeleteTarget.Revision:
+                    testSuiteManagementService.DeleteRevision(id);
+                    LoadCatalog(testSuiteId);
+                    StatusMessage = "Revision deleted.";
+                    break;
                 case TemplateDeleteTarget.Section:
                     testSuiteManagementService.DeleteSection(id);
                     LoadCatalog(testSuiteId, revisionId);
@@ -807,6 +828,11 @@ public sealed partial class TestSuitesViewModel : ObservableObject
     private bool CanShowDeleteTestSuiteDialog(TestSuiteItemViewModel? testSuite)
     {
         return testSuite is not null;
+    }
+
+    private bool CanShowDeleteRevisionDialog(TestSuiteRevisionItemViewModel? revision)
+    {
+        return revision is not null && revision.Id != Guid.Empty;
     }
 
     private bool CanShowDeleteSectionDialog(TemplateSectionItemViewModel? section)

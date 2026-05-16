@@ -1155,6 +1155,50 @@ public sealed class SqlitePersistenceTests
     }
 
     [Fact]
+    public void ManagementService_DeletesRevisionWithChildTemplateItems()
+    {
+        var databasePath = CreateTempDatabasePath();
+        using var serviceProvider = CreateServiceProvider(databasePath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var managementService = serviceProvider.GetRequiredService<ITestSuiteManagementService>();
+        var testSuite = managementService.CreateTestSuite(new CreateTestSuiteRequest(
+            "Revision Delete Suite",
+            "Checks revision delete behavior.",
+            RevisionIsRequired: true,
+            InitialRevisionName: "Revision A"));
+        var revisionAId = testSuite.InitialRevisionId!.Value;
+        var sectionId = managementService.CreateSection(new CreateTemplateSectionRequest(
+            testSuite.TestSuiteId,
+            revisionAId,
+            "Normal",
+            "Startup"));
+        var testCaseId = managementService.CreateTestCase(new CreateTestCaseTemplateRequest(
+            sectionId,
+            "Power button",
+            "The unit powers on."));
+        managementService.CreateTestStep(new CreateTestStepTemplateRequest(
+            testCaseId,
+            "Press the power button.",
+            "The button toggles the unit state."));
+
+        var revisionBId = managementService.CreateRevision(new CreateTestSuiteRevisionRequest(
+            testSuite.TestSuiteId,
+            "Revision B",
+            revisionAId));
+
+        managementService.DeleteRevision(revisionBId);
+
+        var catalog = serviceProvider.GetRequiredService<ITestSuiteCatalogService>().GetCatalog();
+        var createdSuite = catalog.Single(suite => suite.Id == testSuite.TestSuiteId);
+        var revisionA = createdSuite.Revisions.Single(revision => revision.Id == revisionAId);
+
+        Assert.DoesNotContain(createdSuite.Revisions, revision => revision.Id == revisionBId);
+        Assert.Equal("Normal", revisionA.Sections.Single().Name);
+        Assert.Equal("Power button", revisionA.Sections.Single().TestCases.Single().Title);
+    }
+
+    [Fact]
     public void TestSessionService_DeletesSessionWithDiscussionSideData()
     {
         var databasePath = CreateTempDatabasePath();

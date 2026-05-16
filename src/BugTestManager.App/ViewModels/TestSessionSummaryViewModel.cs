@@ -65,4 +65,6 @@ public sealed class TestSessionSummaryViewModel
     public string CreatedAtDisplay => CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
 
     public string SizeDisplay => $"{SectionCount} sections, {TestCaseCount} cases, {StepCount} checks";
+
+    public string SelectorDisplay => $"{Name} - {SizeDisplay} - {CreatedAtDisplay}";
 }

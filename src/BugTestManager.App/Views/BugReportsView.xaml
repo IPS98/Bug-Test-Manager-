@@ -3,11 +3,13 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:shared="clr-namespace:BugTestManager.App.Views.Shared">
     <UserControl.Resources>
-        <Style x:Key="FullWidthListBoxItemStyle" TargetType="ListBoxItem">
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-        </Style>
+        <Style x:Key="FullWidthListBoxItemStyle"
+               BasedOn="{StaticResource StableListBoxItemStyle}"
+               TargetType="ListBoxItem" />
 
-        <Style x:Key="SmallActionButtonStyle" TargetType="Button">
+        <Style x:Key="SmallActionButtonStyle"
+               BasedOn="{StaticResource ActionButtonStyle}"
+               TargetType="Button">
             <Setter Property="MinHeight" Value="30" />
             <Setter Property="MinWidth" Value="72" />
             <Setter Property="Padding" Value="10,0" />
@@ -17,14 +19,15 @@
     <Grid>
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="360" />
-                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="0" />
+                <ColumnDefinition Width="0" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
             <Border Padding="18"
                     Background="White"
-                    CornerRadius="8">
+                    CornerRadius="8"
+                    Visibility="Collapsed">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel>
                     <TextBlock FontSize="18"
@@ -81,7 +84,13 @@
                             MinHeight="36"
                             HorizontalAlignment="Stretch"
                             Command="{Binding CreateBugCommand}"
-                            Content="Create Bug" />
+                            Style="{StaticResource PrimaryActionButtonStyle}"
+                            ToolTip="Create bug">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE710;" />
+                            <TextBlock Text="Create Bug" />
+                        </StackPanel>
+                    </Button>
 
                     <TextBlock Margin="0,14,0,0"
                                Foreground="#64748B"
@@ -105,6 +114,8 @@
                     <Grid Margin="0,0,0,14">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="12" />
                             <ColumnDefinition Width="220" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
@@ -113,17 +124,26 @@
                                    FontWeight="SemiBold"
                                    Foreground="#172033"
                                    Text="Bug Tracker" />
-                        <ComboBox Grid.Column="1"
+                        <Button Grid.Column="1"
+                                Command="{Binding ShowNewBugDialogCommand}"
+                                Style="{StaticResource PrimaryActionButtonStyle}"
+                                ToolTip="Create a new bug report">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE710;" />
+                                <TextBlock Text="New Bug" />
+                            </StackPanel>
+                        </Button>
+                        <ComboBox Grid.Column="3"
                                   MinHeight="34"
-                                  Margin="12,0,10,0"
+                                  Margin="0,0,10,0"
                                   DisplayMemberPath="DisplayName"
                                   ItemsSource="{Binding BugStatuses}"
                                   SelectedItem="{Binding SelectedBugStatus}" />
-                        <Button Grid.Column="2"
-                                MinHeight="34"
-                                MinWidth="110"
+                        <Button Grid.Column="4"
                                 Command="{Binding UpdateBugStatusCommand}"
-                                Content="Update Status" />
+                                Content="Update Status"
+                                Style="{StaticResource ActionButtonStyle}"
+                                ToolTip="Update selected bug status" />
                     </Grid>
 
                     <Grid Grid.Row="1"
@@ -204,14 +224,16 @@
                                                    TextWrapping="Wrap" />
 
                                         <WrapPanel Margin="0,10,0,0">
-                                            <TextBlock Margin="0,0,18,0"
-                                                       FontWeight="SemiBold"
-                                                       Foreground="#256D5A"
-                                                       Text="{Binding SeverityDisplay}" />
-                                            <TextBlock Margin="0,0,18,0"
-                                                       FontWeight="SemiBold"
-                                                       Foreground="#256D5A"
-                                                       Text="{Binding PriorityDisplay}" />
+                                            <Border Margin="0,0,8,8"
+                                                    Style="{StaticResource GreenChipBorderStyle}">
+                                                <TextBlock Style="{StaticResource GreenChipTextStyle}"
+                                                           Text="{Binding SeverityDisplay}" />
+                                            </Border>
+                                            <Border Margin="0,0,8,8"
+                                                    Style="{StaticResource GreenChipBorderStyle}">
+                                                <TextBlock Style="{StaticResource GreenChipTextStyle}"
+                                                           Text="{Binding PriorityDisplay}" />
+                                            </Border>
                                             <TextBlock Margin="0,0,18,0"
                                                        Foreground="#64748B"
                                                        Text="{Binding VersionDisplay}" />
@@ -234,8 +256,10 @@
                                              <Button Grid.Column="1"
                                                      Command="{Binding DataContext.OpenBugDiscussionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                      CommandParameter="{Binding}"
-                                                     Style="{StaticResource SmallActionButtonStyle}">
+                                                     Style="{StaticResource SmallActionButtonStyle}"
+                                                     ToolTip="Open bug chat">
                                                  <StackPanel Orientation="Horizontal">
+                                                     <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE8BD;" />
                                                      <TextBlock Text="Chat" />
                                                      <Border Margin="6,0,0,0"
                                                              Padding="5,1"
@@ -253,14 +277,15 @@
                                                     Command="{Binding DataContext.OpenBugDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}"
                                                     Content="Open"
-                                                    Style="{StaticResource SmallActionButtonStyle}" />
+                                                    Style="{StaticResource SmallActionButtonStyle}"
+                                                    ToolTip="Open bug details" />
                                         </Grid>
 
-                                        <TextBlock Margin="0,6,0,0"
-                                                   FontWeight="SemiBold"
-                                                   Foreground="#256D5A"
-                                                   Text="{Binding LinkDisplay}"
-                                                   TextWrapping="Wrap" />
+                                        <Border Margin="0,6,0,0"
+                                                Style="{StaticResource GreenChipBorderStyle}">
+                                            <TextBlock Style="{StaticResource GreenChipTextStyle}"
+                                                       Text="{Binding LinkDisplay}" />
+                                        </Border>
                                     </StackPanel>
                                 </Border>
                             </DataTemplate>
@@ -269,6 +294,124 @@
                 </Grid>
             </Border>
         </Grid>
+
+        <Border Panel.ZIndex="20"
+                Background="#990F172A"
+                Visibility="{Binding NewBugDialogVisibility}">
+            <Border Width="560"
+                    Padding="24"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Background="White"
+                    CornerRadius="8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="18" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock FontSize="20"
+                               FontWeight="SemiBold"
+                               Foreground="#172033"
+                               Text="New Bug" />
+
+                    <ScrollViewer Grid.Row="2"
+                                  MaxHeight="560"
+                                  VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Foreground="#64748B"
+                                       Text="Title" />
+                            <TextBox Margin="0,6,0,14"
+                                     MinHeight="34"
+                                     VerticalContentAlignment="Center"
+                                     Text="{Binding NewBugTitle, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <TextBlock Foreground="#64748B"
+                                       Text="Description" />
+                            <TextBox Margin="0,6,0,14"
+                                     MinHeight="110"
+                                     AcceptsReturn="True"
+                                     Text="{Binding NewBugDescription, UpdateSourceTrigger=PropertyChanged}"
+                                     TextWrapping="Wrap" />
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Foreground="#64748B"
+                                               Text="Severity" />
+                                    <TextBox Margin="0,6,0,14"
+                                             MinHeight="34"
+                                             VerticalContentAlignment="Center"
+                                             Text="{Binding NewBugSeverity, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Foreground="#64748B"
+                                               Text="Priority" />
+                                    <TextBox Margin="0,6,0,14"
+                                             MinHeight="34"
+                                             VerticalContentAlignment="Center"
+                                             Text="{Binding NewBugPriority, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Grid>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Foreground="#64748B"
+                                               Text="Found in version" />
+                                    <TextBox Margin="0,6,0,14"
+                                             MinHeight="34"
+                                             VerticalContentAlignment="Center"
+                                             Text="{Binding NewBugFoundInVersion, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Foreground="#64748B"
+                                               Text="Build number" />
+                                    <TextBox Margin="0,6,0,14"
+                                             MinHeight="34"
+                                             VerticalContentAlignment="Center"
+                                             Text="{Binding NewBugBuildNumber, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Grid>
+
+                            <shared:CustomFieldValuesEditor DataContext="{Binding NewBugCustomFields}" />
+
+                            <TextBlock Margin="0,4,0,0"
+                                       Foreground="#64748B"
+                                       Text="{Binding StatusMessage}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <StackPanel Grid.Row="3"
+                                Margin="0,18,0,0"
+                                HorizontalAlignment="Right"
+                                Orientation="Horizontal">
+                        <Button MinWidth="92"
+                                Margin="0,0,10,0"
+                                Command="{Binding CloseNewBugDialogCommand}"
+                                Content="Cancel"
+                                Style="{StaticResource ActionButtonStyle}"
+                                ToolTip="Close without creating a bug" />
+                        <Button MinWidth="100"
+                                Command="{Binding CreateBugCommand}"
+                                Content="Create"
+                                Style="{StaticResource PrimaryActionButtonStyle}"
+                                ToolTip="Create bug" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Border>
 
         <Border Panel.ZIndex="20"
                 Background="#660F172A"
@@ -286,10 +429,10 @@
 
                     <DockPanel Margin="0,0,0,16">
                         <Button DockPanel.Dock="Right"
-                                MinHeight="30"
-                                MinWidth="72"
                                 Command="{Binding CloseBugDetailsCommand}"
-                                Content="Close" />
+                                Content="&#xE8BB;"
+                                Style="{StaticResource IconActionButtonStyle}"
+                                ToolTip="Close bug details" />
                         <TextBlock FontSize="22"
                                    FontWeight="SemiBold"
                                    Foreground="#172033"
@@ -381,12 +524,19 @@
                                            Text="Attachments" />
                                 <Button Grid.Column="1"
                                         Command="{Binding AddBugAttachmentCommand}"
-                                        Content="Add File"
-                                        Style="{StaticResource SmallActionButtonStyle}" />
+                                        Style="{StaticResource SmallActionButtonStyle}"
+                                        ToolTip="Add file to this bug">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE723;" />
+                                        <TextBlock Text="Add File" />
+                                    </StackPanel>
+                                </Button>
                                  <Button Grid.Column="3"
                                          Command="{Binding OpenBugDiscussionCommand}"
-                                         Style="{StaticResource SmallActionButtonStyle}">
+                                         Style="{StaticResource SmallActionButtonStyle}"
+                                         ToolTip="Open bug chat">
                                      <StackPanel Orientation="Horizontal">
+                                         <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE8BD;" />
                                          <TextBlock Text="Chat" />
                                          <Border Margin="6,0,0,0"
                                                  Padding="5,1"
@@ -430,13 +580,14 @@
                                                         Command="{Binding DataContext.OpenBugAttachmentCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                         CommandParameter="{Binding}"
                                                         Content="Open"
-                                                        Style="{StaticResource SmallActionButtonStyle}" />
+                                                        Style="{StaticResource SmallActionButtonStyle}"
+                                                        ToolTip="Open attachment" />
                                                 <Button Grid.Column="3"
                                                         Command="{Binding DataContext.DeleteBugAttachmentCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                         CommandParameter="{Binding}"
-                                                        Content="Delete"
-                                                        Foreground="#B91C1C"
-                                                        Style="{StaticResource SmallActionButtonStyle}" />
+                                                        Content="&#xE74D;"
+                                                        Style="{StaticResource DangerIconActionButtonStyle}"
+                                                        ToolTip="Delete attachment" />
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
@@ -453,23 +604,27 @@
                                 MinHeight="34"
                                 Margin="0,0,10,0"
                                 Command="{Binding CloseBugDetailsCommand}"
-                                Content="Cancel" />
+                                Content="Cancel"
+                                Style="{StaticResource ActionButtonStyle}"
+                                ToolTip="Close bug details without saving" />
                         <Button MinWidth="92"
                                 MinHeight="34"
                                 Command="{Binding SaveBugDetailsCommand}"
-                                Content="Save" />
+                                Content="Save"
+                                Style="{StaticResource PrimaryActionButtonStyle}"
+                                ToolTip="Save bug changes" />
                     </StackPanel>
                 </Grid>
             </Border>
         </Border>
 
         <Border Panel.ZIndex="30"
-                Background="#330F172A"
+                Background="#220F172A"
                 Visibility="{Binding DiscussionDrawerVisibility}">
-            <Border Width="440"
-                    Padding="18"
+            <Border Width="460"
+                    Padding="20"
                     HorizontalAlignment="Right"
-                    Background="#F8FAFC"
+                    Background="#EEF3F8"
                     BorderBrush="#CBD5E1"
                     BorderThickness="1,0,0,0">
                 <Grid>
@@ -479,12 +634,12 @@
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <DockPanel Margin="0,0,0,14">
+                    <DockPanel Margin="0,0,0,16">
                         <Button DockPanel.Dock="Right"
-                                MinHeight="30"
-                                MinWidth="72"
                                 Command="{Binding CloseDiscussionCommand}"
-                                Content="Close" />
+                                Content="&#xE8BB;"
+                                Style="{StaticResource IconActionButtonStyle}"
+                                ToolTip="Close chat" />
                         <TextBlock FontSize="18"
                                    FontWeight="SemiBold"
                                    Foreground="#172033"
@@ -495,35 +650,39 @@
                     <ListBox Grid.Row="1"
                              ItemsSource="{Binding DiscussionComments}"
                              ItemContainerStyle="{StaticResource FullWidthListBoxItemStyle}"
+                             Background="Transparent"
                              BorderThickness="0"
+                             ScrollViewer.CanContentScroll="False"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <Border Margin="0,0,0,10"
-                                        Padding="10"
+                                        Padding="12"
                                         Background="White"
-                                        BorderBrush="#E2E8F0"
+                                        BorderBrush="#D8E1EC"
                                         BorderThickness="1"
-                                        CornerRadius="6">
+                                        CornerRadius="12">
                                     <StackPanel>
                                         <DockPanel LastChildFill="True">
                                             <StackPanel DockPanel.Dock="Right"
                                                         Orientation="Horizontal">
-                                                <Button MinWidth="48"
-                                                        Command="{Binding DataContext.EditDiscussionMessageCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                <Button Command="{Binding DataContext.EditDiscussionMessageCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                         CommandParameter="{Binding}"
-                                                        Content="Edit" />
-                                                <Button MinWidth="56"
+                                                        Content="&#xE70F;"
+                                                        Style="{StaticResource IconActionButtonStyle}"
+                                                        ToolTip="Edit message" />
+                                                <Button
                                                         Margin="6,0,0,0"
-                                                        Foreground="#B91C1C"
                                                         Command="{Binding DataContext.DeleteDiscussionMessageCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                         CommandParameter="{Binding}"
-                                                        Content="Delete" />
+                                                        Content="&#xE74D;"
+                                                        Style="{StaticResource DangerIconActionButtonStyle}"
+                                                        ToolTip="Delete message" />
                                             </StackPanel>
-                                            <TextBlock FontWeight="SemiBold"
-                                                       Foreground="#256D5A"
-                                                       Text="{Binding HeaderDisplay}"
-                                                       TextWrapping="Wrap" />
+                                            <Border Style="{StaticResource GreenChipBorderStyle}">
+                                                <TextBlock Style="{StaticResource GreenChipTextStyle}"
+                                                           Text="{Binding HeaderDisplay}" />
+                                            </Border>
                                         </DockPanel>
                                         <TextBlock Margin="0,6,0,0"
                                                    Foreground="#172033"
@@ -540,12 +699,12 @@
                     </ListBox>
 
                     <Border Grid.Row="2"
-                            Margin="0,14,0,0"
-                            Padding="12"
+                            Margin="0,16,0,0"
+                            Padding="14"
                             Background="White"
-                            BorderBrush="#E2E8F0"
+                            BorderBrush="#D8E1EC"
                             BorderThickness="1"
-                            CornerRadius="6">
+                            CornerRadius="12">
                         <StackPanel>
                             <TextBlock FontWeight="SemiBold"
                                        Foreground="#172033"
@@ -553,6 +712,7 @@
                             <TextBox Margin="0,8,0,10"
                                      MinHeight="82"
                                      AcceptsReturn="True"
+                                     Background="#F8FAFC"
                                      Text="{Binding DiscussionMessage, UpdateSourceTrigger=PropertyChanged}"
                                      TextWrapping="Wrap" />
                             <StackPanel HorizontalAlignment="Right"
@@ -560,10 +720,14 @@
                                 <Button MinWidth="76"
                                         Margin="0,0,8,0"
                                         Command="{Binding CancelDiscussionEditCommand}"
-                                        Content="Clear" />
+                                        Content="Clear"
+                                        Style="{StaticResource ActionButtonStyle}"
+                                        ToolTip="Clear message editor" />
                                 <Button MinWidth="110"
                                         Command="{Binding SaveDiscussionMessageCommand}"
-                                        Content="{Binding DiscussionSaveButtonText}" />
+                                        Content="{Binding DiscussionSaveButtonText}"
+                                        Style="{StaticResource PrimaryActionButtonStyle}"
+                                        ToolTip="Save message" />
                             </StackPanel>
                         </StackPanel>
                     </Border>

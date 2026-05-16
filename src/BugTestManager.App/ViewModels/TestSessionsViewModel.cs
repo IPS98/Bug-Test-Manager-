@@ -110,6 +110,14 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     [ObservableProperty]
     private TestSessionSummaryViewModel? selectedSession;
 
+    public GridLength ResultDetailsColumnWidth => ResultDialogOverlayVisibility == Visibility.Visible
+        ? new(420)
+        : new(0);
+
+    public GridLength ResultDetailsGapWidth => ResultDialogOverlayVisibility == Visibility.Visible
+        ? new(16)
+        : new(0);
+
     [ObservableProperty]
     private TestSectionResultViewModel? selectedSection;
 
@@ -287,6 +295,8 @@ public sealed partial class TestSessionsViewModel : ObservableObject
             ? Visibility.Collapsed
             : Visibility.Visible;
 
+        OnPropertyChanged(nameof(ResultDetailsColumnWidth));
+        OnPropertyChanged(nameof(ResultDetailsGapWidth));
         SaveResultCommand.NotifyCanExecuteChanged();
         AddAttachmentCommand.NotifyCanExecuteChanged();
         CreateLinkedBugCommand.NotifyCanExecuteChanged();

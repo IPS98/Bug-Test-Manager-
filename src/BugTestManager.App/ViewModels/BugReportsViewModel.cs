@@ -130,6 +130,9 @@ public sealed partial class BugReportsViewModel : ObservableObject
     private string newBugBuildNumber = string.Empty;
 
     [ObservableProperty]
+    private Visibility newBugDialogVisibility = Visibility.Collapsed;
+
+    [ObservableProperty]
     private Visibility bugDetailsDrawerVisibility = Visibility.Collapsed;
 
     [ObservableProperty]
@@ -232,6 +235,21 @@ public sealed partial class BugReportsViewModel : ObservableObject
         LoadBugs(SelectedBug?.Id);
     }
 
+    [RelayCommand]
+    private void ShowNewBugDialog()
+    {
+        ResetNewBugDraft();
+        StatusMessage = "Ready";
+        NewBugDialogVisibility = Visibility.Visible;
+    }
+
+    [RelayCommand]
+    private void CloseNewBugDialog()
+    {
+        NewBugDialogVisibility = Visibility.Collapsed;
+        ResetNewBugDraft();
+    }
+
     [RelayCommand(CanExecute = nameof(CanCreateBug))]
     private void CreateBug()
     {
@@ -250,13 +268,8 @@ public sealed partial class BugReportsViewModel : ObservableObject
                 ProjectId: projectContext.CurrentProjectId));
 
             SaveCustomFields(NewBugCustomFields, bugId);
-            NewBugTitle = string.Empty;
-            NewBugDescription = string.Empty;
-            NewBugSeverity = "Medium";
-            NewBugPriority = "Medium";
-            NewBugFoundInVersion = string.Empty;
-            NewBugBuildNumber = string.Empty;
-            LoadNewBugCustomFields();
+            NewBugDialogVisibility = Visibility.Collapsed;
+            ResetNewBugDraft();
             LoadBugs(bugId);
             StatusMessage = "Bug created.";
         }
@@ -559,6 +572,18 @@ public sealed partial class BugReportsViewModel : ObservableObject
     private bool CanAddBugAttachment()
     {
         return SelectedBug is not null;
+    }
+
+    private void ResetNewBugDraft()
+    {
+        NewBugTitle = string.Empty;
+        NewBugDescription = string.Empty;
+        NewBugSeverity = "Medium";
+        NewBugPriority = "Medium";
+        NewBugFoundInVersion = string.Empty;
+        NewBugBuildNumber = string.Empty;
+        LoadNewBugCustomFields();
+        CreateBugCommand.NotifyCanExecuteChanged();
     }
 
     private void LoadBugs(Guid? selectedBugId = null)

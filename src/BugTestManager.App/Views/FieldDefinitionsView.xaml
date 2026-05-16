@@ -2,7 +2,9 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <UserControl.Resources>
-        <Style x:Key="SmallActionButtonStyle" TargetType="Button">
+        <Style x:Key="SmallActionButtonStyle"
+               BasedOn="{StaticResource ActionButtonStyle}"
+               TargetType="Button">
             <Setter Property="MinHeight" Value="30" />
             <Setter Property="MinWidth" Value="68" />
             <Setter Property="Padding" Value="10,0" />
@@ -92,7 +94,13 @@
                         MinHeight="36"
                         HorizontalAlignment="Stretch"
                         Command="{Binding CreateFieldCommand}"
-                        Content="Create Field" />
+                        Style="{StaticResource PrimaryActionButtonStyle}"
+                        ToolTip="Create custom field">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE710;" />
+                        <TextBlock Text="Create Field" />
+                    </StackPanel>
+                </Button>
 
                 <TextBlock Margin="0,14,0,0"
                            Foreground="#64748B"
@@ -148,9 +156,10 @@
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="1">
-                                    <TextBlock FontWeight="SemiBold"
-                                               Foreground="#256D5A"
-                                               Text="{Binding FieldTypeDisplay}" />
+                                    <Border Style="{StaticResource GreenChipBorderStyle}">
+                                        <TextBlock Style="{StaticResource GreenChipTextStyle}"
+                                                   Text="{Binding FieldTypeDisplay}" />
+                                    </Border>
                                     <TextBlock Margin="0,4,0,0"
                                                Foreground="#64748B"
                                                Text="{Binding RequirementDisplay}" />
@@ -164,19 +173,21 @@
                                             Orientation="Horizontal">
                                     <Button Command="{Binding DataContext.ShowEditFieldDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}"
-                                            Content="Edit"
-                                            Style="{StaticResource SmallActionButtonStyle}" />
+                                            Content="&#xE70F;"
+                                            Style="{StaticResource IconActionButtonStyle}"
+                                            ToolTip="Edit field" />
                                     <Button Margin="8,0,0,0"
-                                            Command="{Binding DataContext.ArchiveFieldCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            Command="{Binding DataContext.ShowArchiveFieldDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}"
-                                            Content="Archive"
-                                            Style="{StaticResource SmallActionButtonStyle}" />
+                                            Content="&#xE7B8;"
+                                            Style="{StaticResource IconActionButtonStyle}"
+                                            ToolTip="Archive field: hide it from new forms but keep existing values" />
                                     <Button Margin="8,0,0,0"
                                             Command="{Binding DataContext.ShowDeleteFieldDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}"
-                                            Content="Delete"
-                                            Foreground="#B91C1C"
-                                            Style="{StaticResource SmallActionButtonStyle}" />
+                                            Content="&#xE74D;"
+                                            Style="{StaticResource DangerIconActionButtonStyle}"
+                                            ToolTip="Delete field" />
                                 </StackPanel>
                             </Grid>
                         </DataTemplate>
@@ -284,11 +295,65 @@
                                 MinHeight="34"
                                 Margin="0,0,10,0"
                                 Command="{Binding CloseEditFieldDialogCommand}"
-                                Content="Cancel" />
+                                Content="Cancel"
+                                Style="{StaticResource ActionButtonStyle}"
+                                ToolTip="Close field editor without saving" />
                         <Button MinWidth="92"
                                 MinHeight="34"
                                 Command="{Binding UpdateFieldCommand}"
-                                Content="Save" />
+                                Content="Save"
+                                Style="{StaticResource PrimaryActionButtonStyle}"
+                                ToolTip="Save field changes" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Border>
+
+        <Border Grid.ColumnSpan="3"
+                Background="#990F172A"
+                Visibility="{Binding ArchiveFieldDialogVisibility}">
+            <Border Width="500"
+                    Padding="24"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Background="White"
+                    CornerRadius="8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="14" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="18" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock FontSize="20"
+                               FontWeight="SemiBold"
+                               Foreground="#172033"
+                               Text="{Binding ArchiveFieldTitle}"
+                               TextWrapping="Wrap" />
+
+                    <TextBlock Grid.Row="2"
+                               Foreground="#64748B"
+                               Text="{Binding ArchiveFieldWarning}"
+                               TextWrapping="Wrap" />
+
+                    <StackPanel Grid.Row="4"
+                                HorizontalAlignment="Right"
+                                Orientation="Horizontal">
+                        <Button MinWidth="92"
+                                MinHeight="34"
+                                Margin="0,0,10,0"
+                                Command="{Binding CloseArchiveFieldDialogCommand}"
+                                Content="Cancel"
+                                Style="{StaticResource ActionButtonStyle}"
+                                ToolTip="Cancel archive" />
+                        <Button MinWidth="92"
+                                MinHeight="34"
+                                Command="{Binding ConfirmArchiveFieldCommand}"
+                                Content="Archive"
+                                Style="{StaticResource ActionButtonStyle}"
+                                ToolTip="Archive field" />
                     </StackPanel>
                 </Grid>
             </Border>
@@ -330,12 +395,15 @@
                                 MinHeight="34"
                                 Margin="0,0,10,0"
                                 Command="{Binding CloseDeleteFieldDialogCommand}"
-                                Content="Cancel" />
+                                Content="Cancel"
+                                Style="{StaticResource ActionButtonStyle}"
+                                ToolTip="Cancel field delete" />
                         <Button MinWidth="92"
                                 MinHeight="34"
                                 Command="{Binding ConfirmDeleteFieldCommand}"
                                 Content="Delete"
-                                Foreground="#B91C1C" />
+                                Style="{StaticResource DangerActionButtonStyle}"
+                                ToolTip="Delete field and related saved values" />
                     </StackPanel>
                 </Grid>
             </Border>

@@ -39,11 +39,11 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
         Modules =
         [
-            new NavigationItemViewModel(AppPageKey.Templates, "Templates", "Reusable test suites, revisions, sections, cases, and checks."),
-            new NavigationItemViewModel(AppPageKey.Fields, "Fields", "User-defined fields for tests, bugs, sessions, and reports."),
-            new NavigationItemViewModel(AppPageKey.TestSessions, "Test Sessions", "Manual test reports, statuses, photos, comments, and dates."),
-            new NavigationItemViewModel(AppPageKey.Bugs, "Bugs", "Bug reports, developer comments, status changes, and retesting."),
-            new NavigationItemViewModel(AppPageKey.Reports, "Reports", "Readable PDF reports for versions, revisions, tests, and bugs.")
+            new NavigationItemViewModel(AppPageKey.Templates, "Templates", "Reusable test suites, revisions, sections, cases, and checks.", "\uE8A5"),
+            new NavigationItemViewModel(AppPageKey.Fields, "Fields", "User-defined fields for tests, bugs, sessions, and reports.", "\uE713"),
+            new NavigationItemViewModel(AppPageKey.TestSessions, "Test Sessions", "Manual test reports, statuses, photos, comments, and dates.", "\uE9D9"),
+            new NavigationItemViewModel(AppPageKey.Bugs, "Bugs", "Bug reports, developer comments, status changes, and retesting.", "\uEBE8"),
+            new NavigationItemViewModel(AppPageKey.Reports, "Reports", "Readable PDF reports for versions, revisions, tests, and bugs.", "\uE9F9")
         ];
 
         LoadProjects();
@@ -66,6 +66,21 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     [ObservableProperty]
     private object? currentPage;
+
+    [ObservableProperty]
+    private bool isSidebarExpanded = true;
+
+    public GridLength SidebarWidth => IsSidebarExpanded
+        ? new(260)
+        : new(78);
+
+    public Visibility SidebarExpandedContentVisibility => IsSidebarExpanded
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public string SidebarToggleGlyph => IsSidebarExpanded
+        ? "\uE76B"
+        : "\uE76C";
 
     [ObservableProperty]
     private ProjectOptionViewModel? selectedProject;
@@ -102,6 +117,19 @@ public sealed partial class MainWindowViewModel : ObservableObject
     partial void OnNewProjectNameChanged(string value)
     {
         CreateProjectCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnIsSidebarExpandedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(SidebarWidth));
+        OnPropertyChanged(nameof(SidebarExpandedContentVisibility));
+        OnPropertyChanged(nameof(SidebarToggleGlyph));
+    }
+
+    [RelayCommand]
+    private void ToggleSidebar()
+    {
+        IsSidebarExpanded = !IsSidebarExpanded;
     }
 
     [RelayCommand]

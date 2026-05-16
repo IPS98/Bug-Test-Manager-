@@ -3,9 +3,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:shared="clr-namespace:BugTestManager.App.Views.Shared">
     <UserControl.Resources>
-        <Style x:Key="FullWidthListBoxItemStyle" TargetType="ListBoxItem">
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-        </Style>
+        <Style x:Key="FullWidthListBoxItemStyle"
+               BasedOn="{StaticResource StableListBoxItemStyle}"
+               TargetType="ListBoxItem" />
 
         <Style x:Key="SectionHeaderStyle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="16" />
@@ -13,7 +13,9 @@
             <Setter Property="Foreground" Value="#172033" />
         </Style>
 
-        <Style x:Key="SmallActionButtonStyle" TargetType="Button">
+        <Style x:Key="SmallActionButtonStyle"
+               BasedOn="{StaticResource ActionButtonStyle}"
+               TargetType="Button">
             <Setter Property="MinHeight" Value="28" />
             <Setter Property="MinWidth" Value="72" />
             <Setter Property="Padding" Value="10,0" />
@@ -23,114 +25,103 @@
             <Setter Property="MinWidth" Value="68" />
             <Setter Property="Margin" Value="10,0,0,0" />
         </Style>
+
+        <Style x:Key="SessionMetaChipStyle" TargetType="Border">
+            <Setter Property="Margin" Value="0,0,8,8" />
+            <Setter Property="Padding" Value="9,4" />
+            <Setter Property="Background" Value="#F8FAFC" />
+            <Setter Property="BorderBrush" Value="#E2E8F0" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+        </Style>
     </UserControl.Resources>
 
     <Grid>
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="320" />
-                <ColumnDefinition Width="16" />
                 <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="{Binding ResultDetailsGapWidth}" />
+                <ColumnDefinition Width="{Binding ResultDetailsColumnWidth}" />
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0"
-                    Padding="18"
+                    Padding="22"
                     Background="White"
                     CornerRadius="8">
                 <DockPanel>
                     <Grid DockPanel.Dock="Top"
-                          Margin="0,0,0,14">
+                          Margin="0,0,0,18">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock VerticalAlignment="Center"
-                                   FontSize="18"
-                                   FontWeight="SemiBold"
-                                   Foreground="#172033"
-                                   Text="Created Sessions" />
-                        <Button Grid.Column="1"
+
+                        <StackPanel>
+                            <TextBlock FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Foreground="#172033"
+                                       Text="Session Results" />
+                            <Border Margin="0,6,0,0"
+                                    Style="{StaticResource GreenChipBorderStyle}">
+                                <TextBlock FontSize="14"
+                                           Style="{StaticResource GreenChipTextStyle}"
+                                           Text="{Binding SelectedSession.Name}" />
+                            </Border>
+                        </StackPanel>
+
+                        <ComboBox Grid.Column="1"
+                                  Width="360"
+                                  MinHeight="34"
+                                  DisplayMemberPath="SelectorDisplay"
+                                  ItemsSource="{Binding Sessions}"
+                                  SelectedItem="{Binding SelectedSession}"
+                                  ToolTip="Select created test session" />
+                        <Button Grid.Column="3"
                                 Command="{Binding ShowNewSessionDialogCommand}"
-                                Content="New Test Session"
-                                Style="{StaticResource SmallActionButtonStyle}" />
-                    </Grid>
+                                Style="{StaticResource PrimaryActionButtonStyle}"
+                                ToolTip="Create a new test session">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE710;" />
+                                <TextBlock Text="New Session" />
+                            </StackPanel>
+                        </Button>
+                        <Button Grid.Column="5"
+                                Command="{Binding ShowDeleteSessionDialogCommand}"
+                                Content="&#xE74D;"
+                                Style="{StaticResource DangerIconActionButtonStyle}"
+                                ToolTip="Delete selected test session" />
 
-                    <ListBox ItemsSource="{Binding Sessions}"
-                             SelectedItem="{Binding SelectedSession}"
-                             ItemContainerStyle="{StaticResource FullWidthListBoxItemStyle}"
-                             BorderThickness="0"
-                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel Margin="0,4,0,12">
-                                    <DockPanel LastChildFill="True">
-                                        <Button DockPanel.Dock="Right"
-                                                Margin="10,0,0,0"
-                                                Command="{Binding DataContext.ShowDeleteSessionDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                CommandParameter="{Binding}"
-                                                Content="Delete"
-                                                Foreground="#B91C1C"
-                                                Style="{StaticResource SmallActionButtonStyle}" />
-                                        <TextBlock FontWeight="SemiBold"
-                                                   Text="{Binding Name}"
-                                                   TextWrapping="Wrap" />
-                                    </DockPanel>
-                                    <TextBlock Margin="0,4,0,0"
-                                               Foreground="#64748B"
-                                               Text="{Binding TestSuiteName}"
-                                               TextWrapping="Wrap" />
-                                    <TextBlock Margin="0,4,0,0"
-                                               Foreground="#64748B"
-                                               Text="{Binding RevisionDisplay}" />
-                                    <TextBlock Margin="0,6,0,0"
-                                               FontWeight="SemiBold"
-                                               Foreground="#256D5A"
-                                               Text="{Binding SizeDisplay}"
-                                               TextWrapping="Wrap" />
-                                    <TextBlock Margin="0,6,0,0"
-                                               Foreground="#64748B"
-                                               Text="{Binding CreatedAtDisplay}" />
-                                </StackPanel>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </DockPanel>
-            </Border>
-
-            <Border Grid.Column="2"
-                    Padding="18"
-                    Background="White"
-                    CornerRadius="8">
-                <DockPanel>
-                    <StackPanel DockPanel.Dock="Top"
-                                Margin="0,0,0,16">
-                        <TextBlock FontSize="18"
-                                   FontWeight="SemiBold"
-                                   Foreground="#172033"
-                                   Text="Session Results" />
-                        <TextBlock Margin="0,6,0,0"
-                                   FontSize="14"
-                                   FontWeight="SemiBold"
-                                   Foreground="#256D5A"
-                                   Text="{Binding SelectedSession.Name}"
-                                   TextWrapping="Wrap" />
-                        <WrapPanel Margin="0,8,0,0">
-                            <TextBlock Margin="0,0,18,0"
-                                       Foreground="#64748B"
-                                       Text="{Binding SelectedSession.VersionDisplay}" />
-                            <TextBlock Margin="0,0,18,0"
-                                       Foreground="#64748B"
-                                       Text="{Binding SelectedSession.BuildDisplay}" />
-                            <TextBlock Margin="0,0,18,0"
-                                       Foreground="#64748B"
-                                       Text="{Binding SelectedSession.RevisionHeaderDisplay}" />
+                        <WrapPanel Grid.Row="1"
+                                   Grid.ColumnSpan="6"
+                                   Margin="0,10,0,0">
+                            <Border Style="{StaticResource SessionMetaChipStyle}">
+                                <TextBlock Foreground="#64748B"
+                                           Text="{Binding SelectedSession.VersionDisplay}" />
+                            </Border>
+                            <Border Style="{StaticResource SessionMetaChipStyle}">
+                                <TextBlock Foreground="#64748B"
+                                           Text="{Binding SelectedSession.BuildDisplay}" />
+                            </Border>
+                            <Border Style="{StaticResource SessionMetaChipStyle}">
+                                <TextBlock Foreground="#64748B"
+                                           Text="{Binding SelectedSession.RevisionHeaderDisplay}" />
+                            </Border>
+                            <Border Style="{StaticResource SessionMetaChipStyle}">
+                                <TextBlock FontWeight="SemiBold"
+                                           Foreground="#172033"
+                                           Text="{Binding ResultSummary}"
+                                           TextWrapping="Wrap" />
+                            </Border>
                         </WrapPanel>
-                        <TextBlock Margin="0,8,0,0"
-                                   FontWeight="SemiBold"
-                                   Foreground="#172033"
-                                   Text="{Binding ResultSummary}"
-                                   TextWrapping="Wrap" />
-                    </StackPanel>
+                    </Grid>
 
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -144,8 +135,13 @@
                                        Margin="0,0,0,12">
                                 <Button DockPanel.Dock="Right"
                                         Command="{Binding ShowCreateManualSectionDialogCommand}"
-                                        Content="+ Add"
-                                        Style="{StaticResource SmallActionButtonStyle}" />
+                                        Style="{StaticResource PrimaryActionButtonStyle}"
+                                        ToolTip="Add manual section">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE710;" />
+                                        <TextBlock Text="Add" />
+                                    </StackPanel>
+                                </Button>
                                 <TextBlock VerticalAlignment="Center"
                                            Style="{StaticResource SectionHeaderStyle}"
                                            Text="Sections" />
@@ -154,6 +150,7 @@
                                      SelectedItem="{Binding SelectedSection}"
                                      ItemContainerStyle="{StaticResource FullWidthListBoxItemStyle}"
                                      BorderThickness="0"
+                                     ScrollViewer.CanContentScroll="False"
                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
@@ -165,10 +162,11 @@
                                                        Foreground="#64748B"
                                                        Text="{Binding CategoryDisplay}"
                                                        TextWrapping="Wrap" />
-                                            <TextBlock Margin="0,6,0,0"
-                                                       FontWeight="SemiBold"
-                                                       Foreground="#256D5A"
-                                                       Text="{Binding SizeDisplay}" />
+                                            <Border Margin="0,6,0,0"
+                                                    Style="{StaticResource GreenChipBorderStyle}">
+                                                <TextBlock Style="{StaticResource GreenChipTextStyle}"
+                                                           Text="{Binding SizeDisplay}" />
+                                            </Border>
                                         </StackPanel>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
@@ -189,8 +187,13 @@
                                            Text="Test Cases" />
                                 <Button Grid.Column="1"
                                         Command="{Binding ShowCreateManualTestCaseDialogCommand}"
-                                        Content="+ Add Case"
-                                        Style="{StaticResource SmallActionButtonStyle}" />
+                                        Style="{StaticResource PrimaryActionButtonStyle}"
+                                        ToolTip="Add manual test case">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE710;" />
+                                        <TextBlock Text="Add Case" />
+                                    </StackPanel>
+                                </Button>
                                 <ComboBox Grid.Column="3"
                                           MinHeight="32"
                                           DisplayMemberPath="DisplayName"
@@ -201,6 +204,8 @@
                                      SelectedItem="{Binding SelectedTestCase}"
                                      ItemContainerStyle="{StaticResource FullWidthListBoxItemStyle}"
                                      BorderThickness="0"
+                                     ScrollViewer.CanContentScroll="False"
+                                     VirtualizingPanel.IsVirtualizing="False"
                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
@@ -216,19 +221,27 @@
                                                             Command="{Binding DataContext.ShowEditTestCaseResultCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                             CommandParameter="{Binding}"
                                                             Content="Update Case"
-                                                            Style="{StaticResource SmallActionButtonStyle}" />
+                                                            Style="{StaticResource SmallActionButtonStyle}"
+                                                            ToolTip="Update this test case result" />
                                                     <Button DockPanel.Dock="Right"
                                                             Margin="12,0,0,0"
                                                             Command="{Binding DataContext.ShowCreateManualCheckDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                             CommandParameter="{Binding}"
-                                                            Content="+ Check"
-                                                            Style="{StaticResource SmallActionButtonStyle}" />
+                                                            Style="{StaticResource SmallActionButtonStyle}"
+                                                            ToolTip="Add a manual check">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE710;" />
+                                                            <TextBlock Text="Check" />
+                                                        </StackPanel>
+                                                    </Button>
                                                     <Button DockPanel.Dock="Right"
                                                             Margin="12,0,0,0"
                                                             Command="{Binding DataContext.ShowTestCaseDiscussionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                             CommandParameter="{Binding}"
-                                                            Style="{StaticResource SmallActionButtonStyle}">
+                                                            Style="{StaticResource SmallActionButtonStyle}"
+                                                            ToolTip="Open test case chat">
                                                         <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE8BD;" />
                                                             <TextBlock Text="Chat" />
                                                             <Border Margin="6,0,0,0"
                                                                     Padding="5,1"
@@ -301,12 +314,15 @@
                                                                                         Command="{Binding DataContext.ShowEditTestStepResultCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                                         CommandParameter="{Binding}"
                                                                                         Content="Update"
-                                                                                        Style="{StaticResource CheckActionButtonStyle}" />
+                                                                                        Style="{StaticResource CheckActionButtonStyle}"
+                                                                                        ToolTip="Update this check result" />
                                                                                 <Button DockPanel.Dock="Right"
                                                                                         Command="{Binding DataContext.ShowTestStepDiscussionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                                         CommandParameter="{Binding}"
-                                                                                        Style="{StaticResource CheckActionButtonStyle}">
+                                                                                        Style="{StaticResource CheckActionButtonStyle}"
+                                                                                        ToolTip="Open check chat">
                                                                                     <StackPanel Orientation="Horizontal">
+                                                                                        <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE8BD;" />
                                                                                         <TextBlock Text="Chat" />
                                                                                         <Border Margin="6,0,0,0"
                                                                                                 Padding="5,1"
@@ -355,6 +371,211 @@
                         </DockPanel>
                     </Grid>
                 </DockPanel>
+            </Border>
+
+            <Border Grid.Column="2"
+                    Padding="18"
+                    Background="White"
+                    CornerRadius="8"
+                    Visibility="{Binding ResultDialogOverlayVisibility}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="14" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="14" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Right"
+                                    Orientation="Horizontal">
+                            <Button Margin="0,0,8,0"
+                                    Command="{Binding ShowCurrentResultDiscussionCommand}"
+                                    Style="{StaticResource SmallActionButtonStyle}"
+                                    ToolTip="Open result chat">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE8BD;" />
+                                    <TextBlock Text="Chat" />
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{Binding CloseResultDialogCommand}"
+                                    Content="&#xE8BB;"
+                                    Style="{StaticResource IconActionButtonStyle}"
+                                    ToolTip="Close details panel" />
+                        </StackPanel>
+                        <TextBlock FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Foreground="#172033"
+                                   Text="{Binding ResultDialogTitle}"
+                                   TextWrapping="Wrap" />
+                    </DockPanel>
+
+                    <ScrollViewer Grid.Row="2"
+                                  VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Foreground="#64748B"
+                                       Text="Status" />
+                            <ComboBox Margin="0,6,0,14"
+                                      MinHeight="34"
+                                      DisplayMemberPath="DisplayName"
+                                      ItemsSource="{Binding ResultStatuses}"
+                                      SelectedItem="{Binding SelectedResultStatus}" />
+
+                            <TextBlock Foreground="#64748B"
+                                       Text="Comment" />
+                            <TextBox Margin="0,6,0,0"
+                                     MinHeight="110"
+                                     AcceptsReturn="True"
+                                     Text="{Binding ResultComment, UpdateSourceTrigger=PropertyChanged}"
+                                     TextWrapping="Wrap" />
+
+                            <shared:CustomFieldValuesEditor DataContext="{Binding ResultCustomFields}" />
+
+                            <Grid Margin="0,18,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock VerticalAlignment="Center"
+                                           FontWeight="SemiBold"
+                                           Foreground="#172033"
+                                           Text="Attachments" />
+                                <Button Grid.Column="1"
+                                        Command="{Binding AddAttachmentCommand}"
+                                        Style="{StaticResource SmallActionButtonStyle}"
+                                        ToolTip="Add attachment to this result">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE723;" />
+                                        <TextBlock Text="Add" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+
+                            <ItemsControl ItemsSource="{Binding ResultAttachments}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Margin="0,0,0,10"
+                                                Padding="10"
+                                                BorderBrush="#E2E8F0"
+                                                BorderThickness="1"
+                                                CornerRadius="6">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="72" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+
+                                                <Border Width="60"
+                                                        Height="46"
+                                                        Background="#F1F5F9"
+                                                        BorderBrush="#E2E8F0"
+                                                        BorderThickness="1"
+                                                        CornerRadius="4">
+                                                    <Image Source="{Binding AbsolutePath}"
+                                                           Stretch="UniformToFill">
+                                                        <Image.Style>
+                                                            <Style TargetType="Image">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsImage}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Visible" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Image.Style>
+                                                    </Image>
+                                                </Border>
+
+                                                <StackPanel Grid.Column="1"
+                                                            Margin="0,0,10,0">
+                                                    <TextBlock FontWeight="SemiBold"
+                                                               Text="{Binding OriginalFileName}"
+                                                               TextWrapping="Wrap" />
+                                                    <TextBlock Margin="0,3,0,0"
+                                                               Foreground="#64748B"
+                                                               Text="{Binding DetailsDisplay}"
+                                                               TextWrapping="Wrap" />
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="2"
+                                                            VerticalAlignment="Center"
+                                                            Orientation="Horizontal">
+                                                    <Button Margin="0,0,8,0"
+                                                            Command="{Binding DataContext.OpenAttachmentCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}"
+                                                            Content="Open"
+                                                            Style="{StaticResource SmallActionButtonStyle}"
+                                                            ToolTip="Open attachment" />
+                                                    <Button Command="{Binding DataContext.DeleteAttachmentCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}"
+                                                            Content="&#xE74D;"
+                                                            Style="{StaticResource DangerIconActionButtonStyle}"
+                                                            ToolTip="Delete attachment" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <TextBlock Margin="0,18,0,6"
+                                       FontWeight="SemiBold"
+                                       Foreground="#172033"
+                                       Text="Linked Bug" />
+                            <TextBlock Foreground="#64748B"
+                                       Text="{Binding LinkedBugTargetDisplay}"
+                                       TextWrapping="Wrap" />
+
+                            <TextBlock Margin="0,10,0,6"
+                                       Foreground="#64748B"
+                                       Text="Bug title" />
+                            <TextBox MinHeight="34"
+                                     VerticalContentAlignment="Center"
+                                     Text="{Binding LinkedBugTitle, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <TextBlock Margin="0,10,0,6"
+                                       Foreground="#64748B"
+                                       Text="Bug description" />
+                            <TextBox MinHeight="80"
+                                     AcceptsReturn="True"
+                                     Text="{Binding LinkedBugDescription, UpdateSourceTrigger=PropertyChanged}"
+                                     TextWrapping="Wrap" />
+
+                            <Button Margin="0,12,0,0"
+                                    HorizontalAlignment="Right"
+                                    Command="{Binding CreateLinkedBugCommand}"
+                                    Content="Create Linked Bug"
+                                    Style="{StaticResource ActionButtonStyle}"
+                                    ToolTip="Create bug linked to this result" />
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <TextBlock Grid.Row="4"
+                               Margin="0,0,0,14"
+                               Foreground="#64748B"
+                               Text="{Binding StatusMessage}"
+                               TextWrapping="Wrap" />
+
+                    <StackPanel Grid.Row="5"
+                                HorizontalAlignment="Right"
+                                Orientation="Horizontal">
+                        <Button MinWidth="92"
+                                Margin="0,0,10,0"
+                                Command="{Binding CloseResultDialogCommand}"
+                                Content="Cancel"
+                                Style="{StaticResource ActionButtonStyle}"
+                                ToolTip="Close details panel without saving" />
+                        <Button MinWidth="92"
+                                Command="{Binding SaveResultCommand}"
+                                Content="Save"
+                                IsDefault="True"
+                                Style="{StaticResource PrimaryActionButtonStyle}"
+                                ToolTip="Save result changes" />
+                    </StackPanel>
+                </Grid>
             </Border>
         </Grid>
 
@@ -444,11 +665,15 @@
                                 MinHeight="34"
                                 Margin="0,0,10,0"
                                 Command="{Binding CloseNewSessionDialogCommand}"
-                                Content="Cancel" />
+                                Content="Cancel"
+                                Style="{StaticResource ActionButtonStyle}"
+                                ToolTip="Close this dialog without creating a session" />
                         <Button MinWidth="120"
                                 MinHeight="34"
                                 Command="{Binding CreateSessionCommand}"
-                                Content="Create Session" />
+                                Content="Create Session"
+                                Style="{StaticResource PrimaryActionButtonStyle}"
+                                ToolTip="Create test session" />
                     </StackPanel>
                 </Grid>
             </Border>
@@ -489,12 +714,15 @@
                                 MinHeight="34"
                                 Margin="0,0,10,0"
                                 Command="{Binding CloseDeleteSessionDialogCommand}"
-                                Content="Cancel" />
+                                Content="Cancel"
+                                Style="{StaticResource ActionButtonStyle}"
+                                ToolTip="Cancel session delete" />
                         <Button MinWidth="120"
                                 MinHeight="34"
                                 Command="{Binding ConfirmDeleteSessionCommand}"
                                 Content="Delete Session"
-                                Foreground="#B91C1C" />
+                                Style="{StaticResource DangerActionButtonStyle}"
+                                ToolTip="Delete this test session" />
                     </StackPanel>
                 </Grid>
             </Border>
@@ -553,18 +781,21 @@
                                 MinHeight="34"
                                 Margin="0,0,10,0"
                                 Command="{Binding CloseManualItemDialogCommand}"
-                                Content="Cancel" />
+                                Content="Cancel"
+                                Style="{StaticResource ActionButtonStyle}"
+                                ToolTip="Close this dialog without saving" />
                         <Button MinWidth="92"
                                 MinHeight="34"
                                 Command="{Binding SaveManualItemCommand}"
-                                Content="Save" />
+                                Content="Save"
+                                Style="{StaticResource PrimaryActionButtonStyle}"
+                                ToolTip="Save manual item" />
                     </StackPanel>
                 </Grid>
             </Border>
         </Border>
 
-        <Border Background="#990F172A"
-                Visibility="{Binding ResultDialogOverlayVisibility}">
+        <Border Visibility="Collapsed">
             <Border Width="560"
                     MaxWidth="620"
                     Padding="24"
@@ -584,10 +815,14 @@
 
                     <DockPanel>
                         <Button DockPanel.Dock="Right"
-                                MinHeight="30"
-                                MinWidth="72"
                                 Command="{Binding ShowCurrentResultDiscussionCommand}"
-                                Content="Chat" />
+                                Style="{StaticResource SmallActionButtonStyle}"
+                                ToolTip="Open result chat">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE8BD;" />
+                                <TextBlock Text="Chat" />
+                            </StackPanel>
+                        </Button>
                         <TextBlock FontSize="20"
                                    FontWeight="SemiBold"
                                    Foreground="#172033"
@@ -628,8 +863,13 @@
                                        Text="Attachments" />
                             <Button Grid.Column="1"
                                     Command="{Binding AddAttachmentCommand}"
-                                    Content="Add Attachment"
-                                    Style="{StaticResource SmallActionButtonStyle}" />
+                                    Style="{StaticResource SmallActionButtonStyle}"
+                                    ToolTip="Add attachment to this result">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE723;" />
+                                    <TextBlock Text="Add Attachment" />
+                                </StackPanel>
+                            </Button>
                         </Grid>
 
                         <ItemsControl ItemsSource="{Binding ResultAttachments}">
@@ -686,12 +926,13 @@
                                                         Command="{Binding DataContext.OpenAttachmentCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                         CommandParameter="{Binding}"
                                                         Content="Open"
-                                                        Style="{StaticResource SmallActionButtonStyle}" />
+                                                        Style="{StaticResource SmallActionButtonStyle}"
+                                                        ToolTip="Open attachment" />
                                                 <Button Command="{Binding DataContext.DeleteAttachmentCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                         CommandParameter="{Binding}"
-                                                        Content="Delete"
-                                                        Foreground="#B91C1C"
-                                                        Style="{StaticResource SmallActionButtonStyle}" />
+                                                        Content="&#xE74D;"
+                                                        Style="{StaticResource DangerIconActionButtonStyle}"
+                                                        ToolTip="Delete attachment" />
                                             </StackPanel>
                                         </Grid>
                                     </Border>
@@ -726,7 +967,9 @@
                                 MinHeight="34"
                                 HorizontalAlignment="Right"
                                 Command="{Binding CreateLinkedBugCommand}"
-                                Content="Create Linked Bug" />
+                                Content="Create Linked Bug"
+                                Style="{StaticResource ActionButtonStyle}"
+                                ToolTip="Create bug linked to this result" />
                     </StackPanel>
                     </ScrollViewer>
 
@@ -743,24 +986,28 @@
                                 MinHeight="34"
                                 Margin="0,0,10,0"
                                 Command="{Binding CloseResultDialogCommand}"
-                                Content="Cancel" />
+                                Content="Cancel"
+                                Style="{StaticResource ActionButtonStyle}"
+                                ToolTip="Close result dialog without saving" />
                         <Button MinWidth="92"
                                 MinHeight="34"
                                 Command="{Binding SaveResultCommand}"
                                 Content="Save"
-                                IsDefault="True" />
+                                IsDefault="True"
+                                Style="{StaticResource PrimaryActionButtonStyle}"
+                                ToolTip="Save result changes" />
                     </StackPanel>
                 </Grid>
             </Border>
         </Border>
 
         <Border Panel.ZIndex="30"
-                Background="#330F172A"
+                Background="#220F172A"
                 Visibility="{Binding DiscussionDrawerVisibility}">
-            <Border Width="440"
-                    Padding="18"
+            <Border Width="460"
+                    Padding="20"
                     HorizontalAlignment="Right"
-                    Background="#F8FAFC"
+                    Background="#EEF3F8"
                     BorderBrush="#CBD5E1"
                     BorderThickness="1,0,0,0">
                 <Grid>
@@ -770,12 +1017,12 @@
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <DockPanel Margin="0,0,0,14">
+                    <DockPanel Margin="0,0,0,16">
                         <Button DockPanel.Dock="Right"
-                                MinHeight="30"
-                                MinWidth="72"
                                 Command="{Binding CloseDiscussionCommand}"
-                                Content="Close" />
+                                Content="&#xE8BB;"
+                                Style="{StaticResource IconActionButtonStyle}"
+                                ToolTip="Close chat" />
                         <TextBlock FontSize="18"
                                    FontWeight="SemiBold"
                                    Foreground="#172033"
@@ -786,35 +1033,39 @@
                     <ListBox Grid.Row="1"
                              ItemsSource="{Binding DiscussionComments}"
                              ItemContainerStyle="{StaticResource FullWidthListBoxItemStyle}"
+                             Background="Transparent"
                              BorderThickness="0"
+                             ScrollViewer.CanContentScroll="False"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <Border Margin="0,0,0,10"
-                                        Padding="10"
+                                        Padding="12"
                                         Background="White"
-                                        BorderBrush="#E2E8F0"
+                                        BorderBrush="#D8E1EC"
                                         BorderThickness="1"
-                                        CornerRadius="6">
+                                        CornerRadius="12">
                                     <StackPanel>
                                         <DockPanel LastChildFill="True">
                                             <StackPanel DockPanel.Dock="Right"
                                                         Orientation="Horizontal">
-                                                <Button MinWidth="48"
-                                                        Command="{Binding DataContext.EditDiscussionMessageCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                <Button Command="{Binding DataContext.EditDiscussionMessageCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                         CommandParameter="{Binding}"
-                                                        Content="Edit" />
-                                                <Button MinWidth="56"
+                                                        Content="&#xE70F;"
+                                                        Style="{StaticResource IconActionButtonStyle}"
+                                                        ToolTip="Edit message" />
+                                                <Button
                                                         Margin="6,0,0,0"
-                                                        Foreground="#B91C1C"
                                                         Command="{Binding DataContext.DeleteDiscussionMessageCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                         CommandParameter="{Binding}"
-                                                        Content="Delete" />
+                                                        Content="&#xE74D;"
+                                                        Style="{StaticResource DangerIconActionButtonStyle}"
+                                                        ToolTip="Delete message" />
                                             </StackPanel>
-                                            <TextBlock FontWeight="SemiBold"
-                                                       Foreground="#256D5A"
-                                                       Text="{Binding HeaderDisplay}"
-                                                       TextWrapping="Wrap" />
+                                            <Border Style="{StaticResource GreenChipBorderStyle}">
+                                                <TextBlock Style="{StaticResource GreenChipTextStyle}"
+                                                           Text="{Binding HeaderDisplay}" />
+                                            </Border>
                                         </DockPanel>
                                         <TextBlock Margin="0,6,0,0"
                                                    Foreground="#172033"
@@ -831,12 +1082,12 @@
                     </ListBox>
 
                     <Border Grid.Row="2"
-                            Margin="0,14,0,0"
-                            Padding="12"
+                            Margin="0,16,0,0"
+                            Padding="14"
                             Background="White"
-                            BorderBrush="#E2E8F0"
+                            BorderBrush="#D8E1EC"
                             BorderThickness="1"
-                            CornerRadius="6">
+                            CornerRadius="12">
                         <StackPanel>
                             <TextBlock FontWeight="SemiBold"
                                        Foreground="#172033"
@@ -844,6 +1095,7 @@
                             <TextBox Margin="0,8,0,10"
                                      MinHeight="82"
                                      AcceptsReturn="True"
+                                     Background="#F8FAFC"
                                      Text="{Binding DiscussionMessage, UpdateSourceTrigger=PropertyChanged}"
                                      TextWrapping="Wrap" />
                             <StackPanel HorizontalAlignment="Right"
@@ -851,10 +1103,14 @@
                                 <Button MinWidth="76"
                                         Margin="0,0,8,0"
                                         Command="{Binding CancelDiscussionEditCommand}"
-                                        Content="Clear" />
+                                        Content="Clear"
+                                        Style="{StaticResource ActionButtonStyle}"
+                                        ToolTip="Clear message editor" />
                                 <Button MinWidth="110"
                                         Command="{Binding SaveDiscussionMessageCommand}"
-                                        Content="{Binding DiscussionSaveButtonText}" />
+                                        Content="{Binding DiscussionSaveButtonText}"
+                                        Style="{StaticResource PrimaryActionButtonStyle}"
+                                        ToolTip="Save message" />
                             </StackPanel>
                         </StackPanel>
                     </Border>

@@ -2,6 +2,7 @@ using BugTestManager.Application.Abstractions;
 using BugTestManager.Application.Defaults;
 using BugTestManager.Application.Requests;
 using BugTestManager.Application.Results;
+using BugTestManager.Domain.Enums;
 using BugTestManager.Infrastructure.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -325,6 +326,36 @@ public sealed class SqliteTestSuiteManagementService(IDbContextFactory<BugTestMa
         dbContext.SaveChanges();
     }
 
+    public void DeleteRevision(Guid testSuiteRevisionId)
+    {
+        using var dbContext = dbContextFactory.CreateDbContext();
+        var revision = dbContext.TestSuiteRevisions.SingleOrDefault(item => item.Id == testSuiteRevisionId)
+            ?? throw new InvalidOperationException("Selected revision was not found.");
+
+        var sectionIds = dbContext.TemplateSections
+            .Where(section => section.TestSuiteRevisionId == testSuiteRevisionId)
+            .Select(section => section.Id)
+            .ToList();
+        var testCaseIds = dbContext.TestCaseTemplates
+            .Where(testCase => sectionIds.Contains(testCase.TemplateSectionId))
+            .Select(testCase => testCase.Id)
+            .ToList();
+        var testStepIds = dbContext.TestStepTemplates
+            .Where(step => testCaseIds.Contains(step.TestCaseTemplateId))
+            .Select(step => step.Id)
+            .ToList();
+
+        DeleteTemplateSideData(dbContext, EntityReferenceType.TestSuiteRevision, [testSuiteRevisionId]);
+        DeleteTemplateSideData(dbContext, EntityReferenceType.TemplateSection, sectionIds);
+        DeleteTemplateSideData(dbContext, EntityReferenceType.TestCaseTemplate, testCaseIds);
+        DeleteTemplateSideData(dbContext, EntityReferenceType.TestStepTemplate, testStepIds);
+        DeleteFieldScopesForTemplateItems(dbContext, CustomFieldScopeType.TemplateSection, sectionIds);
+        DeleteFieldScopesForTemplateItems(dbContext, CustomFieldScopeType.TestCaseTemplate, testCaseIds);
+
+        dbContext.TestSuiteRevisions.Remove(revision);
+        dbContext.SaveChanges();
+    }
+
     public void DeleteSection(Guid sectionId)
     {
         using var dbContext = dbContextFactory.CreateDbContext();
@@ -454,5 +485,44 @@ public sealed class SqliteTestSuiteManagementService(IDbContextFactory<BugTestMa
 
             dbContext.TemplateSections.Add(section);
         }
+    }
+
+    private static void DeleteTemplateSideData(
+        BugTestManagerDbContext dbContext,
+        EntityReferenceType entityType,
+        IReadOnlyCollection<Guid> entityIds)
+    {
+        if (entityIds.Count == 0)
+        {
+            return;
+        }
+
+        dbContext.DiscussionComments
+            .Where(comment => comment.EntityType == entityType && entityIds.Contains(comment.EntityId))
+            .ExecuteDelete();
+        dbContext.DiscussionReadStates
+            .Where(readState => readState.EntityType == entityType && entityIds.Contains(readState.EntityId))
+            .ExecuteDelete();
+        dbContext.CustomFieldValues
+            .Where(value => value.EntityType == entityType && entityIds.Contains(value.EntityId))
+            .ExecuteDelete();
+    }
+
+    private static void DeleteFieldScopesForTemplateItems(
+        BugTestManagerDbContext dbContext,
+        CustomFieldScopeType scopeType,
+        IReadOnlyCollection<Guid> entityIds)
+    {
+        if (entityIds.Count == 0)
+        {
+            return;
+        }
+
+        dbContext.CustomFieldDefinitionScopes
+            .Where(scope =>
+                scope.ScopeType == scopeType
+                && scope.ScopeEntityId.HasValue
+                && entityIds.Contains(scope.ScopeEntityId.Value))
+            .ExecuteDelete();
     }
 }

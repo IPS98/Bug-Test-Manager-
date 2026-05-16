@@ -27,6 +27,8 @@ public interface ITestSuiteManagementService
 
     void DeleteTestSuite(Guid testSuiteId);
 
+    void DeleteRevision(Guid testSuiteRevisionId);
+
     void DeleteSection(Guid sectionId);
 
     void DeleteTestCase(Guid testCaseId);

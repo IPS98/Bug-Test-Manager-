@@ -7,24 +7,25 @@
             <Setter Property="Orientation" Value="Horizontal" />
             <Setter Property="HorizontalAlignment" Value="Right" />
             <Setter Property="Margin" Value="0,8,0,0" />
-            <Setter Property="Visibility" Value="Collapsed" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+            <Setter Property="Opacity" Value="0" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
-                    <Setter Property="Visibility" Value="Visible" />
+                    <Setter Property="IsHitTestVisible" Value="True" />
+                    <Setter Property="Opacity" Value="1" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
 
-        <Style x:Key="RowActionButtonStyle" TargetType="Button">
-            <Setter Property="MinHeight" Value="26" />
-            <Setter Property="MinWidth" Value="52" />
+        <Style x:Key="RowActionButtonStyle"
+               BasedOn="{StaticResource IconActionButtonStyle}"
+               TargetType="Button">
             <Setter Property="Margin" Value="0,0,6,0" />
-            <Setter Property="Padding" Value="8,0" />
         </Style>
 
-        <Style x:Key="FullWidthListBoxItemStyle" TargetType="ListBoxItem">
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-        </Style>
+        <Style x:Key="FullWidthListBoxItemStyle"
+               BasedOn="{StaticResource StableListBoxItemStyle}"
+               TargetType="ListBoxItem" />
     </UserControl.Resources>
 
     <Grid>
@@ -54,10 +55,14 @@
                                    Foreground="#172033"
                                    Text="Test Suites" />
                         <Button Grid.Column="1"
-                                MinWidth="72"
-                                MinHeight="30"
                                 Command="{Binding ShowCreateTestSuiteDialogCommand}"
-                                Content="+ Add" />
+                                Style="{StaticResource PrimaryActionButtonStyle}"
+                                ToolTip="Create a new test suite">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE710;" />
+                                <TextBlock Text="New Test Suite" />
+                            </StackPanel>
+                        </Button>
                     </Grid>
 
                     <Border DockPanel.Dock="Bottom"
@@ -106,20 +111,22 @@
                                                Foreground="#64748B"
                                                Text="{Binding Description}"
                                                TextWrapping="Wrap" />
-                                    <TextBlock Margin="0,6,0,0"
-                                               FontWeight="SemiBold"
-                                               Foreground="#256D5A"
-                                               Text="{Binding RevisionPolicyDisplay}" />
+                                    <Border Margin="0,6,0,0"
+                                            Style="{StaticResource GreenChipBorderStyle}">
+                                        <TextBlock Style="{StaticResource GreenChipTextStyle}"
+                                                   Text="{Binding RevisionPolicyDisplay}" />
+                                    </Border>
                                     <StackPanel Style="{StaticResource RowActionsStyle}">
                                         <Button Command="{Binding DataContext.ShowEditTestSuiteDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"
-                                                Content="Edit"
-                                                Style="{StaticResource RowActionButtonStyle}" />
+                                                Content="&#xE70F;"
+                                                Style="{StaticResource RowActionButtonStyle}"
+                                                ToolTip="Edit test suite" />
                                         <Button Command="{Binding DataContext.ShowDeleteTestSuiteDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"
-                                                Content="Delete all"
-                                                Foreground="#B91C1C"
-                                                Style="{StaticResource RowActionButtonStyle}" />
+                                                Content="&#xE74D;"
+                                                Style="{StaticResource DangerIconActionButtonStyle}"
+                                                ToolTip="Delete test suite and all child items" />
                                     </StackPanel>
                                 </StackPanel>
                             </DataTemplate>
@@ -147,10 +154,14 @@
                                    Foreground="#172033"
                                    Text="Revisions" />
                         <Button Grid.Column="1"
-                                MinWidth="72"
-                                MinHeight="30"
                                 Command="{Binding ShowCreateRevisionDialogCommand}"
-                                Content="+ Add" />
+                                Style="{StaticResource PrimaryActionButtonStyle}"
+                                ToolTip="Create a new revision">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE710;" />
+                                <TextBlock Text="Add" />
+                            </StackPanel>
+                        </Button>
                     </Grid>
 
                     <ListBox ItemsSource="{Binding SelectedTestSuite.Revisions}"
@@ -181,8 +192,14 @@
                                     <StackPanel Style="{StaticResource RowActionsStyle}">
                                         <Button Command="{Binding DataContext.ShowEditRevisionDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"
-                                                Content="Edit"
-                                                Style="{StaticResource RowActionButtonStyle}" />
+                                                Content="&#xE70F;"
+                                                Style="{StaticResource RowActionButtonStyle}"
+                                                ToolTip="Edit revision" />
+                                        <Button Command="{Binding DataContext.ShowDeleteRevisionDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"
+                                                Content="&#xE74D;"
+                                                Style="{StaticResource DangerIconActionButtonStyle}"
+                                                ToolTip="Delete revision and its tests" />
                                     </StackPanel>
                                 </StackPanel>
                             </DataTemplate>
@@ -209,10 +226,14 @@
                                    Foreground="#172033"
                                    Text="Sections" />
                         <Button Grid.Column="1"
-                                MinWidth="72"
-                                MinHeight="30"
                                 Command="{Binding ShowCreateSectionDialogCommand}"
-                                Content="+ Add" />
+                                Style="{StaticResource PrimaryActionButtonStyle}"
+                                ToolTip="Create a new section">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE710;" />
+                                <TextBlock Text="Add" />
+                            </StackPanel>
+                        </Button>
                     </Grid>
 
                     <ListBox ItemsSource="{Binding SelectedRevision.Sections}"
@@ -233,13 +254,14 @@
                                     <StackPanel Style="{StaticResource RowActionsStyle}">
                                         <Button Command="{Binding DataContext.ShowEditSectionDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"
-                                                Content="Edit"
-                                                Style="{StaticResource RowActionButtonStyle}" />
+                                                Content="&#xE70F;"
+                                                Style="{StaticResource RowActionButtonStyle}"
+                                                ToolTip="Edit section" />
                                         <Button Command="{Binding DataContext.ShowDeleteSectionDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"
-                                                Content="Delete"
-                                                Foreground="#B91C1C"
-                                                Style="{StaticResource RowActionButtonStyle}" />
+                                                Content="&#xE74D;"
+                                                Style="{StaticResource DangerIconActionButtonStyle}"
+                                                ToolTip="Delete section and child items" />
                                     </StackPanel>
                                 </StackPanel>
                             </DataTemplate>
@@ -271,10 +293,14 @@
                                        Foreground="#172033"
                                        Text="Test Cases" />
                             <Button Grid.Column="1"
-                                    MinWidth="72"
-                                    MinHeight="30"
                                     Command="{Binding ShowCreateTestCaseDialogCommand}"
-                                    Content="+ Add" />
+                                    Style="{StaticResource PrimaryActionButtonStyle}"
+                                    ToolTip="Create a new test case">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE710;" />
+                                    <TextBlock Text="Add" />
+                                </StackPanel>
+                            </Button>
                         </Grid>
 
                         <ListBox ItemsSource="{Binding SelectedSection.TestCases}"
@@ -295,13 +321,14 @@
                                         <StackPanel Style="{StaticResource RowActionsStyle}">
                                             <Button Command="{Binding DataContext.ShowEditTestCaseDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}"
-                                                    Content="Edit"
-                                                    Style="{StaticResource RowActionButtonStyle}" />
+                                                    Content="&#xE70F;"
+                                                    Style="{StaticResource RowActionButtonStyle}"
+                                                    ToolTip="Edit test case" />
                                             <Button Command="{Binding DataContext.ShowDeleteTestCaseDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}"
-                                                    Content="Delete"
-                                                    Foreground="#B91C1C"
-                                                    Style="{StaticResource RowActionButtonStyle}" />
+                                                    Content="&#xE74D;"
+                                                    Style="{StaticResource DangerIconActionButtonStyle}"
+                                                    ToolTip="Delete test case and checks" />
                                         </StackPanel>
                                     </StackPanel>
                                 </DataTemplate>
@@ -327,10 +354,14 @@
                                        Foreground="#172033"
                                        Text="Checks" />
                             <Button Grid.Column="1"
-                                    MinWidth="72"
-                                    MinHeight="30"
                                     Command="{Binding ShowCreateTestStepDialogCommand}"
-                                    Content="+ Add" />
+                                    Style="{StaticResource PrimaryActionButtonStyle}"
+                                    ToolTip="Create a new check">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE710;" />
+                                    <TextBlock Text="Add" />
+                                </StackPanel>
+                            </Button>
                         </Grid>
 
                         <ListBox ItemsSource="{Binding SelectedTestCase.Steps}"
@@ -364,15 +395,16 @@
                                                        Text="{Binding ExpectedResult}"
                                                        TextWrapping="Wrap" />
                                             <StackPanel Style="{StaticResource RowActionsStyle}">
-                                            <Button Command="{Binding DataContext.ShowEditTestStepDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    CommandParameter="{Binding}"
-                                                    Content="Edit"
-                                                    Style="{StaticResource RowActionButtonStyle}" />
-                                            <Button Command="{Binding DataContext.ShowDeleteTestStepDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    CommandParameter="{Binding}"
-                                                    Content="Delete"
-                                                    Foreground="#B91C1C"
-                                                    Style="{StaticResource RowActionButtonStyle}" />
+                                                <Button Command="{Binding DataContext.ShowEditTestStepDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        Content="&#xE70F;"
+                                                        Style="{StaticResource RowActionButtonStyle}"
+                                                        ToolTip="Edit check" />
+                                                <Button Command="{Binding DataContext.ShowDeleteTestStepDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        Content="&#xE74D;"
+                                                        Style="{StaticResource DangerIconActionButtonStyle}"
+                                                        ToolTip="Delete check" />
                                             </StackPanel>
                                         </StackPanel>
                                     </Grid>
@@ -627,15 +659,18 @@
                                 MinHeight="34"
                                 Margin="0,0,10,0"
                                 Command="{Binding CloseDialogCommand}"
-                                Content="Cancel" />
+                                Content="Cancel"
+                                Style="{StaticResource ActionButtonStyle}"
+                                ToolTip="Close this dialog without saving" />
 
                         <Button MinWidth="92"
                                 MinHeight="34"
                                 Command="{Binding CreateTestSuiteCommand}"
                                 Content="Create"
-                                IsDefault="True">
+                                IsDefault="True"
+                                ToolTip="Create test suite">
                             <Button.Style>
-                                <Style TargetType="Button">
+                                <Style BasedOn="{StaticResource PrimaryActionButtonStyle}" TargetType="Button">
                                     <Setter Property="Visibility" Value="Collapsed" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding ActiveDialog}" Value="{x:Static viewModels:TemplateDialogKind.TestSuite}">
@@ -650,9 +685,10 @@
                                 MinHeight="34"
                                 Command="{Binding CreateRevisionCommand}"
                                 Content="Create"
-                                IsDefault="True">
+                                IsDefault="True"
+                                ToolTip="Create revision">
                             <Button.Style>
-                                <Style TargetType="Button">
+                                <Style BasedOn="{StaticResource PrimaryActionButtonStyle}" TargetType="Button">
                                     <Setter Property="Visibility" Value="Collapsed" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding ActiveDialog}" Value="{x:Static viewModels:TemplateDialogKind.Revision}">
@@ -667,9 +703,10 @@
                                 MinHeight="34"
                                 Command="{Binding CreateSectionCommand}"
                                 Content="Create"
-                                IsDefault="True">
+                                IsDefault="True"
+                                ToolTip="Create section">
                             <Button.Style>
-                                <Style TargetType="Button">
+                                <Style BasedOn="{StaticResource PrimaryActionButtonStyle}" TargetType="Button">
                                     <Setter Property="Visibility" Value="Collapsed" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding ActiveDialog}" Value="{x:Static viewModels:TemplateDialogKind.Section}">
@@ -684,9 +721,10 @@
                                 MinHeight="34"
                                 Command="{Binding CreateTestCaseCommand}"
                                 Content="Create"
-                                IsDefault="True">
+                                IsDefault="True"
+                                ToolTip="Create test case">
                             <Button.Style>
-                                <Style TargetType="Button">
+                                <Style BasedOn="{StaticResource PrimaryActionButtonStyle}" TargetType="Button">
                                     <Setter Property="Visibility" Value="Collapsed" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding ActiveDialog}" Value="{x:Static viewModels:TemplateDialogKind.TestCase}">
@@ -701,9 +739,10 @@
                                 MinHeight="34"
                                 Command="{Binding CreateTestStepCommand}"
                                 Content="Create"
-                                IsDefault="True">
+                                IsDefault="True"
+                                ToolTip="Create check">
                             <Button.Style>
-                                <Style TargetType="Button">
+                                <Style BasedOn="{StaticResource PrimaryActionButtonStyle}" TargetType="Button">
                                     <Setter Property="Visibility" Value="Collapsed" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding ActiveDialog}" Value="{x:Static viewModels:TemplateDialogKind.Step}">
@@ -718,9 +757,10 @@
                                 MinHeight="34"
                                 Command="{Binding SaveEditCommand}"
                                 Content="Save"
-                                IsDefault="True">
+                                IsDefault="True"
+                                ToolTip="Save changes">
                             <Button.Style>
-                                <Style TargetType="Button">
+                                <Style BasedOn="{StaticResource PrimaryActionButtonStyle}" TargetType="Button">
                                     <Setter Property="Visibility" Value="Collapsed" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding ActiveDialog}" Value="{x:Static viewModels:TemplateDialogKind.EditTestSuite}">
@@ -747,10 +787,10 @@
                                 MinHeight="34"
                                 Command="{Binding ConfirmDeleteCommand}"
                                 Content="Delete"
-                                Foreground="#B91C1C"
-                                IsDefault="True">
+                                IsDefault="True"
+                                ToolTip="Confirm delete">
                             <Button.Style>
-                                <Style TargetType="Button">
+                                <Style BasedOn="{StaticResource DangerActionButtonStyle}" TargetType="Button">
                                     <Setter Property="Visibility" Value="Collapsed" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding ActiveDialog}" Value="{x:Static viewModels:TemplateDialogKind.DeleteConfirmation}">

@@ -8,6 +8,165 @@
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Light.Blue.xaml" />
             </ResourceDictionary.MergedDictionaries>
+
+            <SolidColorBrush x:Key="AppActionBackgroundBrush" Color="#F8FAFC" />
+            <SolidColorBrush x:Key="AppActionHoverBackgroundBrush" Color="#EEF6FF" />
+            <SolidColorBrush x:Key="AppActionPressedBackgroundBrush" Color="#DBEAFE" />
+            <SolidColorBrush x:Key="AppActionBorderBrush" Color="#CBD5E1" />
+            <SolidColorBrush x:Key="AppActionHoverBorderBrush" Color="#93C5FD" />
+            <SolidColorBrush x:Key="AppActionForegroundBrush" Color="#172033" />
+            <SolidColorBrush x:Key="AppPrimaryBackgroundBrush" Color="#256D5A" />
+            <SolidColorBrush x:Key="AppPrimaryHoverBackgroundBrush" Color="#1F5F50" />
+            <SolidColorBrush x:Key="AppDangerForegroundBrush" Color="#B91C1C" />
+            <SolidColorBrush x:Key="AppDangerHoverBackgroundBrush" Color="#FEF2F2" />
+            <SolidColorBrush x:Key="AppDangerHoverBorderBrush" Color="#FCA5A5" />
+            <SolidColorBrush x:Key="AppPositiveChipBackgroundBrush" Color="#E7F6EF" />
+            <SolidColorBrush x:Key="AppPositiveChipBorderBrush" Color="#A7F3D0" />
+            <SolidColorBrush x:Key="AppPositiveChipForegroundBrush" Color="#256D5A" />
+
+            <Style x:Key="GreenChipBorderStyle" TargetType="{x:Type Border}">
+                <Setter Property="Padding" Value="8,3" />
+                <Setter Property="Background" Value="{StaticResource AppPositiveChipBackgroundBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource AppPositiveChipBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="6" />
+                <Setter Property="HorizontalAlignment" Value="Left" />
+            </Style>
+
+            <Style x:Key="GreenChipTextStyle" TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="{StaticResource AppPositiveChipForegroundBrush}" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+            </Style>
+
+            <Style x:Key="ActionButtonStyle" TargetType="{x:Type Button}">
+                <Setter Property="MinHeight" Value="34" />
+                <Setter Property="MinWidth" Value="38" />
+                <Setter Property="Padding" Value="12,0" />
+                <Setter Property="Background" Value="{StaticResource AppActionBackgroundBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource AppActionBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Foreground" Value="{StaticResource AppActionForegroundBrush}" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="ToolTipService.ShowDuration" Value="6000" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="6">
+                                <ContentPresenter Margin="{TemplateBinding Padding}"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  RecognizesAccessKey="True" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource AppActionHoverBackgroundBrush}" />
+                                    <Setter Property="BorderBrush" Value="{StaticResource AppActionHoverBorderBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource AppActionPressedBackgroundBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Opacity" Value="0.45" />
+                                    <Setter Property="Cursor" Value="Arrow" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="PrimaryActionButtonStyle"
+                   BasedOn="{StaticResource ActionButtonStyle}"
+                   TargetType="{x:Type Button}">
+                <Setter Property="Background" Value="{StaticResource AppPrimaryBackgroundBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource AppPrimaryBackgroundBrush}" />
+                <Setter Property="Foreground" Value="White" />
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Background" Value="{StaticResource AppPrimaryHoverBackgroundBrush}" />
+                        <Setter Property="BorderBrush" Value="{StaticResource AppPrimaryHoverBackgroundBrush}" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="DangerActionButtonStyle"
+                   BasedOn="{StaticResource ActionButtonStyle}"
+                   TargetType="{x:Type Button}">
+                <Setter Property="Foreground" Value="{StaticResource AppDangerForegroundBrush}" />
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Background" Value="{StaticResource AppDangerHoverBackgroundBrush}" />
+                        <Setter Property="BorderBrush" Value="{StaticResource AppDangerHoverBorderBrush}" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="IconActionButtonStyle"
+                   BasedOn="{StaticResource ActionButtonStyle}"
+                   TargetType="{x:Type Button}">
+                <Setter Property="Width" Value="34" />
+                <Setter Property="MinWidth" Value="34" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+                <Setter Property="FontSize" Value="13" />
+            </Style>
+
+            <Style x:Key="DangerIconActionButtonStyle"
+                   BasedOn="{StaticResource IconActionButtonStyle}"
+                   TargetType="{x:Type Button}">
+                <Setter Property="Foreground" Value="{StaticResource AppDangerForegroundBrush}" />
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Background" Value="{StaticResource AppDangerHoverBackgroundBrush}" />
+                        <Setter Property="BorderBrush" Value="{StaticResource AppDangerHoverBorderBrush}" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="ActionIconTextStyle" TargetType="{x:Type TextBlock}">
+                <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="Margin" Value="0,0,7,0" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="StableListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Margin" Value="0" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderBrush" Value="Transparent" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="6">
+                                <ContentPresenter Margin="{TemplateBinding Padding}"
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#F8FAFC" />
+                                    <Setter Property="BorderBrush" Value="#E2E8F0" />
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#ECFDF5" />
+                                    <Setter Property="BorderBrush" Value="#A7F3D0" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

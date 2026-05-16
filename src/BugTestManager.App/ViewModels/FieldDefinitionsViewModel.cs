@@ -76,6 +76,18 @@ public sealed partial class FieldDefinitionsViewModel : ObservableObject
     private Visibility editFieldDialogVisibility = Visibility.Collapsed;
 
     [ObservableProperty]
+    private FieldDefinitionItemViewModel? archivingField;
+
+    [ObservableProperty]
+    private Visibility archiveFieldDialogVisibility = Visibility.Collapsed;
+
+    [ObservableProperty]
+    private string archiveFieldTitle = string.Empty;
+
+    [ObservableProperty]
+    private string archiveFieldWarning = string.Empty;
+
+    [ObservableProperty]
     private SelectionOption<EntityReferenceType>? editTargetEntityType;
 
     [ObservableProperty]
@@ -236,18 +248,43 @@ public sealed partial class FieldDefinitionsViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void ArchiveField(FieldDefinitionItemViewModel? field)
+    private void ShowArchiveFieldDialog(FieldDefinitionItemViewModel? field)
     {
         if (field is null)
         {
             return;
         }
 
+        ArchivingField = field;
+        ArchiveFieldTitle = $"Archive field: {field.Name}";
+        ArchiveFieldWarning = "Archived fields stop appearing in new test or bug forms, but existing saved values are kept for history.";
+        ArchiveFieldDialogVisibility = Visibility.Visible;
+    }
+
+    [RelayCommand]
+    private void CloseArchiveFieldDialog()
+    {
+        ArchiveFieldDialogVisibility = Visibility.Collapsed;
+        ArchivingField = null;
+        ArchiveFieldTitle = string.Empty;
+        ArchiveFieldWarning = string.Empty;
+    }
+
+    [RelayCommand]
+    private void ConfirmArchiveField()
+    {
+        if (ArchivingField is null)
+        {
+            return;
+        }
+
         try
         {
-            fieldDefinitionService.ArchiveDefinition(field.Id);
+            var fieldName = ArchivingField.Name;
+            fieldDefinitionService.ArchiveDefinition(ArchivingField.Id);
+            CloseArchiveFieldDialog();
             LoadFields();
-            StatusMessage = $"Field '{field.Name}' archived.";
+            StatusMessage = $"Field '{fieldName}' archived.";
         }
         catch (Exception ex)
         {

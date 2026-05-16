@@ -29,114 +29,186 @@
         <DataTemplate DataType="{x:Type viewModels:PlaceholderPageViewModel}">
             <views:PlaceholderPageView />
         </DataTemplate>
+
+        <Style x:Key="SidebarIconButtonStyle"
+               BasedOn="{StaticResource IconActionButtonStyle}"
+               TargetType="{x:Type Button}">
+            <Setter Property="Background" Value="#22304A" />
+            <Setter Property="BorderBrush" Value="#33415F" />
+            <Setter Property="Foreground" Value="White" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#2D3E5E" />
+                    <Setter Property="BorderBrush" Value="#4A5E83" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="SidebarNavigationButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="MinHeight" Value="54" />
+            <Setter Property="Padding" Value="12" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Background" Value="#22304A" />
+            <Setter Property="BorderBrush" Value="#22304A" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="ToolTipService.ShowDuration" Value="6000" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#2D3E5E" />
+                                <Setter Property="BorderBrush" Value="#4A5E83" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                    <Setter Property="Background" Value="#256D5A" />
+                    <Setter Property="BorderBrush" Value="#4ADE80" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </mah:MetroWindow.Resources>
 
     <Grid Background="#F5F7FA">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="260" />
+            <ColumnDefinition Width="{Binding SidebarWidth}" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
         <Border Grid.Column="0"
-                Padding="22"
+                Padding="14"
                 Background="#172033">
-            <DockPanel LastChildFill="True">
-                <StackPanel DockPanel.Dock="Top">
-                    <TextBlock FontSize="22"
-                               FontWeight="SemiBold"
-                               Foreground="White"
-                               Text="Bug &amp; Test Manager" />
-                    <TextBlock Margin="0,8,0,0"
-                               Foreground="#B8C2D6"
-                               Text="{Binding CurrentUserDisplay}" />
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+                <DockPanel LastChildFill="True">
+                    <StackPanel DockPanel.Dock="Top">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
 
-                    <TextBlock Margin="0,24,0,6"
-                               FontWeight="SemiBold"
-                               Foreground="#D5DCEB"
-                               Text="Project" />
-                    <ComboBox MinHeight="32"
-                              DisplayMemberPath="DisplayName"
-                              ItemsSource="{Binding Projects}"
-                              SelectedItem="{Binding SelectedProject}" />
-                    <Grid Margin="0,8,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="8" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBox MinHeight="30"
-                                 VerticalContentAlignment="Center"
-                                 Text="{Binding NewProjectName, UpdateSourceTrigger=PropertyChanged}" />
-                        <Button Grid.Column="2"
-                                MinWidth="54"
-                                MinHeight="30"
-                                Command="{Binding CreateProjectCommand}"
-                                Content="+ Add" />
-                    </Grid>
-                    <TextBlock Margin="0,6,0,0"
-                               Foreground="#B8C2D6"
-                               Text="{Binding ProjectStatusMessage}"
-                               TextWrapping="Wrap" />
-                    <Button Margin="0,8,0,0"
-                            MinHeight="30"
-                            HorizontalAlignment="Stretch"
-                            Command="{Binding ShowDeleteProjectDialogCommand}"
-                            Content="Delete Project"
-                            Foreground="#FCA5A5" />
-                </StackPanel>
+                            <Button HorizontalAlignment="Right"
+                                    Command="{Binding ToggleSidebarCommand}"
+                                    Content="{Binding SidebarToggleGlyph}"
+                                    Style="{StaticResource SidebarIconButtonStyle}"
+                                    ToolTip="Open or close the main menu" />
 
-                <ItemsControl Margin="0,24,0,0"
-                              ItemsSource="{Binding Modules}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Button Margin="0,0,0,10"
-                                    Padding="14"
-                                    HorizontalContentAlignment="Stretch"
-                                    Background="#22304A"
-                                    BorderBrush="#22304A"
-                                    Command="{Binding DataContext.SelectModuleCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                    CommandParameter="{Binding}"
-                                    Cursor="Hand">
-                                <Button.Style>
-                                    <Style TargetType="Button">
-                                        <Setter Property="Foreground" Value="White" />
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="Button">
-                                                    <Border Padding="{TemplateBinding Padding}"
-                                                            Background="{TemplateBinding Background}"
-                                                            BorderBrush="{TemplateBinding BorderBrush}"
-                                                            BorderThickness="1"
-                                                            CornerRadius="6">
-                                                        <ContentPresenter />
-                                                    </Border>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                <Setter Property="Background" Value="#256D5A" />
-                                                <Setter Property="BorderBrush" Value="#4ADE80" />
-                                            </DataTrigger>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="#2D3E5E" />
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                                <StackPanel>
-                                    <TextBlock FontWeight="SemiBold"
-                                               Text="{Binding Name}" />
-                                    <TextBlock Margin="0,4,0,0"
-                                               Foreground="#D5DCEB"
-                                               Text="{Binding Description}"
-                                               TextWrapping="Wrap" />
-                                </StackPanel>
-                            </Button>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </DockPanel>
+                            <StackPanel Grid.Row="1"
+                                        Margin="0,14,0,0"
+                                        Visibility="{Binding SidebarExpandedContentVisibility}">
+                                <TextBlock FontSize="21"
+                                           FontWeight="SemiBold"
+                                           Foreground="White"
+                                           TextWrapping="Wrap"
+                                           Text="Bug &amp; Test Manager" />
+                                <TextBlock Margin="0,8,0,0"
+                                           Foreground="#B8C2D6"
+                                           TextWrapping="Wrap"
+                                           Text="{Binding CurrentUserDisplay}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Border Margin="0,22,0,0"
+                                Padding="12"
+                                Background="#1E2A42"
+                                BorderBrush="#33415F"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Visibility="{Binding SidebarExpandedContentVisibility}">
+                            <StackPanel>
+                                <TextBlock FontWeight="SemiBold"
+                                           Foreground="#D5DCEB"
+                                           Text="Project" />
+                                <ComboBox Margin="0,8,0,0"
+                                          MinHeight="34"
+                                          DisplayMemberPath="DisplayName"
+                                          ItemsSource="{Binding Projects}"
+                                          SelectedItem="{Binding SelectedProject}" />
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="8" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox MinHeight="34"
+                                             VerticalContentAlignment="Center"
+                                             Text="{Binding NewProjectName, UpdateSourceTrigger=PropertyChanged}" />
+                                    <Button Grid.Column="2"
+                                            Command="{Binding CreateProjectCommand}"
+                                            Style="{StaticResource SidebarIconButtonStyle}"
+                                            ToolTip="Create project">
+                                        <TextBlock Text="&#xE710;" />
+                                    </Button>
+                                </Grid>
+                                <TextBlock Margin="0,8,0,0"
+                                           Foreground="#B8C2D6"
+                                           Text="{Binding ProjectStatusMessage}"
+                                           TextWrapping="Wrap" />
+                                <Button Margin="0,10,0,0"
+                                        HorizontalAlignment="Stretch"
+                                        Command="{Binding ShowDeleteProjectDialogCommand}"
+                                        Style="{StaticResource DangerActionButtonStyle}"
+                                        ToolTip="Delete selected project">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE74D;" />
+                                        <TextBlock Text="Delete Project" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <ItemsControl Margin="0,24,0,0"
+                                  ItemsSource="{Binding Modules}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Margin="0,0,0,10"
+                                        Command="{Binding DataContext.SelectModuleCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        CommandParameter="{Binding}"
+                                        Style="{StaticResource SidebarNavigationButtonStyle}"
+                                        ToolTip="{Binding Name}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="28" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   FontFamily="Segoe MDL2 Assets"
+                                                   FontSize="16"
+                                                   Text="{Binding IconGlyph}" />
+                                        <StackPanel Grid.Column="1"
+                                                    Margin="8,0,0,0"
+                                                    Visibility="{Binding DataContext.SidebarExpandedContentVisibility, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
+                                            <TextBlock FontWeight="SemiBold"
+                                                       Text="{Binding Name}" />
+                                            <TextBlock Margin="0,4,0,0"
+                                                       Foreground="#D5DCEB"
+                                                       Text="{Binding Description}"
+                                                       TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </DockPanel>
+            </ScrollViewer>
         </Border>
 
         <Grid Grid.Column="1"
@@ -200,12 +272,15 @@
                                 MinHeight="34"
                                 Margin="0,0,10,0"
                                 Command="{Binding CloseDeleteProjectDialogCommand}"
-                                Content="Cancel" />
+                                Content="Cancel"
+                                Style="{StaticResource ActionButtonStyle}"
+                                ToolTip="Cancel project delete" />
                         <Button MinWidth="110"
                                 MinHeight="34"
                                 Command="{Binding ConfirmDeleteProjectCommand}"
                                 Content="Delete Project"
-                                Foreground="#B91C1C" />
+                                Style="{StaticResource DangerActionButtonStyle}"
+                                ToolTip="Delete selected project" />
                     </StackPanel>
                 </Grid>
             </Border>
