@@ -47,6 +47,13 @@ Selection criteria:
 
 The current code should not depend directly on a specific PDF package from ViewModels.
 
+Initial renderer decision:
+
+- Use PDFsharp/MigraDoc through an `IReportExportService` Infrastructure implementation.
+- Keep PDFsharp/MigraDoc outside WPF ViewModels.
+- Keep the export contract in `Application`, so the renderer can be replaced later.
+- Use the core package first. Image embedding and advanced layout can be improved behind the same interface.
+
 ## Future Report Types
 
 - Full test session report.

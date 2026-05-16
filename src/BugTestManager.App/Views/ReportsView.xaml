@@ -53,6 +53,15 @@
                                 <TextBlock Text="Prepare" />
                             </StackPanel>
                         </Button>
+                        <Button Margin="10,0,0,0"
+                                Command="{Binding ExportPdfCommand}"
+                                Style="{StaticResource ActionButtonStyle}"
+                                ToolTip="Export selected test session report to PDF">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE749;" />
+                                <TextBlock Text="Export PDF" />
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
                 </Grid>
 
@@ -64,9 +73,22 @@
                                 BorderBrush="#E2E8F0"
                                 BorderThickness="1"
                                 CornerRadius="6">
-                            <TextBlock Foreground="#475569"
-                                       Text="{Binding StatusMessage}"
-                                       TextWrapping="Wrap" />
+                            <DockPanel LastChildFill="True">
+                                <Button DockPanel.Dock="Right"
+                                        Margin="12,0,0,0"
+                                        Command="{Binding OpenExportedReportCommand}"
+                                        Style="{StaticResource ActionButtonStyle}"
+                                        ToolTip="Open exported PDF report"
+                                        Visibility="{Binding ExportedReportVisibility}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE8A7;" />
+                                        <TextBlock Text="Open PDF" />
+                                    </StackPanel>
+                                </Button>
+                                <TextBlock Foreground="#475569"
+                                           Text="{Binding StatusMessage}"
+                                           TextWrapping="Wrap" />
+                            </DockPanel>
                         </Border>
 
                         <StackPanel Margin="0,18,0,0"

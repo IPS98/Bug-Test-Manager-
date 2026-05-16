@@ -945,6 +945,43 @@ public sealed class SqlitePersistenceTests
     }
 
     [Fact]
+    public void ReportExportService_ExportsTestSessionPdf()
+    {
+        var databasePath = CreateTempDatabasePath();
+        using var serviceProvider = CreateServiceProvider(databasePath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var catalog = serviceProvider.GetRequiredService<ITestSuiteCatalogService>().GetCatalog();
+        var sourceSuite = catalog.Single(suite => suite.Name == "Application UI Regression");
+        var sessionService = serviceProvider.GetRequiredService<ITestSessionService>();
+        var sessionId = sessionService.CreateSession(new CreateTestSessionRequest(
+            "PDF report source",
+            sourceSuite.Id,
+            TestSuiteRevisionId: null,
+            TestedVersion: "1.3.1",
+            BuildNumber: "901",
+            Notes: "PDF export notes",
+            CreatedBy: "tester"));
+
+        var report = serviceProvider
+            .GetRequiredService<IReportDataService>()
+            .GetTestSessionReport(sessionId);
+        var outputFilePath = Path.Combine(CreateTempDirectoryPath(), "test-session-report.pdf");
+
+        var result = serviceProvider
+            .GetRequiredService<IReportExportService>()
+            .ExportTestSessionReport(new ExportTestSessionReportRequest(
+                report,
+                outputFilePath,
+                "tester"));
+
+        Assert.Equal(outputFilePath, result.OutputFilePath);
+        Assert.True(File.Exists(outputFilePath));
+        Assert.True(new FileInfo(outputFilePath).Length > 0);
+        Assert.Equal("%PDF"u8.ToArray(), File.ReadAllBytes(outputFilePath).Take(4).ToArray());
+    }
+
+    [Fact]
     public void TestSessionService_RequiresRevisionForRevisionedSuite()
     {
         var databasePath = CreateTempDatabasePath();

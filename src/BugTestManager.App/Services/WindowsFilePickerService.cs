@@ -17,4 +17,21 @@ public sealed class WindowsFilePickerService : IFilePickerService
             ? dialog.FileName
             : null;
     }
+
+    public string? PickPdfReportSaveFile(string suggestedFileName)
+    {
+        var dialog = new SaveFileDialog
+        {
+            Title = "Save PDF Report",
+            Filter = "PDF report|*.pdf",
+            FileName = suggestedFileName,
+            AddExtension = true,
+            DefaultExt = ".pdf",
+            OverwritePrompt = true
+        };
+
+        return dialog.ShowDialog() == true
+            ? dialog.FileName
+            : null;
+    }
 }

@@ -1,5 +1,6 @@
 using BugTestManager.Application.Abstractions;
 using BugTestManager.Infrastructure.Data;
+using BugTestManager.Infrastructure.Pdf;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -42,6 +43,7 @@ public static class InfrastructureServiceCollectionExtensions
             new SqliteReportDataService(
                 provider.GetRequiredService<IDbContextFactory<BugTestManagerDbContext>>(),
                 attachmentRootPath));
+        services.AddSingleton<IReportExportService, MigraDocReportExportService>();
         services.AddSingleton<IAttachmentService>(_ =>
             new SqliteAttachmentService(
                 _.GetRequiredService<IDbContextFactory<BugTestManagerDbContext>>(),
