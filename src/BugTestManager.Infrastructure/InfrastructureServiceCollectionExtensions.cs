@@ -38,6 +38,10 @@ public static class InfrastructureServiceCollectionExtensions
                 attachmentRootPath));
         services.AddSingleton<IBugReportService, SqliteBugReportService>();
         services.AddSingleton<IDiscussionService, SqliteDiscussionService>();
+        services.AddSingleton<IReportDataService>(provider =>
+            new SqliteReportDataService(
+                provider.GetRequiredService<IDbContextFactory<BugTestManagerDbContext>>(),
+                attachmentRootPath));
         services.AddSingleton<IAttachmentService>(_ =>
             new SqliteAttachmentService(
                 _.GetRequiredService<IDbContextFactory<BugTestManagerDbContext>>(),

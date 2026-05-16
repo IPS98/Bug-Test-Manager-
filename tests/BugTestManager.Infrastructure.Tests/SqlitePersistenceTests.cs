@@ -860,6 +860,91 @@ public sealed class SqlitePersistenceTests
     }
 
     [Fact]
+    public void ReportDataService_BuildsTestSessionReportData()
+    {
+        var databasePath = CreateTempDatabasePath();
+        var attachmentRootPath = CreateTempDirectoryPath();
+        using var serviceProvider = CreateServiceProvider(databasePath, attachmentRootPath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var catalog = serviceProvider.GetRequiredService<ITestSuiteCatalogService>().GetCatalog();
+        var sourceSuite = catalog.Single(suite => suite.Name == "Application UI Regression");
+        var sessionService = serviceProvider.GetRequiredService<ITestSessionService>();
+        var sessionId = sessionService.CreateSession(new CreateTestSessionRequest(
+            "Regression report source",
+            sourceSuite.Id,
+            TestSuiteRevisionId: null,
+            TestedVersion: "1.3.0",
+            BuildNumber: "900",
+            Notes: "Report notes",
+            CreatedBy: "tester"));
+
+        var session = sessionService.GetSession(sessionId);
+        var testCase = session.Sections.SelectMany(section => section.TestCases).First();
+        sessionService.UpdateTestCaseResult(new UpdateTestCaseResultRequest(
+            testCase.Id,
+            TestResultStatus.Pass,
+            "Case passed for report."));
+
+        var fieldService = serviceProvider.GetRequiredService<ICustomFieldDefinitionService>();
+        var fieldId = fieldService.CreateDefinition(new CreateCustomFieldDefinitionRequest(
+            EntityReferenceType.TestCaseResult,
+            "Firmware",
+            FieldType.Text,
+            IsRequired: false,
+            SortOrder: 1,
+            CustomFieldScopeType.Global,
+            ScopeEntityId: null,
+            ScopeDisplayName: "Whole project",
+            Options: []));
+        var valueService = serviceProvider.GetRequiredService<ICustomFieldValueService>();
+        valueService.SaveValue(new SaveCustomFieldValueRequest(
+            fieldId,
+            EntityReferenceType.TestCaseResult,
+            testCase.Id,
+            "FW-1.0.0",
+            "tester"));
+
+        var sourceDirectory = CreateTempDirectoryPath();
+        var sourceFilePath = Path.Combine(sourceDirectory, "report-evidence.txt");
+        File.WriteAllText(sourceFilePath, "Evidence for report.");
+        var attachmentService = serviceProvider.GetRequiredService<IAttachmentService>();
+        attachmentService.AddAttachment(new AddAttachmentRequest(
+            EntityReferenceType.TestCaseResult,
+            testCase.Id,
+            sourceFilePath,
+            "tester"));
+
+        var bugService = serviceProvider.GetRequiredService<IBugReportService>();
+        var bugId = bugService.CreateBug(new CreateBugReportRequest(
+            "Report linked bug",
+            "Bug visible in report data.",
+            "High",
+            "P1",
+            "1.3.0",
+            "900",
+            "tester",
+            EntityReferenceType.TestCaseResult,
+            testCase.Id,
+            $"Test case: {testCase.Title}"));
+
+        var report = serviceProvider.GetRequiredService<IReportDataService>().GetTestSessionReport(sessionId);
+        var reportCase = report.Sections
+            .SelectMany(section => section.TestCases)
+            .Single(item => item.Id == testCase.Id);
+
+        Assert.Equal("Regression report source", report.SessionName);
+        Assert.Equal("1.3.0", report.TestedVersion);
+        Assert.Equal("900", report.BuildNumber);
+        Assert.Equal(session.Sections.Sum(section => section.TestCases.Count), report.Summary.Total);
+        Assert.Equal(1, report.Summary.Passed);
+        Assert.Equal("Case passed for report.", reportCase.Comment);
+        Assert.Contains(reportCase.CustomFields, field => field.Name == "Firmware" && field.Value == "FW-1.0.0");
+        Assert.Contains(reportCase.Attachments, attachment => attachment.OriginalFileName == "report-evidence.txt");
+        Assert.Contains(report.LinkedBugs, bug => bug.Id == bugId && bug.Title == "Report linked bug");
+    }
+
+    [Fact]
     public void TestSessionService_RequiresRevisionForRevisionedSuite()
     {
         var databasePath = CreateTempDatabasePath();

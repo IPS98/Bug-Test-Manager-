@@ -115,6 +115,8 @@ Status: implementation in progress after approved architecture and skeleton setu
 - Test sessions can be deleted after confirmation, including related result data, custom field values, attachments, and discussions.
 - New Test Session creation now opens in a popup dialog instead of permanently occupying the Test Sessions screen.
 - Test Sessions page can create a new clean session by copying the structure of a previous session.
+- Reports stage started with a modular report data service for full test session report data.
+- Reports page can prepare a test session report preview from the report data model.
 - Test suite revisions can be created, renamed, and copied from an existing revision without modifying the original revision.
 - Test suite revision requirement can be disabled again while editing a test suite.
 - Custom fields can be bound to multiple selected scopes/targets without duplicating the same field definition.
@@ -420,6 +422,7 @@ History:
 
 ### Milestone 6 - PDF Reports
 
+- Prepare full test session report data. Started.
 - Generate full test report PDF.
 - Generate bug report PDF.
 - Generate summary/sign-off report if required.

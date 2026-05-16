@@ -18,6 +18,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private readonly FieldDefinitionsViewModel fieldDefinitionsViewModel;
     private readonly TestSessionsViewModel testSessionsViewModel;
     private readonly BugReportsViewModel bugReportsViewModel;
+    private readonly ReportsViewModel reportsViewModel;
 
     public MainWindowViewModel(
         IUserContext userContext,
@@ -26,7 +27,8 @@ public sealed partial class MainWindowViewModel : ObservableObject
         TestSuitesViewModel testSuitesViewModel,
         FieldDefinitionsViewModel fieldDefinitionsViewModel,
         TestSessionsViewModel testSessionsViewModel,
-        BugReportsViewModel bugReportsViewModel)
+        BugReportsViewModel bugReportsViewModel,
+        ReportsViewModel reportsViewModel)
     {
         this.projectService = projectService;
         this.projectContext = projectContext;
@@ -34,6 +36,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         this.fieldDefinitionsViewModel = fieldDefinitionsViewModel;
         this.testSessionsViewModel = testSessionsViewModel;
         this.bugReportsViewModel = bugReportsViewModel;
+        this.reportsViewModel = reportsViewModel;
         CurrentUserDisplay = $"Signed in as {userContext.UserName} ({userContext.Role})";
         Projects = [];
 
@@ -148,6 +151,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
             AppPageKey.Fields => GetFieldDefinitionsViewModel(),
             AppPageKey.TestSessions => GetTestSessionsViewModel(),
             AppPageKey.Bugs => GetBugReportsViewModel(),
+            AppPageKey.Reports => GetReportsViewModel(),
             _ => new PlaceholderPageViewModel(module.Name, "This page will be implemented after the template browser is stable.")
         };
     }
@@ -238,6 +242,12 @@ public sealed partial class MainWindowViewModel : ObservableObject
         return bugReportsViewModel;
     }
 
+    private ReportsViewModel GetReportsViewModel()
+    {
+        reportsViewModel.Refresh();
+        return reportsViewModel;
+    }
+
     private bool CanCreateProject()
     {
         return !string.IsNullOrWhiteSpace(NewProjectName);
@@ -286,6 +296,9 @@ public sealed partial class MainWindowViewModel : ObservableObject
                 break;
             case BugReportsViewModel:
                 bugReportsViewModel.Refresh();
+                break;
+            case ReportsViewModel:
+                reportsViewModel.Refresh();
                 break;
         }
     }

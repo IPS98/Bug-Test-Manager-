@@ -26,6 +26,9 @@
         <DataTemplate DataType="{x:Type viewModels:BugReportsViewModel}">
             <views:BugReportsView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type viewModels:ReportsViewModel}">
+            <views:ReportsView />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type viewModels:PlaceholderPageViewModel}">
             <views:PlaceholderPageView />
         </DataTemplate>

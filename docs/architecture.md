@@ -214,6 +214,13 @@ Reports should support:
 
 The PDF library must be selected after checking license requirements.
 
+The reporting module should stay layered:
+
+- `Application` defines report read models and report service interfaces.
+- `Infrastructure` collects report data from storage.
+- A future PDF renderer should depend on report models, not on WPF ViewModels.
+- WPF screens should request prepared report data through application services.
+
 ## Versioning and Updates
 
 The project should track:
