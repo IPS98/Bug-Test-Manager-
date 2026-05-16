@@ -1196,12 +1196,28 @@ public sealed class SqlitePersistenceTests
             ScopeEntityId: null,
             ScopeDisplayName: "Whole project",
             Options: []));
+        var dateFieldId = fieldService.CreateDefinition(new CreateCustomFieldDefinitionRequest(
+            EntityReferenceType.TestCaseResult,
+            "Review date",
+            FieldType.Date,
+            IsRequired: false,
+            SortOrder: 2,
+            CustomFieldScopeType.Global,
+            ScopeEntityId: null,
+            ScopeDisplayName: "Whole project",
+            Options: []));
         var valueService = serviceProvider.GetRequiredService<ICustomFieldValueService>();
         valueService.SaveValue(new SaveCustomFieldValueRequest(
             fieldId,
             EntityReferenceType.TestCaseResult,
             testCase.Id,
             "FW-1.0.0",
+            "tester"));
+        valueService.SaveValue(new SaveCustomFieldValueRequest(
+            dateFieldId,
+            EntityReferenceType.TestCaseResult,
+            testCase.Id,
+            "2026-05-16T11:45:00+00:00",
             "tester"));
 
         var sourceDirectory = CreateTempDirectoryPath();
@@ -1238,7 +1254,10 @@ public sealed class SqlitePersistenceTests
         Assert.Equal(session.Sections.Sum(section => section.TestCases.Count), report.Summary.Total);
         Assert.Equal(1, report.Summary.Passed);
         Assert.Equal("Case passed for report.", reportCase.Comment);
+        Assert.NotNull(reportCase.LastStatusChangedAt);
+        Assert.Equal(10, reportCase.LastStatusChangedDateDisplay.Length);
         Assert.Contains(reportCase.CustomFields, field => field.Name == "Firmware" && field.Value == "FW-1.0.0");
+        Assert.Contains(reportCase.CustomFields, field => field.Name == "Review date" && field.DisplayValue == "2026-05-16");
         Assert.Contains(reportCase.Attachments, attachment => attachment.OriginalFileName == "report-evidence.txt");
         Assert.Contains(report.LinkedBugs, bug => bug.Id == bugId && bug.Title == "Report linked bug");
     }
@@ -1247,7 +1266,8 @@ public sealed class SqlitePersistenceTests
     public void ReportExportService_ExportsTestSessionPdf()
     {
         var databasePath = CreateTempDatabasePath();
-        using var serviceProvider = CreateServiceProvider(databasePath);
+        var attachmentRootPath = CreateTempDirectoryPath();
+        using var serviceProvider = CreateServiceProvider(databasePath, attachmentRootPath);
         serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
 
         var catalog = serviceProvider.GetRequiredService<ITestSuiteCatalogService>().GetCatalog();
@@ -1261,6 +1281,20 @@ public sealed class SqlitePersistenceTests
             BuildNumber: "901",
             Notes: "PDF export notes",
             CreatedBy: "tester"));
+        var testCase = sessionService.GetSession(sessionId)
+            .Sections
+            .SelectMany(section => section.TestCases)
+            .First();
+        var sourceDirectory = CreateTempDirectoryPath();
+        var sourceImagePath = Path.Combine(sourceDirectory, "evidence.png");
+        File.WriteAllBytes(
+            sourceImagePath,
+            Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII="));
+        serviceProvider.GetRequiredService<IAttachmentService>().AddAttachment(new AddAttachmentRequest(
+            EntityReferenceType.TestCaseResult,
+            testCase.Id,
+            sourceImagePath,
+            "tester"));
 
         var report = serviceProvider
             .GetRequiredService<IReportDataService>()

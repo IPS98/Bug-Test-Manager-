@@ -64,6 +64,7 @@ public sealed class SqliteReportDataService(
                         testCase.ExpectedResult,
                         testCase.SortOrder,
                         testCase.Status,
+                        testCase.LastStatusChangedAt,
                         testCase.Comment,
                         GetDictionaryItems(customFieldsByTestCase, testCase.Id),
                         GetDictionaryItems(attachmentsByTestCase, testCase.Id),
@@ -75,6 +76,7 @@ public sealed class SqliteReportDataService(
                                 check.ExpectedResult,
                                 check.SortOrder,
                                 check.Status,
+                                check.LastStatusChangedAt,
                                 check.Comment,
                                 GetDictionaryItems(customFieldsByCheck, check.Id),
                                 GetDictionaryItems(attachmentsByCheck, check.Id)))

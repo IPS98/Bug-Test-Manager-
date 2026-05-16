@@ -15,7 +15,10 @@ public sealed record TestSessionReportItem(
     DateTimeOffset CreatedAt,
     ReportStatusSummaryItem Summary,
     IReadOnlyList<ReportSectionItem> Sections,
-    IReadOnlyList<ReportBugItem> LinkedBugs);
+    IReadOnlyList<ReportBugItem> LinkedBugs)
+{
+    public string CreatedDateDisplay => ReportDisplayFormatter.FormatDate(CreatedAt);
+}
 
 public sealed record ReportStatusSummaryItem(
     int Total,
@@ -38,10 +41,14 @@ public sealed record ReportTestCaseItem(
     string ExpectedResult,
     int SortOrder,
     TestResultStatus Status,
+    DateTimeOffset? LastStatusChangedAt,
     string Comment,
     IReadOnlyList<ReportCustomFieldItem> CustomFields,
     IReadOnlyList<ReportAttachmentItem> Attachments,
-    IReadOnlyList<ReportCheckItem> Checks);
+    IReadOnlyList<ReportCheckItem> Checks)
+{
+    public string LastStatusChangedDateDisplay => ReportDisplayFormatter.FormatOptionalDate(LastStatusChangedAt);
+}
 
 public sealed record ReportCheckItem(
     Guid Id,
@@ -49,16 +56,25 @@ public sealed record ReportCheckItem(
     string ExpectedResult,
     int SortOrder,
     TestResultStatus Status,
+    DateTimeOffset? LastStatusChangedAt,
     string Comment,
     IReadOnlyList<ReportCustomFieldItem> CustomFields,
-    IReadOnlyList<ReportAttachmentItem> Attachments);
+    IReadOnlyList<ReportAttachmentItem> Attachments)
+{
+    public string LastStatusChangedDateDisplay => ReportDisplayFormatter.FormatOptionalDate(LastStatusChangedAt);
+}
 
 public sealed record ReportCustomFieldItem(
     string Name,
     FieldType FieldType,
     string Value,
     string UpdatedBy,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt)
+{
+    public string DisplayValue => ReportDisplayFormatter.FormatCustomFieldValue(FieldType, Value);
+
+    public string UpdatedDateDisplay => ReportDisplayFormatter.FormatDate(UpdatedAt);
+}
 
 public sealed record ReportAttachmentItem(
     Guid Id,
@@ -67,7 +83,12 @@ public sealed record ReportAttachmentItem(
     string ContentType,
     long SizeBytes,
     string UploadedBy,
-    DateTimeOffset UploadedAt);
+    DateTimeOffset UploadedAt)
+{
+    public bool IsImage => ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
+
+    public string UploadedDateDisplay => ReportDisplayFormatter.FormatDate(UploadedAt);
+}
 
 public sealed record ReportBugItem(
     Guid Id,
@@ -81,4 +102,9 @@ public sealed record ReportBugItem(
     string CreatedBy,
     DateTimeOffset CreatedAt,
     string UpdatedBy,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt)
+{
+    public string CreatedDateDisplay => ReportDisplayFormatter.FormatDate(CreatedAt);
+
+    public string UpdatedDateDisplay => ReportDisplayFormatter.FormatDate(UpdatedAt);
+}

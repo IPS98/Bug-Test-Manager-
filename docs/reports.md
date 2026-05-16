@@ -30,7 +30,10 @@ A full test session report should include:
 - result comments;
 - custom fields;
 - attachments metadata;
+- image attachments embedded in PDF when the file is available;
 - linked bugs.
+
+Date-only report values should be displayed without time. Date/time fields can still include time when the field type explicitly requires it.
 
 ## PDF Renderer Selection
 

@@ -5,8 +5,8 @@
         <Style x:Key="ReportMetaChipStyle" TargetType="Border">
             <Setter Property="Margin" Value="0,0,8,8" />
             <Setter Property="Padding" Value="9,4" />
-            <Setter Property="Background" Value="#F8FAFC" />
-            <Setter Property="BorderBrush" Value="#E2E8F0" />
+            <Setter Property="Background" Value="{StaticResource AppSubtleSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource AppBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="6" />
         </Style>
@@ -14,7 +14,7 @@
 
     <Grid>
         <Border Padding="22"
-                Background="White"
+                Background="{StaticResource AppSurfaceBrush}"
                 CornerRadius="8">
             <DockPanel>
                 <Grid DockPanel.Dock="Top"
@@ -28,10 +28,10 @@
                     <StackPanel>
                         <TextBlock FontSize="18"
                                    FontWeight="SemiBold"
-                                   Foreground="#172033"
+                                   Foreground="{StaticResource AppTextBrush}"
                                    Text="Report Builder" />
                         <TextBlock Margin="0,5,0,0"
-                                   Foreground="#64748B"
+                                   Foreground="{StaticResource AppMutedTextBrush}"
                                    Text="Prepare complete report data before PDF generation."
                                    TextWrapping="Wrap" />
                     </StackPanel>
@@ -69,8 +69,8 @@
                               HorizontalScrollBarVisibility="Disabled">
                     <StackPanel>
                         <Border Padding="12"
-                                Background="#F8FAFC"
-                                BorderBrush="#E2E8F0"
+                                Background="{StaticResource AppSubtleSurfaceBrush}"
+                                BorderBrush="{StaticResource AppBorderBrush}"
                                 BorderThickness="1"
                                 CornerRadius="6">
                             <DockPanel LastChildFill="True">
@@ -85,7 +85,7 @@
                                         <TextBlock Text="Open PDF" />
                                     </StackPanel>
                                 </Button>
-                                <TextBlock Foreground="#475569"
+                                <TextBlock Foreground="{StaticResource AppMutedTextBrush}"
                                            Text="{Binding StatusMessage}"
                                            TextWrapping="Wrap" />
                             </DockPanel>
@@ -101,14 +101,14 @@
                                 </Grid.ColumnDefinitions>
 
                                 <Border Padding="16"
-                                        Background="#F8FAFC"
-                                        BorderBrush="#E2E8F0"
+                                        Background="{StaticResource AppSubtleSurfaceBrush}"
+                                        BorderBrush="{StaticResource AppBorderBrush}"
                                         BorderThickness="1"
                                         CornerRadius="8">
                                     <StackPanel>
                                         <TextBlock FontSize="17"
                                                    FontWeight="SemiBold"
-                                                   Foreground="#172033"
+                                                   Foreground="{StaticResource AppTextBrush}"
                                                    Text="{Binding SelectedReport.SessionName}"
                                                    TextWrapping="Wrap" />
                                         <WrapPanel Margin="0,12,0,0">
@@ -119,27 +119,32 @@
                                             </Border>
                                             <Border Margin="0,0,8,8"
                                                     Style="{StaticResource ReportMetaChipStyle}">
-                                                <TextBlock Foreground="#64748B"
+                                                <TextBlock Foreground="{StaticResource AppMutedTextBrush}"
                                                            Text="{Binding SelectedReport.TestSuiteName}" />
                                             </Border>
                                             <Border Margin="0,0,8,8"
                                                     Style="{StaticResource ReportMetaChipStyle}">
-                                                <TextBlock Foreground="#64748B"
+                                                <TextBlock Foreground="{StaticResource AppMutedTextBrush}"
                                                            Text="{Binding SelectedReport.TestSuiteRevisionName, TargetNullValue=No revision}" />
                                             </Border>
                                             <Border Margin="0,0,8,8"
                                                     Style="{StaticResource ReportMetaChipStyle}">
-                                                <TextBlock Foreground="#64748B"
+                                                <TextBlock Foreground="{StaticResource AppMutedTextBrush}"
                                                            Text="{Binding SelectedReport.TestedVersion, StringFormat=Version: {0}}" />
                                             </Border>
                                             <Border Margin="0,0,8,8"
                                                     Style="{StaticResource ReportMetaChipStyle}">
-                                                <TextBlock Foreground="#64748B"
+                                                <TextBlock Foreground="{StaticResource AppMutedTextBrush}"
                                                            Text="{Binding SelectedReport.BuildNumber, StringFormat=Build: {0}}" />
+                                            </Border>
+                                            <Border Margin="0,0,8,8"
+                                                    Style="{StaticResource ReportMetaChipStyle}">
+                                                <TextBlock Foreground="{StaticResource AppMutedTextBrush}"
+                                                           Text="{Binding SelectedReport.CreatedDateDisplay, StringFormat=Created: {0}}" />
                                             </Border>
                                         </WrapPanel>
                                         <TextBlock Margin="0,8,0,0"
-                                                   Foreground="#475569"
+                                                   Foreground="{StaticResource AppMutedTextBrush}"
                                                    Text="{Binding SelectedReport.Notes}"
                                                    TextWrapping="Wrap" />
                                     </StackPanel>
@@ -147,14 +152,14 @@
 
                                 <Border Grid.Column="2"
                                         Padding="16"
-                                        Background="#F8FAFC"
-                                        BorderBrush="#E2E8F0"
+                                        Background="{StaticResource AppSubtleSurfaceBrush}"
+                                        BorderBrush="{StaticResource AppBorderBrush}"
                                         BorderThickness="1"
                                         CornerRadius="8">
                                     <StackPanel>
                                         <TextBlock FontSize="16"
                                                    FontWeight="SemiBold"
-                                                   Foreground="#172033"
+                                                   Foreground="{StaticResource AppTextBrush}"
                                                    Text="Status Summary" />
                                         <UniformGrid Margin="0,12,0,0"
                                                      Columns="2">
@@ -173,7 +178,7 @@
                             <TextBlock Margin="0,20,0,10"
                                        FontSize="16"
                                        FontWeight="SemiBold"
-                                       Foreground="#172033"
+                                       Foreground="{StaticResource AppTextBrush}"
                                        Text="Report Content Preview" />
 
                             <ItemsControl ItemsSource="{Binding SelectedReport.Sections}">
@@ -181,17 +186,17 @@
                                     <DataTemplate>
                                         <Border Margin="0,0,0,14"
                                                 Padding="14"
-                                                Background="#F8FAFC"
-                                                BorderBrush="#E2E8F0"
+                                                Background="{StaticResource AppSubtleSurfaceBrush}"
+                                                BorderBrush="{StaticResource AppBorderBrush}"
                                                 BorderThickness="1"
                                                 CornerRadius="8">
                                             <StackPanel>
                                                 <TextBlock FontWeight="SemiBold"
-                                                           Foreground="#172033"
+                                                           Foreground="{StaticResource AppTextBrush}"
                                                            Text="{Binding Name}"
                                                            TextWrapping="Wrap" />
                                                 <TextBlock Margin="0,4,0,10"
-                                                           Foreground="#64748B"
+                                                           Foreground="{StaticResource AppMutedTextBrush}"
                                                            Text="{Binding Category}"
                                                            TextWrapping="Wrap" />
 
@@ -200,18 +205,18 @@
                                                         <DataTemplate>
                                                             <Border Margin="0,0,0,10"
                                                                     Padding="12"
-                                                                    Background="White"
-                                                                    BorderBrush="#E2E8F0"
+                                                                    Background="{StaticResource AppSurfaceBrush}"
+                                                                    BorderBrush="{StaticResource AppBorderBrush}"
                                                                     BorderThickness="1"
                                                                     CornerRadius="6">
                                                                 <StackPanel>
                                                                     <DockPanel LastChildFill="True">
                                                                         <Border DockPanel.Dock="Right"
                                                                                 Padding="8,3"
-                                                                                Background="#EEF6FF"
+                                                                                Background="{StaticResource AppInfoChipBackgroundBrush}"
                                                                                 CornerRadius="4">
                                                                             <TextBlock FontWeight="SemiBold"
-                                                                                       Foreground="#172033"
+                                                                                       Foreground="{StaticResource AppTextBrush}"
                                                                                        Text="{Binding Status}" />
                                                                         </Border>
                                                                         <TextBlock FontWeight="SemiBold"
@@ -219,21 +224,44 @@
                                                                                    TextWrapping="Wrap" />
                                                                     </DockPanel>
                                                                     <TextBlock Margin="0,6,0,0"
-                                                                               Foreground="#64748B"
+                                                                               Foreground="{StaticResource AppMutedTextBrush}"
                                                                                Text="{Binding ExpectedResult}"
                                                                                TextWrapping="Wrap" />
                                                                     <TextBlock Margin="0,6,0,0"
-                                                                               Foreground="#475569"
+                                                                               Foreground="{StaticResource AppMutedTextBrush}"
                                                                                Text="{Binding Comment}"
                                                                                TextWrapping="Wrap" />
+                                                                    <TextBlock Margin="0,6,0,0"
+                                                                               Foreground="{StaticResource AppMutedTextBrush}"
+                                                                               Text="{Binding LastStatusChangedDateDisplay, StringFormat=Status changed: {0}}" />
+                                                                    <ItemsControl Margin="0,8,0,0"
+                                                                                  ItemsSource="{Binding CustomFields}">
+                                                                        <ItemsControl.ItemsPanel>
+                                                                            <ItemsPanelTemplate>
+                                                                                <WrapPanel />
+                                                                            </ItemsPanelTemplate>
+                                                                        </ItemsControl.ItemsPanel>
+                                                                        <ItemsControl.ItemTemplate>
+                                                                            <DataTemplate>
+                                                                                <Border Margin="0,0,8,8"
+                                                                                        Style="{StaticResource ReportMetaChipStyle}">
+                                                                                    <TextBlock Foreground="{StaticResource AppMutedTextBrush}">
+                                                                                        <Run Text="{Binding Name}" />
+                                                                                        <Run Text=": " />
+                                                                                        <Run Text="{Binding DisplayValue}" />
+                                                                                    </TextBlock>
+                                                                                </Border>
+                                                                            </DataTemplate>
+                                                                        </ItemsControl.ItemTemplate>
+                                                                    </ItemsControl>
                                                                     <TextBlock Margin="0,8,0,0"
-                                                                               Foreground="#64748B"
+                                                                               Foreground="{StaticResource AppMutedTextBrush}"
                                                                                Text="{Binding Checks.Count, StringFormat=Checks: {0}}" />
                                                                     <TextBlock Margin="0,4,0,0"
-                                                                               Foreground="#64748B"
+                                                                               Foreground="{StaticResource AppMutedTextBrush}"
                                                                                Text="{Binding Attachments.Count, StringFormat=Attachments: {0}}" />
                                                                     <TextBlock Margin="0,4,0,0"
-                                                                               Foreground="#64748B"
+                                                                               Foreground="{StaticResource AppMutedTextBrush}"
                                                                                Text="{Binding CustomFields.Count, StringFormat=Custom fields: {0}}" />
                                                                 </StackPanel>
                                                             </Border>
@@ -249,7 +277,7 @@
                             <TextBlock Margin="0,10,0,10"
                                        FontSize="16"
                                        FontWeight="SemiBold"
-                                       Foreground="#172033"
+                                       Foreground="{StaticResource AppTextBrush}"
                                        Text="{Binding SelectedReport.LinkedBugs.Count, StringFormat=Linked Bugs: {0}}" />
                         </StackPanel>
                     </StackPanel>

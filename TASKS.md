@@ -118,6 +118,9 @@ Status: implementation in progress after approved architecture and skeleton setu
 - Reports stage started with a modular report data service for full test session report data.
 - Reports page can prepare a test session report preview from the report data model.
 - Reports page can export the selected test session report to a first PDF file through a replaceable report export interface.
+- Test session reports now include Last Status Change Date for test cases and checks.
+- Report date-only values are formatted without time for cleaner management reports.
+- Test session PDF export can embed image attachments safely when the image file exists.
 - Test Sessions page shows a clear empty state when no sessions exist.
 - Linked bug creation in Test Sessions opens in a modal instead of permanently occupying the result details panel.
 - Test case and check result cards show linked bug indicators when bugs already exist.
@@ -217,7 +220,6 @@ These are still important, but they do not block the first skeleton:
 - Later, extend session-to-template sync to include supported custom field definition changes when field editing becomes available inside the testing workflow.
 - Later, add an optional bulk sync/review action for required fields added after sessions already exist.
 - Later, add Created Date and Last Modified Date to session result items.
-- Later, support report date formatting without time when the report only needs a calendar date.
 - Later, support multi-session reports and full-project/program reports with image attachments embedded in the PDF.
 
 ## Proposed Technology
