@@ -45,6 +45,7 @@ public sealed record TestCaseResultItem(
     int SortOrder,
     TestResultStatus Status,
     string Comment,
+    IReadOnlyList<LinkedBugSummaryItem> LinkedBugs,
     IReadOnlyList<TestStepResultItem> Steps);
 
 public sealed record TestStepResultItem(
@@ -54,4 +55,10 @@ public sealed record TestStepResultItem(
     string ExpectedResult,
     int SortOrder,
     TestResultStatus Status,
-    string Comment);
+    string Comment,
+    IReadOnlyList<LinkedBugSummaryItem> LinkedBugs);
+
+public sealed record LinkedBugSummaryItem(
+    Guid Id,
+    string Title,
+    BugStatus Status);

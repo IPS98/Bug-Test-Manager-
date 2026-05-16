@@ -70,7 +70,8 @@
                                        Foreground="#172033"
                                        Text="Session Results" />
                             <Border Margin="0,6,0,0"
-                                    Style="{StaticResource GreenChipBorderStyle}">
+                                    Style="{StaticResource GreenChipBorderStyle}"
+                                    Visibility="{Binding SessionWorkspaceVisibility}">
                                 <TextBlock FontSize="14"
                                            Style="{StaticResource GreenChipTextStyle}"
                                            Text="{Binding SelectedSession.Name}" />
@@ -101,7 +102,8 @@
 
                         <WrapPanel Grid.Row="1"
                                    Grid.ColumnSpan="6"
-                                   Margin="0,10,0,0">
+                                   Margin="0,10,0,0"
+                                   Visibility="{Binding SessionWorkspaceVisibility}">
                             <Border Style="{StaticResource SessionMetaChipStyle}">
                                 <TextBlock Foreground="#64748B"
                                            Text="{Binding SelectedSession.VersionDisplay}" />
@@ -124,54 +126,58 @@
                     </Grid>
 
                     <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="260" />
-                            <ColumnDefinition Width="16" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
+                        <Grid Visibility="{Binding SessionWorkspaceVisibility}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="260" />
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
 
-                        <DockPanel>
-                            <DockPanel DockPanel.Dock="Top"
-                                       Margin="0,0,0,12">
-                                <Button DockPanel.Dock="Right"
-                                        Command="{Binding ShowCreateManualSectionDialogCommand}"
-                                        Style="{StaticResource PrimaryActionButtonStyle}"
-                                        ToolTip="Add manual section">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE710;" />
-                                        <TextBlock Text="Add" />
-                                    </StackPanel>
-                                </Button>
-                                <TextBlock VerticalAlignment="Center"
-                                           Style="{StaticResource SectionHeaderStyle}"
-                                           Text="Sections" />
-                            </DockPanel>
-                            <ListBox ItemsSource="{Binding Sections}"
-                                     SelectedItem="{Binding SelectedSection}"
-                                     ItemContainerStyle="{StaticResource FullWidthListBoxItemStyle}"
-                                     BorderThickness="0"
-                                     ScrollViewer.CanContentScroll="False"
-                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Margin="0,4,0,10">
-                                            <TextBlock FontWeight="SemiBold"
-                                                       Text="{Binding Name}"
-                                                       TextWrapping="Wrap" />
-                                            <TextBlock Margin="0,4,0,0"
-                                                       Foreground="#64748B"
-                                                       Text="{Binding CategoryDisplay}"
-                                                       TextWrapping="Wrap" />
-                                            <Border Margin="0,6,0,0"
-                                                    Style="{StaticResource GreenChipBorderStyle}">
-                                                <TextBlock Style="{StaticResource GreenChipTextStyle}"
-                                                           Text="{Binding SizeDisplay}" />
-                                            </Border>
+                            <DockPanel>
+                                <DockPanel DockPanel.Dock="Top"
+                                           Margin="0,0,0,12">
+                                    <Button DockPanel.Dock="Right"
+                                            Command="{Binding ShowCreateManualSectionDialogCommand}"
+                                            Style="{StaticResource PrimaryActionButtonStyle}"
+                                            ToolTip="Add manual section">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE710;" />
+                                            <TextBlock Text="Add" />
                                         </StackPanel>
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-                            </ListBox>
-                        </DockPanel>
+                                    </Button>
+                                    <TextBlock VerticalAlignment="Center"
+                                               Style="{StaticResource SectionHeaderStyle}"
+                                               Text="Sections" />
+                                </DockPanel>
+                                <ListBox ItemsSource="{Binding Sections}"
+                                         SelectedItem="{Binding SelectedSection}"
+                                         ItemContainerStyle="{StaticResource FullWidthListBoxItemStyle}"
+                                         BorderThickness="0"
+                                         ScrollViewer.CanContentScroll="False"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Margin="0,4,0,10"
+                                                    Style="{StaticResource SelectableCardBorderStyle}">
+                                                <StackPanel>
+                                                    <TextBlock FontWeight="SemiBold"
+                                                               Text="{Binding Name}"
+                                                               TextWrapping="Wrap" />
+                                                    <TextBlock Margin="0,4,0,0"
+                                                               Foreground="#64748B"
+                                                               Text="{Binding CategoryDisplay}"
+                                                               TextWrapping="Wrap" />
+                                                    <Border Margin="0,6,0,0"
+                                                            Style="{StaticResource GreenChipBorderStyle}">
+                                                        <TextBlock Style="{StaticResource GreenChipTextStyle}"
+                                                                   Text="{Binding SizeDisplay}" />
+                                                    </Border>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </DockPanel>
 
                         <DockPanel Grid.Column="2">
                             <Grid DockPanel.Dock="Top"
@@ -210,10 +216,7 @@
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
                                         <Border Margin="0,4,0,14"
-                                                Padding="14"
-                                                BorderBrush="#E2E8F0"
-                                                BorderThickness="1"
-                                                CornerRadius="6">
+                                                Style="{StaticResource SelectableCardBorderStyle}">
                                             <StackPanel>
                                                 <DockPanel LastChildFill="True">
                                                     <Button DockPanel.Dock="Right"
@@ -262,6 +265,17 @@
                                                         <TextBlock FontWeight="SemiBold"
                                                                    Foreground="{Binding StatusForeground}"
                                                                    Text="{Binding StatusDisplay}" />
+                                                    </Border>
+                                                    <Border DockPanel.Dock="Right"
+                                                            Margin="12,0,0,0"
+                                                            Style="{StaticResource InfoChipBorderStyle}"
+                                                            ToolTip="{Binding LinkedBugSummaryDisplay}"
+                                                            Visibility="{Binding LinkedBugBadgeVisibility}">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xEBE8;" />
+                                                            <TextBlock Style="{StaticResource InfoChipTextStyle}"
+                                                                       Text="{Binding LinkedBugCountDisplay}" />
+                                                        </StackPanel>
                                                     </Border>
                                                     <TextBlock FontWeight="SemiBold"
                                                                Text="{Binding Title}"
@@ -336,17 +350,28 @@
                                                                                         </Border>
                                                                                     </StackPanel>
                                                                                 </Button>
-                                                                                <Border DockPanel.Dock="Right"
-                                                                                        Padding="8,3"
-                                                                                        Background="{Binding StatusBackground}"
-                                                                                        CornerRadius="4">
-                                                                                    <TextBlock FontWeight="SemiBold"
-                                                                                               Foreground="{Binding StatusForeground}"
-                                                                                               Text="{Binding StatusDisplay}" />
-                                                                                </Border>
-                                                                                <TextBlock FontWeight="SemiBold"
-                                                                                           Text="{Binding CheckText}"
-                                                                                           TextWrapping="Wrap" />
+                                                                <Border DockPanel.Dock="Right"
+                                                                        Padding="8,3"
+                                                                        Background="{Binding StatusBackground}"
+                                                                        CornerRadius="4">
+                                                                    <TextBlock FontWeight="SemiBold"
+                                                                               Foreground="{Binding StatusForeground}"
+                                                                               Text="{Binding StatusDisplay}" />
+                                                                </Border>
+                                                                <Border DockPanel.Dock="Right"
+                                                                        Margin="10,0,0,0"
+                                                                        Style="{StaticResource InfoChipBorderStyle}"
+                                                                        ToolTip="{Binding LinkedBugSummaryDisplay}"
+                                                                        Visibility="{Binding LinkedBugBadgeVisibility}">
+                                                                    <StackPanel Orientation="Horizontal">
+                                                                        <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xEBE8;" />
+                                                                        <TextBlock Style="{StaticResource InfoChipTextStyle}"
+                                                                                   Text="{Binding LinkedBugCountDisplay}" />
+                                                                    </StackPanel>
+                                                                </Border>
+                                                                <TextBlock FontWeight="SemiBold"
+                                                                           Text="{Binding CheckText}"
+                                                                           TextWrapping="Wrap" />
                                                                             </DockPanel>
                                                                             <TextBlock Margin="0,5,0,0"
                                                                                        Foreground="#64748B"
@@ -369,6 +394,46 @@
                                 </ListBox.ItemTemplate>
                             </ListBox>
                         </DockPanel>
+                        </Grid>
+
+                        <Border Padding="28"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Background="#F8FAFC"
+                                BorderBrush="#E2E8F0"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Visibility="{Binding EmptyStateVisibility}">
+                            <StackPanel Width="420"
+                                        HorizontalAlignment="Center">
+                                <TextBlock HorizontalAlignment="Center"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="34"
+                                           Foreground="#256D5A"
+                                           Text="&#xE9D9;" />
+                                <TextBlock Margin="0,14,0,0"
+                                           HorizontalAlignment="Center"
+                                           FontSize="20"
+                                           FontWeight="SemiBold"
+                                           Foreground="#172033"
+                                           Text="No test sessions yet" />
+                                <TextBlock Margin="0,8,0,18"
+                                           HorizontalAlignment="Center"
+                                           Foreground="#64748B"
+                                           Text="Create your first test session to start testing."
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap" />
+                                <Button HorizontalAlignment="Center"
+                                        Command="{Binding ShowNewSessionDialogCommand}"
+                                        Style="{StaticResource PrimaryActionButtonStyle}"
+                                        ToolTip="Create a new test session">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE710;" />
+                                        <TextBlock Text="New Test Session" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Border>
                     </Grid>
                 </DockPanel>
             </Border>
@@ -391,6 +456,25 @@
                     <DockPanel>
                         <StackPanel DockPanel.Dock="Right"
                                     Orientation="Horizontal">
+                            <Button Margin="0,0,8,0"
+                                    Command="{Binding ShowLinkedBugDialogCommand}"
+                                    Style="{StaticResource SmallActionButtonStyle}"
+                                    ToolTip="Create or view a linked bug">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xEBE8;" />
+                                    <TextBlock Text="{Binding ResultLinkedBugButtonText}" />
+                                    <Border Margin="6,0,0,0"
+                                            Padding="5,1"
+                                            Background="#1D4ED8"
+                                            CornerRadius="6"
+                                            Visibility="{Binding ResultLinkedBugBadgeVisibility}">
+                                        <TextBlock FontSize="10"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="White"
+                                                   Text="Linked" />
+                                    </Border>
+                                </StackPanel>
+                            </Button>
                             <Button Margin="0,0,8,0"
                                     Command="{Binding ShowCurrentResultDiscussionCommand}"
                                     Style="{StaticResource SmallActionButtonStyle}"
@@ -521,35 +605,6 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
 
-                            <TextBlock Margin="0,18,0,6"
-                                       FontWeight="SemiBold"
-                                       Foreground="#172033"
-                                       Text="Linked Bug" />
-                            <TextBlock Foreground="#64748B"
-                                       Text="{Binding LinkedBugTargetDisplay}"
-                                       TextWrapping="Wrap" />
-
-                            <TextBlock Margin="0,10,0,6"
-                                       Foreground="#64748B"
-                                       Text="Bug title" />
-                            <TextBox MinHeight="34"
-                                     VerticalContentAlignment="Center"
-                                     Text="{Binding LinkedBugTitle, UpdateSourceTrigger=PropertyChanged}" />
-
-                            <TextBlock Margin="0,10,0,6"
-                                       Foreground="#64748B"
-                                       Text="Bug description" />
-                            <TextBox MinHeight="80"
-                                     AcceptsReturn="True"
-                                     Text="{Binding LinkedBugDescription, UpdateSourceTrigger=PropertyChanged}"
-                                     TextWrapping="Wrap" />
-
-                            <Button Margin="0,12,0,0"
-                                    HorizontalAlignment="Right"
-                                    Command="{Binding CreateLinkedBugCommand}"
-                                    Content="Create Linked Bug"
-                                    Style="{StaticResource ActionButtonStyle}"
-                                    ToolTip="Create bug linked to this result" />
                         </StackPanel>
                     </ScrollViewer>
 
@@ -578,6 +633,145 @@
                 </Grid>
             </Border>
         </Grid>
+
+        <Border Panel.ZIndex="24"
+                Background="#990F172A"
+                Visibility="{Binding LinkedBugDialogVisibility}">
+            <Border Width="520"
+                    Padding="24"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Background="White"
+                    CornerRadius="8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="18" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right"
+                                Command="{Binding CloseLinkedBugDialogCommand}"
+                                Content="&#xE8BB;"
+                                Style="{StaticResource IconActionButtonStyle}"
+                                ToolTip="Close linked bug dialog" />
+                        <TextBlock FontSize="20"
+                                   FontWeight="SemiBold"
+                                   Foreground="#172033"
+                                   Text="Linked Bug" />
+                    </DockPanel>
+
+                    <ScrollViewer Grid.Row="2"
+                                  MaxHeight="420"
+                                  VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <Border Padding="10"
+                                    Background="#F8FAFC"
+                                    BorderBrush="#E2E8F0"
+                                    BorderThickness="1"
+                                    CornerRadius="6">
+                                <TextBlock Foreground="#64748B"
+                                           Text="{Binding LinkedBugTargetDisplay}"
+                                           TextWrapping="Wrap" />
+                            </Border>
+
+                            <TextBlock Margin="0,14,0,6"
+                                       FontWeight="SemiBold"
+                                       Foreground="#172033"
+                                       Text="Existing linked bugs"
+                                       Visibility="{Binding ResultLinkedBugListVisibility}" />
+                            <ItemsControl ItemsSource="{Binding ResultLinkedBugs}"
+                                          Visibility="{Binding ResultLinkedBugListVisibility}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Margin="0,0,0,8"
+                                                Padding="10"
+                                                BorderBrush="{StaticResource AppInfoChipBorderBrush}"
+                                                BorderThickness="1"
+                                                Background="{StaticResource AppInfoChipBackgroundBrush}"
+                                                CornerRadius="6">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock FontWeight="SemiBold"
+                                                           Foreground="{StaticResource AppInfoChipForegroundBrush}"
+                                                           Text="{Binding Title}"
+                                                           TextWrapping="Wrap" />
+                                                <Border Grid.Column="1"
+                                                        Margin="10,0,0,0"
+                                                        Padding="8,3"
+                                                        Background="{Binding StatusBackground}"
+                                                        CornerRadius="4">
+                                                    <TextBlock FontWeight="SemiBold"
+                                                               Foreground="{Binding StatusForeground}"
+                                                               Text="{Binding StatusDisplay}" />
+                                                </Border>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <Border Margin="0,14,0,0"
+                                    Padding="10"
+                                    Background="{StaticResource AppSubtleSurfaceBrush}"
+                                    BorderBrush="{StaticResource AppBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Visibility="{Binding ResultLinkedBugEmptyVisibility}">
+                                <TextBlock Foreground="{StaticResource AppMutedTextBrush}"
+                                           Text="No linked bugs yet. Create one if this test result needs developer follow-up."
+                                           TextWrapping="Wrap" />
+                            </Border>
+
+                            <TextBlock Margin="0,14,0,6"
+                                       Foreground="#64748B"
+                                       Text="Bug title" />
+                            <TextBox MinHeight="34"
+                                     VerticalContentAlignment="Center"
+                                     Text="{Binding LinkedBugTitle, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <TextBlock Margin="0,12,0,6"
+                                       Foreground="#64748B"
+                                       Text="Bug description" />
+                            <TextBox MinHeight="110"
+                                     AcceptsReturn="True"
+                                     Text="{Binding LinkedBugDescription, UpdateSourceTrigger=PropertyChanged}"
+                                     TextWrapping="Wrap" />
+
+                            <TextBlock Margin="0,12,0,0"
+                                       Foreground="#64748B"
+                                       Text="{Binding StatusMessage}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <StackPanel Grid.Row="3"
+                                Margin="0,18,0,0"
+                                HorizontalAlignment="Right"
+                                Orientation="Horizontal">
+                        <Button MinWidth="92"
+                                Margin="0,0,10,0"
+                                Command="{Binding CloseLinkedBugDialogCommand}"
+                                Content="Cancel"
+                                Style="{StaticResource ActionButtonStyle}"
+                                ToolTip="Close linked bug dialog without creating a bug" />
+                        <Button MinWidth="130"
+                                Command="{Binding CreateLinkedBugCommand}"
+                                Style="{StaticResource PrimaryActionButtonStyle}"
+                                ToolTip="Create bug linked to this result">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xEBE8;" />
+                                <TextBlock Text="{Binding CreateLinkedBugButtonText}" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Border>
 
         <Border Background="#990F172A"
                 Visibility="{Binding NewSessionDialogVisibility}">

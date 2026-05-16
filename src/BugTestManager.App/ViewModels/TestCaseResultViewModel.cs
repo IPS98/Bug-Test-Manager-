@@ -16,6 +16,7 @@ public sealed class TestCaseResultViewModel : ObservableObject
         int sortOrder,
         TestResultStatus status,
         string comment,
+        IEnumerable<LinkedBugSummaryViewModel> linkedBugs,
         IEnumerable<TestStepResultViewModel> steps)
     {
         Id = id;
@@ -25,6 +26,7 @@ public sealed class TestCaseResultViewModel : ObservableObject
         SortOrder = sortOrder;
         Status = status;
         Comment = comment;
+        LinkedBugs = new ObservableCollection<LinkedBugSummaryViewModel>(linkedBugs);
         Steps = new ObservableCollection<TestStepResultViewModel>(steps);
     }
 
@@ -41,6 +43,8 @@ public sealed class TestCaseResultViewModel : ObservableObject
     public TestResultStatus Status { get; }
 
     public string Comment { get; }
+
+    public ObservableCollection<LinkedBugSummaryViewModel> LinkedBugs { get; }
 
     public ObservableCollection<TestStepResultViewModel> Steps { get; }
 
@@ -68,6 +72,19 @@ public sealed class TestCaseResultViewModel : ObservableObject
     public string CommentDisplay => string.IsNullOrWhiteSpace(Comment) ? "No comment yet" : Comment;
 
     public string CheckCountDisplay => $"{Steps.Count} checks";
+
+    public Visibility LinkedBugBadgeVisibility => LinkedBugs.Count > 0
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public string LinkedBugCountDisplay => LinkedBugs.Count == 1
+        ? "1 linked bug"
+        : $"{LinkedBugs.Count} linked bugs";
+
+    public string LinkedBugSummaryDisplay => LinkedBugs.Count == 0
+        ? "No linked bugs"
+        : string.Join(", ", LinkedBugs.Take(2).Select(bug => bug.Title))
+            + (LinkedBugs.Count > 2 ? $" +{LinkedBugs.Count - 2} more" : string.Empty);
 
     public Visibility DiscussionBadgeVisibility => UnreadDiscussionCount > 0
         ? Visibility.Visible

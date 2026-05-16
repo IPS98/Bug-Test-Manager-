@@ -23,6 +23,17 @@
             <SolidColorBrush x:Key="AppPositiveChipBackgroundBrush" Color="#E7F6EF" />
             <SolidColorBrush x:Key="AppPositiveChipBorderBrush" Color="#A7F3D0" />
             <SolidColorBrush x:Key="AppPositiveChipForegroundBrush" Color="#256D5A" />
+            <SolidColorBrush x:Key="AppInfoChipBackgroundBrush" Color="#EFF6FF" />
+            <SolidColorBrush x:Key="AppInfoChipBorderBrush" Color="#BFDBFE" />
+            <SolidColorBrush x:Key="AppInfoChipForegroundBrush" Color="#1D4ED8" />
+            <SolidColorBrush x:Key="AppSurfaceBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="AppSubtleSurfaceBrush" Color="#F8FAFC" />
+            <SolidColorBrush x:Key="AppBorderBrush" Color="#E2E8F0" />
+            <SolidColorBrush x:Key="AppTextBrush" Color="#172033" />
+            <SolidColorBrush x:Key="AppMutedTextBrush" Color="#64748B" />
+            <SolidColorBrush x:Key="AppSelectableHoverBrush" Color="#F1F7FF" />
+            <SolidColorBrush x:Key="AppSelectableSelectedBrush" Color="#ECFDF5" />
+            <SolidColorBrush x:Key="AppSelectableSelectedBorderBrush" Color="#A7F3D0" />
 
             <Style x:Key="GreenChipBorderStyle" TargetType="{x:Type Border}">
                 <Setter Property="Padding" Value="8,3" />
@@ -37,6 +48,39 @@
                 <Setter Property="Foreground" Value="{StaticResource AppPositiveChipForegroundBrush}" />
                 <Setter Property="FontWeight" Value="SemiBold" />
                 <Setter Property="TextWrapping" Value="Wrap" />
+            </Style>
+
+            <Style x:Key="InfoChipBorderStyle" TargetType="{x:Type Border}">
+                <Setter Property="Padding" Value="8,3" />
+                <Setter Property="Background" Value="{StaticResource AppInfoChipBackgroundBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource AppInfoChipBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="6" />
+                <Setter Property="HorizontalAlignment" Value="Left" />
+            </Style>
+
+            <Style x:Key="InfoChipTextStyle" TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="{StaticResource AppInfoChipForegroundBrush}" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+            </Style>
+
+            <Style x:Key="SelectableCardBorderStyle" TargetType="{x:Type Border}">
+                <Setter Property="Padding" Value="12" />
+                <Setter Property="Background" Value="{StaticResource AppSubtleSurfaceBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource AppBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="7" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                        <Setter Property="Background" Value="{StaticResource AppSelectableHoverBrush}" />
+                        <Setter Property="BorderBrush" Value="{StaticResource AppActionHoverBorderBrush}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                        <Setter Property="Background" Value="{StaticResource AppSelectableSelectedBrush}" />
+                        <Setter Property="BorderBrush" Value="{StaticResource AppSelectableSelectedBorderBrush}" />
+                    </DataTrigger>
+                </Style.Triggers>
             </Style>
 
             <Style x:Key="ActionButtonStyle" TargetType="{x:Type Button}">

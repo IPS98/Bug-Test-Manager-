@@ -55,6 +55,8 @@ public sealed class SqliteTestSessionService(
             .SingleOrDefault(item => item.Id == testSessionId)
             ?? throw new InvalidOperationException("Selected test session was not found.");
 
+        var linkedBugLookup = LoadLinkedBugLookup(dbContext, session);
+
         return new TestSessionDetailsItem(
             session.Id,
             session.TestSuiteId,
@@ -84,6 +86,10 @@ public sealed class SqliteTestSessionService(
                             testCase.SortOrder,
                             testCase.Status,
                             testCase.Comment,
+                            GetLinkedBugs(
+                                linkedBugLookup,
+                                EntityReferenceType.TestCaseResult,
+                                testCase.Id),
                             testCase.Steps
                                 .OrderBy(step => step.SortOrder)
                                 .Select(step => new TestStepResultItem(
@@ -93,7 +99,11 @@ public sealed class SqliteTestSessionService(
                                     step.ExpectedResult,
                                     step.SortOrder,
                                     step.Status,
-                                    step.Comment))
+                                    step.Comment,
+                                    GetLinkedBugs(
+                                        linkedBugLookup,
+                                        EntityReferenceType.TestStepResult,
+                                        step.Id)))
                                 .ToList()))
                         .ToList()))
                 .ToList());
@@ -524,6 +534,58 @@ public sealed class SqliteTestSessionService(
     private static Guid ResolveProjectId(Guid? projectId)
     {
         return projectId ?? ProjectDefaults.DefaultProjectId;
+    }
+
+    private static Dictionary<(EntityReferenceType EntityType, Guid EntityId), IReadOnlyList<LinkedBugSummaryItem>> LoadLinkedBugLookup(
+        BugTestManagerDbContext dbContext,
+        TestSessionRecord session)
+    {
+        var testCaseIds = session.Sections
+            .SelectMany(section => section.TestCases)
+            .Select(testCase => testCase.Id)
+            .ToList();
+        var stepIds = session.Sections
+            .SelectMany(section => section.TestCases)
+            .SelectMany(testCase => testCase.Steps)
+            .Select(step => step.Id)
+            .ToList();
+
+        if (testCaseIds.Count == 0 && stepIds.Count == 0)
+        {
+            return [];
+        }
+
+        return dbContext.BugReports
+            .AsNoTracking()
+            .Where(bug =>
+                bug.ProjectId == session.ProjectId
+                && bug.LinkedEntityType.HasValue
+                && bug.LinkedEntityId.HasValue
+                && ((bug.LinkedEntityType == EntityReferenceType.TestCaseResult
+                        && testCaseIds.Contains(bug.LinkedEntityId.Value))
+                    || (bug.LinkedEntityType == EntityReferenceType.TestStepResult
+                        && stepIds.Contains(bug.LinkedEntityId.Value))))
+            .ToList()
+            .GroupBy(bug => (bug.LinkedEntityType!.Value, bug.LinkedEntityId!.Value))
+            .ToDictionary(
+                group => group.Key,
+                group => (IReadOnlyList<LinkedBugSummaryItem>)group
+                    .OrderByDescending(bug => bug.UpdatedAt)
+                    .Select(bug => new LinkedBugSummaryItem(
+                        bug.Id,
+                        bug.Title,
+                        bug.Status))
+                    .ToList());
+    }
+
+    private static IReadOnlyList<LinkedBugSummaryItem> GetLinkedBugs(
+        IReadOnlyDictionary<(EntityReferenceType EntityType, Guid EntityId), IReadOnlyList<LinkedBugSummaryItem>> linkedBugLookup,
+        EntityReferenceType entityType,
+        Guid entityId)
+    {
+        return linkedBugLookup.TryGetValue((entityType, entityId), out var linkedBugs)
+            ? linkedBugs
+            : [];
     }
 
     private void DeleteEntitySideData(

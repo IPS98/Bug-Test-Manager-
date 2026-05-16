@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Media;
 using BugTestManager.Domain.Enums;
@@ -14,7 +15,8 @@ public sealed class TestStepResultViewModel : ObservableObject
         string expectedResult,
         int sortOrder,
         TestResultStatus status,
-        string comment)
+        string comment,
+        IEnumerable<LinkedBugSummaryViewModel> linkedBugs)
     {
         Id = id;
         TestStepTemplateId = testStepTemplateId;
@@ -23,6 +25,7 @@ public sealed class TestStepResultViewModel : ObservableObject
         SortOrder = sortOrder;
         Status = status;
         Comment = comment;
+        LinkedBugs = new ObservableCollection<LinkedBugSummaryViewModel>(linkedBugs);
     }
 
     public Guid Id { get; }
@@ -41,6 +44,8 @@ public sealed class TestStepResultViewModel : ObservableObject
 
     public string Comment { get; }
 
+    public ObservableCollection<LinkedBugSummaryViewModel> LinkedBugs { get; }
+
     public string StatusDisplay => TestResultStatusDisplayNames.ForStatus(Status);
 
     public Brush StatusBackground => TestResultStatusDisplayNames.BackgroundForStatus(Status);
@@ -48,6 +53,19 @@ public sealed class TestStepResultViewModel : ObservableObject
     public Brush StatusForeground => TestResultStatusDisplayNames.ForegroundForStatus(Status);
 
     public string CommentDisplay => string.IsNullOrWhiteSpace(Comment) ? "No comment yet" : Comment;
+
+    public Visibility LinkedBugBadgeVisibility => LinkedBugs.Count > 0
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public string LinkedBugCountDisplay => LinkedBugs.Count == 1
+        ? "1 linked bug"
+        : $"{LinkedBugs.Count} linked bugs";
+
+    public string LinkedBugSummaryDisplay => LinkedBugs.Count == 0
+        ? "No linked bugs"
+        : string.Join(", ", LinkedBugs.Take(2).Select(bug => bug.Title))
+            + (LinkedBugs.Count > 2 ? $" +{LinkedBugs.Count - 2} more" : string.Empty);
 
     private int unreadDiscussionCount;
 

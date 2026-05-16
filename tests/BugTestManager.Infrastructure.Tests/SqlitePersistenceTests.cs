@@ -794,6 +794,65 @@ public sealed class SqlitePersistenceTests
     }
 
     [Fact]
+    public void TestSessionService_LoadsLinkedBugsForCaseAndCheckResults()
+    {
+        var databasePath = CreateTempDatabasePath();
+        using var serviceProvider = CreateServiceProvider(databasePath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var catalog = serviceProvider.GetRequiredService<ITestSuiteCatalogService>().GetCatalog();
+        var sourceSuite = catalog.Single(suite => suite.Name == "Application UI Regression");
+        var sessionService = serviceProvider.GetRequiredService<ITestSessionService>();
+        var sessionId = sessionService.CreateSession(new CreateTestSessionRequest(
+            "Regression with linked bugs",
+            sourceSuite.Id,
+            TestSuiteRevisionId: null,
+            TestedVersion: "1.2.4",
+            BuildNumber: "789",
+            Notes: "",
+            CreatedBy: "tester"));
+
+        var session = sessionService.GetSession(sessionId);
+        var testCase = session.Sections
+            .SelectMany(section => section.TestCases)
+            .First(item => item.Steps.Count > 0);
+        var check = testCase.Steps.First();
+
+        var bugService = serviceProvider.GetRequiredService<IBugReportService>();
+        var caseBugId = bugService.CreateBug(new CreateBugReportRequest(
+            "Case level linked bug",
+            "The full test case needs developer review.",
+            "Medium",
+            "Medium",
+            "1.2.4",
+            "789",
+            "tester",
+            EntityReferenceType.TestCaseResult,
+            testCase.Id,
+            $"Test case: {testCase.Title}"));
+        var checkBugId = bugService.CreateBug(new CreateBugReportRequest(
+            "Check level linked bug",
+            "The individual check needs developer review.",
+            "High",
+            "High",
+            "1.2.4",
+            "789",
+            "tester",
+            EntityReferenceType.TestStepResult,
+            check.Id,
+            $"Check {check.SortOrder}: {check.StepText}"));
+
+        var refreshedSession = sessionService.GetSession(sessionId);
+        var refreshedCase = refreshedSession.Sections
+            .SelectMany(section => section.TestCases)
+            .Single(item => item.Id == testCase.Id);
+        var refreshedCheck = refreshedCase.Steps.Single(item => item.Id == check.Id);
+
+        Assert.Contains(refreshedCase.LinkedBugs, bug => bug.Id == caseBugId && bug.Title == "Case level linked bug");
+        Assert.Contains(refreshedCheck.LinkedBugs, bug => bug.Id == checkBugId && bug.Title == "Check level linked bug");
+    }
+
+    [Fact]
     public void TestSessionService_CopiesPreviousSessionAsCleanNewRun()
     {
         var databasePath = CreateTempDatabasePath();

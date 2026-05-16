@@ -60,7 +60,9 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         FilteredTestCases = [];
         ResultAttachments = [];
         ResultCustomFields = [];
+        ResultLinkedBugs = [];
         DiscussionComments = [];
+        ResultLinkedBugs.CollectionChanged += (_, _) => NotifyResultLinkedBugPropertiesChanged();
         ResultStatuses = Enum.GetValues<TestResultStatus>()
             .Select(status => new SelectionOption<TestResultStatus>(
                 status,
@@ -95,6 +97,8 @@ public sealed partial class TestSessionsViewModel : ObservableObject
 
     public ObservableCollection<CustomFieldValueItemViewModel> ResultCustomFields { get; }
 
+    public ObservableCollection<LinkedBugSummaryViewModel> ResultLinkedBugs { get; }
+
     public ObservableCollection<DiscussionCommentItemViewModel> DiscussionComments { get; }
 
     public IReadOnlyList<SelectionOption<TestResultStatus>> ResultStatuses { get; }
@@ -108,6 +112,36 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     public Visibility PreviousSessionPickerVisibility => IsCopyPreviousSessionTemplateOption(SelectedTestSuite)
         ? Visibility.Visible
         : Visibility.Collapsed;
+
+    public Visibility EmptyStateVisibility => Sessions.Count == 0
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public Visibility SessionWorkspaceVisibility => Sessions.Count == 0
+        ? Visibility.Collapsed
+        : Visibility.Visible;
+
+    public Visibility ResultLinkedBugListVisibility => ResultLinkedBugs.Count > 0
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public Visibility ResultLinkedBugEmptyVisibility => ResultLinkedBugs.Count == 0
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public Visibility ResultLinkedBugBadgeVisibility => ResultLinkedBugs.Count > 0
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public string ResultLinkedBugButtonText => ResultLinkedBugs.Count == 0
+        ? "Linked Bug"
+        : ResultLinkedBugs.Count == 1
+            ? "1 Linked Bug"
+            : $"{ResultLinkedBugs.Count} Linked Bugs";
+
+    public string CreateLinkedBugButtonText => ResultLinkedBugs.Count == 0
+        ? "Create Bug"
+        : "Create Another Bug";
 
     [ObservableProperty]
     private TestSessionSuiteOption? selectedTestSuite;
@@ -202,6 +236,9 @@ public sealed partial class TestSessionsViewModel : ObservableObject
 
     [ObservableProperty]
     private string linkedBugTargetDisplay = string.Empty;
+
+    [ObservableProperty]
+    private Visibility linkedBugDialogVisibility = Visibility.Collapsed;
 
     [ObservableProperty]
     private Visibility discussionDrawerVisibility = Visibility.Collapsed;
@@ -327,6 +364,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         SaveResultCommand.NotifyCanExecuteChanged();
         AddAttachmentCommand.NotifyCanExecuteChanged();
         CreateLinkedBugCommand.NotifyCanExecuteChanged();
+        ShowLinkedBugDialogCommand.NotifyCanExecuteChanged();
         ShowCurrentResultDiscussionCommand.NotifyCanExecuteChanged();
     }
 
@@ -335,6 +373,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         SaveResultCommand.NotifyCanExecuteChanged();
         AddAttachmentCommand.NotifyCanExecuteChanged();
         CreateLinkedBugCommand.NotifyCanExecuteChanged();
+        ShowLinkedBugDialogCommand.NotifyCanExecuteChanged();
         ShowCurrentResultDiscussionCommand.NotifyCanExecuteChanged();
     }
 
@@ -539,6 +578,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         EditingResultTarget = TestSessionResultTargetKind.TestCase;
         LoadResultAttachments();
         LoadResultCustomFields();
+        LoadResultLinkedBugs();
     }
 
     [RelayCommand(CanExecute = nameof(CanShowEditTestStepResult))]
@@ -561,6 +601,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         EditingResultTarget = TestSessionResultTargetKind.Step;
         LoadResultAttachments();
         LoadResultCustomFields();
+        LoadResultLinkedBugs();
     }
 
     [RelayCommand]
@@ -576,6 +617,8 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         SelectedResultStatus = ResultStatuses.FirstOrDefault();
         ResultAttachments.Clear();
         ResultCustomFields.Clear();
+        ResultLinkedBugs.Clear();
+        LinkedBugDialogVisibility = Visibility.Collapsed;
     }
 
     [RelayCommand(CanExecute = nameof(CanShowCreateManualSectionDialog))]
@@ -749,7 +792,19 @@ public sealed partial class TestSessionsViewModel : ObservableObject
                 LinkedBugTargetDisplay,
                 projectContext.CurrentProjectId));
 
+            var sessionId = SelectedSession?.Id;
+            var sectionId = SelectedSection?.Id;
+            var testCaseId = EditingResultTarget == TestSessionResultTargetKind.TestCase
+                ? EditingResultId
+                : SelectedTestCase?.Id;
+            var stepId = EditingResultTarget == TestSessionResultTargetKind.Step
+                ? EditingResultId
+                : SelectedStep?.Id;
+
+            LoadSelectedSession(sessionId, sectionId, testCaseId, stepId);
+            LoadResultLinkedBugs();
             StatusMessage = "Linked bug created.";
+            LinkedBugDialogVisibility = Visibility.Collapsed;
         }
         catch (Exception ex)
         {
@@ -759,6 +814,18 @@ public sealed partial class TestSessionsViewModel : ObservableObject
             errorDialogService.ShowError(title, ex.Message);
             StatusMessage = ex.Message;
         }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanShowLinkedBugDialog))]
+    private void ShowLinkedBugDialog()
+    {
+        LinkedBugDialogVisibility = Visibility.Visible;
+    }
+
+    [RelayCommand]
+    private void CloseLinkedBugDialog()
+    {
+        LinkedBugDialogVisibility = Visibility.Collapsed;
     }
 
     [RelayCommand(CanExecute = nameof(CanShowTestCaseDiscussion))]
@@ -996,6 +1063,11 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         return CanAddAttachment() && !string.IsNullOrWhiteSpace(LinkedBugTitle);
     }
 
+    private bool CanShowLinkedBugDialog()
+    {
+        return CanAddAttachment();
+    }
+
     private bool CanShowCreateManualSectionDialog()
     {
         return SelectedSession is not null;
@@ -1119,6 +1191,8 @@ public sealed partial class TestSessionsViewModel : ObservableObject
                 ?? SelectedSession
                 ?? CopySourceSessions.FirstOrDefault();
 
+        OnPropertyChanged(nameof(EmptyStateVisibility));
+        OnPropertyChanged(nameof(SessionWorkspaceVisibility));
         CreateSessionCommand.NotifyCanExecuteChanged();
     }
 
@@ -1237,6 +1311,23 @@ public sealed partial class TestSessionsViewModel : ObservableObject
                      .Select(MapCustomField))
         {
             ResultCustomFields.Add(field);
+        }
+    }
+
+    private void LoadResultLinkedBugs()
+    {
+        ResultLinkedBugs.Clear();
+
+        IEnumerable<LinkedBugSummaryViewModel> linkedBugs = EditingResultTarget switch
+        {
+            TestSessionResultTargetKind.TestCase when SelectedTestCase is not null => SelectedTestCase.LinkedBugs,
+            TestSessionResultTargetKind.Step when SelectedStep is not null => SelectedStep.LinkedBugs,
+            _ => []
+        };
+
+        foreach (var linkedBug in linkedBugs)
+        {
+            ResultLinkedBugs.Add(linkedBug);
         }
     }
 
@@ -1383,6 +1474,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
             testCase.SortOrder,
             testCase.Status,
             testCase.Comment,
+            testCase.LinkedBugs.Select(MapLinkedBug),
             testCase.Steps
                 .OrderBy(step => step.SortOrder)
                 .Select(MapStep));
@@ -1397,7 +1489,16 @@ public sealed partial class TestSessionsViewModel : ObservableObject
             step.ExpectedResult,
             step.SortOrder,
             step.Status,
-            step.Comment);
+            step.Comment,
+            step.LinkedBugs.Select(MapLinkedBug));
+    }
+
+    private static LinkedBugSummaryViewModel MapLinkedBug(LinkedBugSummaryItem bug)
+    {
+        return new LinkedBugSummaryViewModel(
+            bug.Id,
+            bug.Title,
+            bug.Status);
     }
 
     private static AttachmentItemViewModel MapAttachment(AttachmentItem attachment)
@@ -1447,5 +1548,14 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         return string.IsNullOrWhiteSpace(expectedResult)
             ? "Created from a test result."
             : $"Expected result: {expectedResult}";
+    }
+
+    private void NotifyResultLinkedBugPropertiesChanged()
+    {
+        OnPropertyChanged(nameof(ResultLinkedBugListVisibility));
+        OnPropertyChanged(nameof(ResultLinkedBugEmptyVisibility));
+        OnPropertyChanged(nameof(ResultLinkedBugBadgeVisibility));
+        OnPropertyChanged(nameof(ResultLinkedBugButtonText));
+        OnPropertyChanged(nameof(CreateLinkedBugButtonText));
     }
 }

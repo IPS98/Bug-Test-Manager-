@@ -125,71 +125,73 @@
                          BorderThickness="0"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                     <ListBox.ItemContainerStyle>
-                        <Style TargetType="ListBoxItem">
-                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                        </Style>
+                        <Style BasedOn="{StaticResource StableListBoxItemStyle}"
+                               TargetType="ListBoxItem" />
                     </ListBox.ItemContainerStyle>
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <Grid Margin="0,4,0,10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="120" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
+                            <Border Margin="0,4,0,10"
+                                    Style="{StaticResource SelectableCardBorderStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="120" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
 
-                                <StackPanel Margin="0,0,14,0">
-                                    <TextBlock FontWeight="SemiBold"
-                                               Text="{Binding Name}"
-                                               TextWrapping="Wrap" />
-                                    <TextBlock Margin="0,4,0,0"
-                                               Foreground="#64748B"
-                                               Text="{Binding TargetDisplay}" />
-                                    <TextBlock Margin="0,4,0,0"
-                                               Foreground="#64748B"
-                                               Text="{Binding ScopeDisplayName}"
-                                               TextWrapping="Wrap" />
-                                    <TextBlock Margin="0,4,0,0"
-                                               Foreground="#64748B"
-                                               Text="{Binding OptionsDisplay}"
-                                               TextWrapping="Wrap" />
-                                </StackPanel>
+                                    <StackPanel Margin="0,0,14,0">
+                                        <TextBlock FontWeight="SemiBold"
+                                                   Text="{Binding Name}"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock Margin="0,4,0,0"
+                                                   Foreground="#64748B"
+                                                   Text="{Binding TargetDisplay}" />
+                                        <TextBlock Margin="0,4,0,0"
+                                                   Foreground="#64748B"
+                                                   Text="{Binding ScopeDisplayName}"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock Margin="0,4,0,0"
+                                                   Foreground="#64748B"
+                                                   Text="{Binding OptionsDisplay}"
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
 
-                                <StackPanel Grid.Column="1">
-                                    <Border Style="{StaticResource GreenChipBorderStyle}">
-                                        <TextBlock Style="{StaticResource GreenChipTextStyle}"
-                                                   Text="{Binding FieldTypeDisplay}" />
-                                    </Border>
-                                    <TextBlock Margin="0,4,0,0"
-                                               Foreground="#64748B"
-                                               Text="{Binding RequirementDisplay}" />
-                                    <TextBlock Margin="0,4,0,0"
-                                               Foreground="#64748B"
-                                               Text="{Binding StatusDisplay}" />
-                                </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <Border Style="{StaticResource GreenChipBorderStyle}">
+                                            <TextBlock Style="{StaticResource GreenChipTextStyle}"
+                                                       Text="{Binding FieldTypeDisplay}" />
+                                        </Border>
+                                        <TextBlock Margin="0,4,0,0"
+                                                   Foreground="#64748B"
+                                                   Text="{Binding RequirementDisplay}" />
+                                        <TextBlock Margin="0,4,0,0"
+                                                   Foreground="#64748B"
+                                                   Text="{Binding StatusDisplay}" />
+                                    </StackPanel>
 
-                                <StackPanel Grid.Column="2"
-                                            VerticalAlignment="Center"
-                                            Orientation="Horizontal">
-                                    <Button Command="{Binding DataContext.ShowEditFieldDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                            CommandParameter="{Binding}"
-                                            Content="&#xE70F;"
-                                            Style="{StaticResource IconActionButtonStyle}"
-                                            ToolTip="Edit field" />
-                                    <Button Margin="8,0,0,0"
-                                            Command="{Binding DataContext.ShowArchiveFieldDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                            CommandParameter="{Binding}"
-                                            Content="&#xE7B8;"
-                                            Style="{StaticResource IconActionButtonStyle}"
-                                            ToolTip="Archive field: hide it from new forms but keep existing values" />
-                                    <Button Margin="8,0,0,0"
-                                            Command="{Binding DataContext.ShowDeleteFieldDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                            CommandParameter="{Binding}"
-                                            Content="&#xE74D;"
-                                            Style="{StaticResource DangerIconActionButtonStyle}"
-                                            ToolTip="Delete field" />
-                                </StackPanel>
-                            </Grid>
+                                    <StackPanel Grid.Column="2"
+                                                VerticalAlignment="Center"
+                                                Orientation="Horizontal">
+                                        <Button Command="{Binding DataContext.ShowEditFieldDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"
+                                                Content="&#xE70F;"
+                                                Style="{StaticResource IconActionButtonStyle}"
+                                                ToolTip="Edit field" />
+                                        <Button Margin="8,0,0,0"
+                                                Command="{Binding DataContext.ShowArchiveFieldDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"
+                                                Content="&#xE7B8;"
+                                                Style="{StaticResource IconActionButtonStyle}"
+                                                ToolTip="Archive field: hide it from new forms but keep existing values" />
+                                        <Button Margin="8,0,0,0"
+                                                Command="{Binding DataContext.ShowDeleteFieldDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"
+                                                Content="&#xE74D;"
+                                                Style="{StaticResource DangerIconActionButtonStyle}"
+                                                ToolTip="Delete field" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>

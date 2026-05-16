@@ -118,6 +118,11 @@ Status: implementation in progress after approved architecture and skeleton setu
 - Reports stage started with a modular report data service for full test session report data.
 - Reports page can prepare a test session report preview from the report data model.
 - Reports page can export the selected test session report to a first PDF file through a replaceable report export interface.
+- Test Sessions page shows a clear empty state when no sessions exist.
+- Linked bug creation in Test Sessions opens in a modal instead of permanently occupying the result details panel.
+- Test case and check result cards show linked bug indicators when bugs already exist.
+- Linked bug modal shows existing linked bugs before creating another linked bug.
+- Selectable cards started moving to a shared selectable style with visible background, hover, and selected states.
 - Test suite revisions can be created, renamed, and copied from an existing revision without modifying the original revision.
 - Test suite revision requirement can be disabled again while editing a test suite.
 - Custom fields can be bound to multiple selected scopes/targets without duplicating the same field definition.
@@ -197,6 +202,11 @@ These are still important, but they do not block the first skeleton:
 - Later, add an analytics/dashboard screen with a table and charts for filtering test and bug data by date range, status, version, build, owner, and other report fields.
 - Later, add application logging for important user actions and errors.
 - Later, add an activity/event panel for visible app events such as template creation, status changes, project deletion, and important errors.
+- Later, add full theme support with Dark Mode, a theme switcher, and saved theme preference.
+- Later, add session-to-template sync workflows: update original template from a session and create a new template from a session, both with preview and confirmation.
+- Later, add mandatory-field sync behavior for existing sessions when new required fields are created.
+- Later, add Created Date, Last Modified Date, and Last Status Change Date to session result items.
+- Later, support multi-session reports and full-project/program reports with image attachments embedded in the PDF.
 
 ## Proposed Technology
 
@@ -428,6 +438,9 @@ History:
 - Generate bug report PDF.
 - Generate summary/sign-off report if required.
 - Include images, metadata, dates, statuses, custom fields, and summary tables.
+- Add multi-session report export.
+- Add project/program-level report export.
+- Embed image attachments safely with scaling and missing-file handling.
 
 ### Milestone 7 - Packaging and Release
 
