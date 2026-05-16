@@ -114,6 +114,7 @@ Status: implementation in progress after approved architecture and skeleton setu
 - Whole projects can be deleted after a dangerous-action confirmation, including related templates, sessions, bugs, fields, attachments, and discussions.
 - Test sessions can be deleted after confirmation, including related result data, custom field values, attachments, and discussions.
 - New Test Session creation now opens in a popup dialog instead of permanently occupying the Test Sessions screen.
+- Test Sessions page can create a new clean session by copying the structure of a previous session.
 - Test suite revisions can be created, renamed, and copied from an existing revision without modifying the original revision.
 - Test suite revision requirement can be disabled again while editing a test suite.
 - Custom fields can be bound to multiple selected scopes/targets without duplicating the same field definition.
@@ -386,7 +387,7 @@ History:
 - Add dynamic field definition management screen. Started.
 - Add template revisions, sections, cases, and steps. Started at Domain level.
 - Add copy-from-template workflow.
-- Add copy-from-previous-session workflow.
+- Add copy-from-previous-session workflow. Done.
 - Replace in-memory sample catalog with database-backed reads. Done.
 - Add first test suite and section creation workflow. Done.
 - Add first test case and check creation workflow. Done.

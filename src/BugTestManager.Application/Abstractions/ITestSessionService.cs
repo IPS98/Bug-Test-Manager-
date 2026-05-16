@@ -13,6 +13,8 @@ public interface ITestSessionService
 
     Guid CreateManualSession(CreateManualTestSessionRequest request);
 
+    Guid CopySession(CopyTestSessionRequest request);
+
     Guid CreateManualSection(CreateManualTestSectionRequest request);
 
     Guid CreateManualTestCase(CreateManualTestCaseRequest request);

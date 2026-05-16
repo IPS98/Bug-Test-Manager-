@@ -230,6 +230,90 @@ public sealed class SqliteTestSessionService(
         return sessionId;
     }
 
+    public Guid CopySession(CopyTestSessionRequest request)
+    {
+        var name = Require(request.Name, "Session name");
+        var createdBy = Require(request.CreatedBy, "Created by");
+        var projectId = ResolveProjectId(request.ProjectId);
+
+        using var dbContext = dbContextFactory.CreateDbContext();
+        var sourceSession = dbContext.TestSessions
+            .AsNoTracking()
+            .Include(item => item.Sections)
+            .ThenInclude(section => section.TestCases)
+            .ThenInclude(testCase => testCase.Steps)
+            .SingleOrDefault(item => item.Id == request.SourceTestSessionId && item.ProjectId == projectId)
+            ?? throw new InvalidOperationException("Source test session was not found.");
+
+        var sessionId = Guid.NewGuid();
+        var session = new TestSessionRecord
+        {
+            Id = sessionId,
+            ProjectId = projectId,
+            Name = name,
+            TestSuiteId = sourceSession.TestSuiteId,
+            TestSuiteRevisionId = sourceSession.TestSuiteRevisionId,
+            IsManual = sourceSession.IsManual,
+            TestSuiteName = sourceSession.TestSuiteName,
+            TestSuiteRevisionName = sourceSession.TestSuiteRevisionName,
+            TestedVersion = request.TestedVersion.Trim(),
+            BuildNumber = request.BuildNumber.Trim(),
+            Notes = request.Notes.Trim(),
+            CreatedBy = createdBy,
+            CreatedAt = DateTimeOffset.UtcNow
+        };
+
+        foreach (var sourceSection in sourceSession.Sections.OrderBy(section => section.SortOrder))
+        {
+            var section = new TestSectionResultRecord
+            {
+                Id = Guid.NewGuid(),
+                TestSessionId = sessionId,
+                TemplateSectionId = sourceSection.TemplateSectionId,
+                Name = sourceSection.Name,
+                Category = sourceSection.Category,
+                SortOrder = sourceSection.SortOrder
+            };
+
+            foreach (var sourceTestCase in sourceSection.TestCases.OrderBy(testCase => testCase.SortOrder))
+            {
+                var testCase = new TestCaseResultRecord
+                {
+                    Id = Guid.NewGuid(),
+                    TestCaseTemplateId = sourceTestCase.TestCaseTemplateId,
+                    Title = sourceTestCase.Title,
+                    ExpectedResult = sourceTestCase.ExpectedResult,
+                    SortOrder = sourceTestCase.SortOrder,
+                    Status = TestResultStatus.NotTested,
+                    Comment = string.Empty
+                };
+
+                foreach (var sourceStep in sourceTestCase.Steps.OrderBy(step => step.SortOrder))
+                {
+                    testCase.Steps.Add(new TestStepResultRecord
+                    {
+                        Id = Guid.NewGuid(),
+                        TestStepTemplateId = sourceStep.TestStepTemplateId,
+                        StepText = sourceStep.StepText,
+                        ExpectedResult = sourceStep.ExpectedResult,
+                        SortOrder = sourceStep.SortOrder,
+                        Status = TestResultStatus.NotTested,
+                        Comment = string.Empty
+                    });
+                }
+
+                section.TestCases.Add(testCase);
+            }
+
+            session.Sections.Add(section);
+        }
+
+        dbContext.TestSessions.Add(session);
+        dbContext.SaveChanges();
+
+        return sessionId;
+    }
+
     public Guid CreateManualSection(CreateManualTestSectionRequest request)
     {
         var name = Require(request.Name, "Section name");

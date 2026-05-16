@@ -605,12 +605,26 @@
                                   VerticalScrollBarVisibility="Auto">
                         <StackPanel>
                             <TextBlock Foreground="#64748B"
-                                       Text="Template source" />
+                                       Text="Session source" />
                             <ComboBox Margin="0,6,0,14"
                                       MinHeight="34"
                                       DisplayMemberPath="Name"
                                       ItemsSource="{Binding TestSuites}"
                                       SelectedItem="{Binding SelectedTestSuite}" />
+
+                            <StackPanel Visibility="{Binding PreviousSessionPickerVisibility}">
+                                <TextBlock Foreground="#64748B"
+                                           Text="Previous session" />
+                                <ComboBox Margin="0,6,0,6"
+                                          MinHeight="34"
+                                          DisplayMemberPath="SelectorDisplay"
+                                          ItemsSource="{Binding CopySourceSessions}"
+                                          SelectedItem="{Binding CopySourceSession}" />
+                                <TextBlock Margin="0,0,0,14"
+                                           Foreground="#64748B"
+                                           Text="Only the structure is copied. Results, comments, attachments, and chat messages start clean."
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
 
                             <StackPanel Visibility="{Binding RevisionPickerVisibility}">
                                 <TextBlock Foreground="#64748B"

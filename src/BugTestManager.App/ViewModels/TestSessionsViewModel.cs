@@ -14,6 +14,7 @@ namespace BugTestManager.App.ViewModels;
 public sealed partial class TestSessionsViewModel : ObservableObject
 {
     private static readonly Guid ManualSessionTemplateOptionId = Guid.Empty;
+    private static readonly Guid CopyPreviousSessionTemplateOptionId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
 
     private readonly ITestSessionService testSessionService;
     private readonly ITestSuiteCatalogService testSuiteCatalogService;
@@ -54,6 +55,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         TestSuites = [];
         Revisions = [];
         Sessions = [];
+        CopySourceSessions = [];
         Sections = [];
         FilteredTestCases = [];
         ResultAttachments = [];
@@ -83,6 +85,8 @@ public sealed partial class TestSessionsViewModel : ObservableObject
 
     public ObservableCollection<TestSessionSummaryViewModel> Sessions { get; }
 
+    public ObservableCollection<TestSessionSummaryViewModel> CopySourceSessions { get; }
+
     public ObservableCollection<TestSectionResultViewModel> Sections { get; }
 
     public ObservableCollection<TestCaseResultViewModel> FilteredTestCases { get; }
@@ -101,6 +105,10 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         ? Visibility.Visible
         : Visibility.Collapsed;
 
+    public Visibility PreviousSessionPickerVisibility => IsCopyPreviousSessionTemplateOption(SelectedTestSuite)
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
     [ObservableProperty]
     private TestSessionSuiteOption? selectedTestSuite;
 
@@ -109,6 +117,9 @@ public sealed partial class TestSessionsViewModel : ObservableObject
 
     [ObservableProperty]
     private TestSessionSummaryViewModel? selectedSession;
+
+    [ObservableProperty]
+    private TestSessionSummaryViewModel? copySourceSession;
 
     public GridLength ResultDetailsColumnWidth => ResultDialogOverlayVisibility == Visibility.Visible
         ? new(420)
@@ -243,7 +254,13 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         }
 
         SelectedRevision = Revisions.FirstOrDefault();
+        if (IsCopyPreviousSessionTemplateOption(value) && CopySourceSession is null)
+        {
+            CopySourceSession = SelectedSession ?? CopySourceSessions.FirstOrDefault();
+        }
+
         OnPropertyChanged(nameof(RevisionPickerVisibility));
+        OnPropertyChanged(nameof(PreviousSessionPickerVisibility));
         CreateSessionCommand.NotifyCanExecuteChanged();
     }
 
@@ -254,9 +271,19 @@ public sealed partial class TestSessionsViewModel : ObservableObject
 
     partial void OnSelectedSessionChanged(TestSessionSummaryViewModel? value)
     {
+        if (CopySourceSession is null && value is not null)
+        {
+            CopySourceSession = value;
+        }
+
         LoadSelectedSession(value?.Id);
         ShowCreateManualSectionDialogCommand.NotifyCanExecuteChanged();
         ShowDeleteSessionDialogCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnCopySourceSessionChanged(TestSessionSummaryViewModel? value)
+    {
+        CreateSessionCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnSelectedSectionChanged(TestSectionResultViewModel? value)
@@ -363,6 +390,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     private void ShowNewSessionDialog()
     {
         StatusMessage = "Ready";
+        CopySourceSession ??= SelectedSession ?? CopySourceSessions.FirstOrDefault();
         NewSessionDialogVisibility = Visibility.Visible;
     }
 
@@ -382,15 +410,36 @@ public sealed partial class TestSessionsViewModel : ObservableObject
 
         try
         {
-            var sessionId = CreateSessionWithoutTemplate
-                ? testSessionService.CreateManualSession(new CreateManualTestSessionRequest(
+            Guid sessionId;
+            if (IsCopyPreviousSessionTemplateOption(SelectedTestSuite))
+            {
+                if (CopySourceSession is null)
+                {
+                    return;
+                }
+
+                sessionId = testSessionService.CopySession(new CopyTestSessionRequest(
+                    NewSessionName,
+                    CopySourceSession.Id,
+                    TestedVersion,
+                    BuildNumber,
+                    Notes,
+                    userContext.UserName,
+                    projectContext.CurrentProjectId));
+            }
+            else if (CreateSessionWithoutTemplate)
+            {
+                sessionId = testSessionService.CreateManualSession(new CreateManualTestSessionRequest(
                     NewSessionName,
                     TestedVersion,
                     BuildNumber,
                     Notes,
                     userContext.UserName,
-                    projectContext.CurrentProjectId))
-                : testSessionService.CreateSession(new CreateTestSessionRequest(
+                    projectContext.CurrentProjectId));
+            }
+            else
+            {
+                sessionId = testSessionService.CreateSession(new CreateTestSessionRequest(
                     NewSessionName,
                     SelectedTestSuite!.Id,
                     SelectedRevision?.Id,
@@ -399,6 +448,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
                     Notes,
                     userContext.UserName,
                     projectContext.CurrentProjectId));
+            }
 
             NewSessionName = string.Empty;
             TestedVersion = string.Empty;
@@ -406,9 +456,11 @@ public sealed partial class TestSessionsViewModel : ObservableObject
             Notes = string.Empty;
 
             LoadSessions(sessionId);
-            StatusMessage = CreateSessionWithoutTemplate
-                ? "Manual test session created."
-                : "Test session created from template.";
+            StatusMessage = IsCopyPreviousSessionTemplateOption(SelectedTestSuite)
+                ? "Test session copied from previous session."
+                : CreateSessionWithoutTemplate
+                    ? "Manual test session created."
+                    : "Test session created from template.";
             NewSessionDialogVisibility = Visibility.Collapsed;
         }
         catch (Exception ex)
@@ -899,7 +951,9 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     private bool CanCreateSession()
     {
         return !string.IsNullOrWhiteSpace(NewSessionName)
-            && (CreateSessionWithoutTemplate
+            && (IsCopyPreviousSessionTemplateOption(SelectedTestSuite)
+                ? CopySourceSession is not null
+                : CreateSessionWithoutTemplate
                 || (SelectedTestSuite is not null
                     && (!SelectedTestSuite.RevisionIsRequired || SelectedRevision?.Id is not null)));
     }
@@ -992,6 +1046,11 @@ public sealed partial class TestSessionsViewModel : ObservableObject
                 ManualSessionTemplateOptionId,
                 "Start without template",
                 revisionIsRequired: false,
+                [new TestSessionRevisionOption(null, "No revision")]),
+            new(
+                CopyPreviousSessionTemplateOptionId,
+                "Copy previous session",
+                revisionIsRequired: false,
                 [new TestSessionRevisionOption(null, "No revision")])
         };
 
@@ -1014,7 +1073,9 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         }
 
         SelectedTestSuite = selectedSuiteId is null
-            ? TestSuites.FirstOrDefault(suite => !IsManualSessionTemplateOption(suite)) ?? TestSuites.FirstOrDefault()
+            ? TestSuites.FirstOrDefault(suite =>
+                !IsManualSessionTemplateOption(suite)
+                && !IsCopyPreviousSessionTemplateOption(suite)) ?? TestSuites.FirstOrDefault()
             : TestSuites.FirstOrDefault(suite => suite.Id == selectedSuiteId) ?? TestSuites.FirstOrDefault();
     }
 
@@ -1023,9 +1084,15 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         return option?.Id == ManualSessionTemplateOptionId;
     }
 
+    private static bool IsCopyPreviousSessionTemplateOption(TestSessionSuiteOption? option)
+    {
+        return option?.Id == CopyPreviousSessionTemplateOptionId;
+    }
+
     private void LoadSessions(Guid? selectedSessionId = null)
     {
         var preferredSessionId = selectedSessionId ?? SelectedSession?.Id;
+        var preferredCopySourceSessionId = CopySourceSession?.Id;
         var sessions = testSessionService.GetSessions(projectContext.CurrentProjectId)
             .Select(MapSession)
             .ToList();
@@ -1039,6 +1106,20 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         SelectedSession = preferredSessionId is null
             ? Sessions.FirstOrDefault()
             : Sessions.FirstOrDefault(session => session.Id == preferredSessionId) ?? Sessions.FirstOrDefault();
+
+        CopySourceSessions.Clear();
+        foreach (var session in sessions)
+        {
+            CopySourceSessions.Add(session);
+        }
+
+        CopySourceSession = preferredCopySourceSessionId is null
+            ? SelectedSession ?? CopySourceSessions.FirstOrDefault()
+            : CopySourceSessions.FirstOrDefault(session => session.Id == preferredCopySourceSessionId)
+                ?? SelectedSession
+                ?? CopySourceSessions.FirstOrDefault();
+
+        CreateSessionCommand.NotifyCanExecuteChanged();
     }
 
     private void LoadSelectedSession(

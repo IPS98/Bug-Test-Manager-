@@ -794,6 +794,72 @@ public sealed class SqlitePersistenceTests
     }
 
     [Fact]
+    public void TestSessionService_CopiesPreviousSessionAsCleanNewRun()
+    {
+        var databasePath = CreateTempDatabasePath();
+        using var serviceProvider = CreateServiceProvider(databasePath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var catalog = serviceProvider.GetRequiredService<ITestSuiteCatalogService>().GetCatalog();
+        var sourceSuite = catalog.Single(suite => suite.Name == "Application UI Regression");
+        var sessionService = serviceProvider.GetRequiredService<ITestSessionService>();
+
+        var sourceSessionId = sessionService.CreateSession(new CreateTestSessionRequest(
+            "Regression 1.2.4",
+            sourceSuite.Id,
+            TestSuiteRevisionId: null,
+            TestedVersion: "1.2.4",
+            BuildNumber: "789",
+            Notes: "Original run",
+            CreatedBy: "tester"));
+
+        var sourceSession = sessionService.GetSession(sourceSessionId);
+        var sourceCase = sourceSession.Sections
+            .SelectMany(section => section.TestCases)
+            .First(item => item.Steps.Count > 0);
+        var sourceCheck = sourceCase.Steps.First();
+
+        sessionService.UpdateTestCaseResult(new UpdateTestCaseResultRequest(
+            sourceCase.Id,
+            TestResultStatus.Pass,
+            "Original case comment."));
+        sessionService.UpdateTestStepResult(new UpdateTestStepResultRequest(
+            sourceCheck.Id,
+            TestResultStatus.Fail,
+            "Original check comment."));
+
+        var copiedSessionId = sessionService.CopySession(new CopyTestSessionRequest(
+            "Regression 1.2.5",
+            sourceSessionId,
+            TestedVersion: "1.2.5",
+            BuildNumber: "790",
+            Notes: "Copied structure for next build",
+            CreatedBy: "tester"));
+
+        var copiedSession = sessionService.GetSession(copiedSessionId);
+        var copiedCase = copiedSession.Sections
+            .SelectMany(section => section.TestCases)
+            .First(item => item.Title == sourceCase.Title);
+        var copiedCheck = copiedCase.Steps.First(item => item.StepText == sourceCheck.StepText);
+
+        Assert.NotEqual(sourceSessionId, copiedSessionId);
+        Assert.Equal("Regression 1.2.5", copiedSession.Name);
+        Assert.Equal("1.2.5", copiedSession.TestedVersion);
+        Assert.Equal("790", copiedSession.BuildNumber);
+        Assert.Equal(sourceSession.Sections.Count, copiedSession.Sections.Count);
+        Assert.Equal(sourceSession.Sections.Sum(section => section.TestCases.Count), copiedSession.Sections.Sum(section => section.TestCases.Count));
+        Assert.Equal(sourceSession.Sections.Sum(section => section.TestCases.Sum(testCase => testCase.Steps.Count)), copiedSession.Sections.Sum(section => section.TestCases.Sum(testCase => testCase.Steps.Count)));
+        Assert.NotEqual(sourceCase.Id, copiedCase.Id);
+        Assert.Equal(sourceCase.TestCaseTemplateId, copiedCase.TestCaseTemplateId);
+        Assert.Equal(TestResultStatus.NotTested, copiedCase.Status);
+        Assert.Equal(string.Empty, copiedCase.Comment);
+        Assert.NotEqual(sourceCheck.Id, copiedCheck.Id);
+        Assert.Equal(sourceCheck.TestStepTemplateId, copiedCheck.TestStepTemplateId);
+        Assert.Equal(TestResultStatus.NotTested, copiedCheck.Status);
+        Assert.Equal(string.Empty, copiedCheck.Comment);
+    }
+
+    [Fact]
     public void TestSessionService_RequiresRevisionForRevisionedSuite()
     {
         var databasePath = CreateTempDatabasePath();
