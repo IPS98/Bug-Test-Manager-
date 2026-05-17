@@ -432,19 +432,16 @@ public sealed class SqliteTestSessionService(
 
         testCase.Comment = request.Comment.Trim();
 
-        if (request.Status is not TestResultStatus.Fail)
+        foreach (var step in testCase.Steps)
         {
-            foreach (var step in testCase.Steps)
+            if (step.Status != request.Status)
             {
-                if (step.Status != request.Status)
-                {
-                    step.Status = request.Status;
-                    step.LastStatusChangedAt = now;
-                }
-                else if (NeedsMissingStatusChangeDate(step.Status, step.LastStatusChangedAt))
-                {
-                    step.LastStatusChangedAt = now;
-                }
+                step.Status = request.Status;
+                step.LastStatusChangedAt = now;
+            }
+            else if (NeedsMissingStatusChangeDate(step.Status, step.LastStatusChangedAt))
+            {
+                step.LastStatusChangedAt = now;
             }
         }
 

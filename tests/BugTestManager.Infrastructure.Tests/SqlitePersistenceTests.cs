@@ -865,7 +865,25 @@ public sealed class SqlitePersistenceTests
         Assert.All(passedCase.Steps, item => Assert.Equal(TestResultStatus.Pass, item.Status));
         Assert.All(passedCase.Steps, item => Assert.NotNull(item.LastStatusChangedAt));
 
-        var passedCaseStatusChangedAt = passedCase.LastStatusChangedAt;
+        var oldStatusChangedAt = new DateTimeOffset(2026, 5, 1, 12, 0, 0, TimeSpan.Zero);
+        var dbContextFactory = serviceProvider.GetRequiredService<IDbContextFactory<BugTestManagerDbContext>>();
+        using (var dbContext = dbContextFactory.CreateDbContext())
+        {
+            var storedCase = dbContext.TestCaseResults
+                .Include(item => item.Steps)
+                .Single(item => item.Id == testCase.Id);
+            storedCase.LastStatusChangedAt = oldStatusChangedAt;
+
+            foreach (var storedStep in storedCase.Steps)
+            {
+                storedStep.LastStatusChangedAt = oldStatusChangedAt;
+            }
+
+            dbContext.SaveChanges();
+        }
+
+        var passedCaseStatusChangedAt = oldStatusChangedAt;
+        var passedStepStatusChangedAt = oldStatusChangedAt;
         sessionService.UpdateTestCaseResult(new UpdateTestCaseResultRequest(
             testCase.Id,
             TestResultStatus.Pass,
@@ -878,6 +896,24 @@ public sealed class SqlitePersistenceTests
 
         Assert.Equal("Only the comment changed.", commentOnlyCase.Comment);
         Assert.Equal(passedCaseStatusChangedAt, commentOnlyCase.LastStatusChangedAt);
+        Assert.Equal(passedStepStatusChangedAt, commentOnlyCase.Steps.First().LastStatusChangedAt);
+
+        sessionService.UpdateTestCaseResult(new UpdateTestCaseResultRequest(
+            testCase.Id,
+            TestResultStatus.Fail,
+            "The full case failed."));
+
+        var failedSession = sessionService.GetSession(sessionId);
+        var failedCase = failedSession.Sections
+            .SelectMany(section => section.TestCases)
+            .Single(item => item.Id == testCase.Id);
+
+        Assert.Equal(TestResultStatus.Fail, failedCase.Status);
+        Assert.Equal("The full case failed.", failedCase.Comment);
+        Assert.All(failedCase.Steps, item => Assert.Equal(TestResultStatus.Fail, item.Status));
+        Assert.All(failedCase.Steps, item => Assert.NotNull(item.LastStatusChangedAt));
+        Assert.NotEqual(passedCaseStatusChangedAt, failedCase.LastStatusChangedAt);
+        Assert.NotEqual(passedStepStatusChangedAt, failedCase.Steps.First().LastStatusChangedAt);
 
         sessionService.UpdateTestStepResult(new UpdateTestStepResultRequest(
             step.Id,
@@ -891,7 +927,7 @@ public sealed class SqlitePersistenceTests
         var updatedStep = updatedCase.Steps.Single(item => item.Id == step.Id);
 
         Assert.Equal(TestResultStatus.Fail, updatedCase.Status);
-        Assert.Equal("Only the comment changed.", updatedCase.Comment);
+        Assert.Equal("The full case failed.", updatedCase.Comment);
         Assert.NotNull(updatedCase.LastStatusChangedAt);
         Assert.Equal(TestResultStatus.Fail, updatedStep.Status);
         Assert.Equal("Tooltip text is missing.", updatedStep.Comment);
@@ -955,6 +991,62 @@ public sealed class SqlitePersistenceTests
         Assert.NotNull(updatedCase.LastStatusChangedAt);
         Assert.All(updatedCase.Steps, step => Assert.Equal(TestResultStatus.Pass, step.Status));
         Assert.All(updatedCase.Steps, step => Assert.NotNull(step.LastStatusChangedAt));
+    }
+
+    [Fact]
+    public void TestSessionService_CalculatesCaseStatusFromChecks()
+    {
+        var databasePath = CreateTempDatabasePath();
+        using var serviceProvider = CreateServiceProvider(databasePath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var catalog = serviceProvider.GetRequiredService<ITestSuiteCatalogService>().GetCatalog();
+        var sourceSuite = catalog.Single(suite => suite.Name == "Application UI Regression");
+        var sessionService = serviceProvider.GetRequiredService<ITestSessionService>();
+
+        var sessionId = sessionService.CreateSession(new CreateTestSessionRequest(
+            "Regression with calculated case status",
+            sourceSuite.Id,
+            TestSuiteRevisionId: null,
+            TestedVersion: "1.2.6",
+            BuildNumber: "791",
+            Notes: "",
+            CreatedBy: "tester"));
+
+        var testCase = sessionService.GetSession(sessionId)
+            .Sections
+            .SelectMany(section => section.TestCases)
+            .First(item => item.Steps.Count > 1);
+
+        foreach (var step in testCase.Steps)
+        {
+            sessionService.UpdateTestStepResult(new UpdateTestStepResultRequest(
+                step.Id,
+                TestResultStatus.Pass,
+                $"Check {step.SortOrder} passed."));
+        }
+
+        var passedCase = sessionService.GetSession(sessionId)
+            .Sections
+            .SelectMany(section => section.TestCases)
+            .Single(item => item.Id == testCase.Id);
+
+        Assert.Equal(TestResultStatus.Pass, passedCase.Status);
+        Assert.NotNull(passedCase.LastStatusChangedAt);
+
+        var failedStep = passedCase.Steps.First();
+        sessionService.UpdateTestStepResult(new UpdateTestStepResultRequest(
+            failedStep.Id,
+            TestResultStatus.Fail,
+            "One check failed."));
+
+        var failedCase = sessionService.GetSession(sessionId)
+            .Sections
+            .SelectMany(section => section.TestCases)
+            .Single(item => item.Id == testCase.Id);
+
+        Assert.Equal(TestResultStatus.Fail, failedCase.Status);
+        Assert.Equal(TestResultStatus.Fail, failedCase.Steps.Single(step => step.Id == failedStep.Id).Status);
     }
 
     [Fact]
