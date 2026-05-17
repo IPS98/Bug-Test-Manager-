@@ -48,6 +48,12 @@ public sealed record ReportTestCaseItem(
     IReadOnlyList<ReportCheckItem> Checks)
 {
     public string LastStatusChangedDateDisplay => ReportDisplayFormatter.FormatOptionalDate(LastStatusChangedAt);
+
+    public IReadOnlyList<ReportAttachmentItem> ImageAttachments =>
+        Attachments
+            .Concat(Checks.SelectMany(check => check.Attachments))
+            .Where(attachment => attachment.IsImage)
+            .ToList();
 }
 
 public sealed record ReportCheckItem(

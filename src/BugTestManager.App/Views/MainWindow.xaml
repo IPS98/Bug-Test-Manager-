@@ -86,7 +86,7 @@
         </Style>
     </mah:MetroWindow.Resources>
 
-    <Grid Background="#F5F7FA">
+    <Grid Background="{StaticResource AppShellBackgroundBrush}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="{Binding SidebarWidth}" />
             <ColumnDefinition Width="*" />

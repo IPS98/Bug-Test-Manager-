@@ -254,6 +254,53 @@
                                                                             </DataTemplate>
                                                                         </ItemsControl.ItemTemplate>
                                                                     </ItemsControl>
+                                                                    <ItemsControl Margin="0,4,0,0"
+                                                                                  ItemsSource="{Binding ImageAttachments}">
+                                                                        <ItemsControl.Style>
+                                                                            <Style TargetType="{x:Type ItemsControl}">
+                                                                                <Setter Property="Visibility" Value="Visible" />
+                                                                                <Style.Triggers>
+                                                                                    <DataTrigger Binding="{Binding ImageAttachments.Count}" Value="0">
+                                                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                                                    </DataTrigger>
+                                                                                </Style.Triggers>
+                                                                            </Style>
+                                                                        </ItemsControl.Style>
+                                                                        <ItemsControl.ItemsPanel>
+                                                                            <ItemsPanelTemplate>
+                                                                                <WrapPanel />
+                                                                            </ItemsPanelTemplate>
+                                                                        </ItemsControl.ItemsPanel>
+                                                                        <ItemsControl.ItemTemplate>
+                                                                            <DataTemplate>
+                                                                                <Border Width="190"
+                                                                                        Margin="0,0,10,10"
+                                                                                        Padding="8"
+                                                                                        Background="{StaticResource AppSubtleSurfaceBrush}"
+                                                                                        BorderBrush="{StaticResource AppBorderBrush}"
+                                                                                        BorderThickness="1"
+                                                                                        CornerRadius="6">
+                                                                                    <StackPanel>
+                                                                                        <Border Height="105"
+                                                                                                Background="{StaticResource AppSurfaceBrush}"
+                                                                                                BorderBrush="{StaticResource AppBorderBrush}"
+                                                                                                BorderThickness="1"
+                                                                                                CornerRadius="4">
+                                                                                            <Image MaxHeight="96"
+                                                                                                   Margin="4"
+                                                                                                   Source="{Binding AbsolutePath}"
+                                                                                                   Stretch="Uniform" />
+                                                                                        </Border>
+                                                                                        <TextBlock Margin="0,6,0,0"
+                                                                                                   Foreground="{StaticResource AppMutedTextBrush}"
+                                                                                                   Text="{Binding OriginalFileName}"
+                                                                                                   TextTrimming="CharacterEllipsis"
+                                                                                                   ToolTip="{Binding AbsolutePath}" />
+                                                                                    </StackPanel>
+                                                                                </Border>
+                                                                            </DataTemplate>
+                                                                        </ItemsControl.ItemTemplate>
+                                                                    </ItemsControl>
                                                                     <TextBlock Margin="0,8,0,0"
                                                                                Foreground="{StaticResource AppMutedTextBrush}"
                                                                                Text="{Binding Checks.Count, StringFormat=Checks: {0}}" />

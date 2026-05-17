@@ -5,6 +5,7 @@ using BugTestManager.Application.Requests;
 using BugTestManager.Domain.Enums;
 using BugTestManager.Infrastructure;
 using BugTestManager.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BugTestManager.Infrastructure.Tests;
@@ -898,6 +899,65 @@ public sealed class SqlitePersistenceTests
     }
 
     [Fact]
+    public void TestSessionService_BackfillsMissingStatusChangeDatesForExistingPassedChecks()
+    {
+        var databasePath = CreateTempDatabasePath();
+        using var serviceProvider = CreateServiceProvider(databasePath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var catalog = serviceProvider.GetRequiredService<ITestSuiteCatalogService>().GetCatalog();
+        var sourceSuite = catalog.Single(suite => suite.Name == "Application UI Regression");
+        var sessionService = serviceProvider.GetRequiredService<ITestSessionService>();
+
+        var sessionId = sessionService.CreateSession(new CreateTestSessionRequest(
+            "Regression with old result dates",
+            sourceSuite.Id,
+            TestSuiteRevisionId: null,
+            TestedVersion: "1.2.5",
+            BuildNumber: "790",
+            Notes: "",
+            CreatedBy: "tester"));
+
+        var testCase = sessionService.GetSession(sessionId)
+            .Sections
+            .SelectMany(section => section.TestCases)
+            .First(item => item.Steps.Count > 0);
+
+        var dbContextFactory = serviceProvider.GetRequiredService<IDbContextFactory<BugTestManagerDbContext>>();
+        using (var dbContext = dbContextFactory.CreateDbContext())
+        {
+            var oldCase = dbContext.TestCaseResults
+                .Include(item => item.Steps)
+                .Single(item => item.Id == testCase.Id);
+            oldCase.Status = TestResultStatus.NotTested;
+            oldCase.LastStatusChangedAt = null;
+
+            foreach (var step in oldCase.Steps)
+            {
+                step.Status = TestResultStatus.Pass;
+                step.LastStatusChangedAt = null;
+            }
+
+            dbContext.SaveChanges();
+        }
+
+        sessionService.UpdateTestCaseResult(new UpdateTestCaseResultRequest(
+            testCase.Id,
+            TestResultStatus.Pass,
+            "Case passed after older check statuses existed."));
+
+        var updatedCase = sessionService.GetSession(sessionId)
+            .Sections
+            .SelectMany(section => section.TestCases)
+            .Single(item => item.Id == testCase.Id);
+
+        Assert.Equal(TestResultStatus.Pass, updatedCase.Status);
+        Assert.NotNull(updatedCase.LastStatusChangedAt);
+        Assert.All(updatedCase.Steps, step => Assert.Equal(TestResultStatus.Pass, step.Status));
+        Assert.All(updatedCase.Steps, step => Assert.NotNull(step.LastStatusChangedAt));
+    }
+
+    [Fact]
     public void TestSessionService_LoadsLinkedBugsForCaseAndCheckResults()
     {
         var databasePath = CreateTempDatabasePath();
@@ -1285,6 +1345,7 @@ public sealed class SqlitePersistenceTests
             .Sections
             .SelectMany(section => section.TestCases)
             .First();
+        var check = testCase.Steps.First();
         var sourceDirectory = CreateTempDirectoryPath();
         var sourceImagePath = Path.Combine(sourceDirectory, "evidence.png");
         File.WriteAllBytes(
@@ -1294,6 +1355,13 @@ public sealed class SqlitePersistenceTests
             EntityReferenceType.TestCaseResult,
             testCase.Id,
             sourceImagePath,
+            "tester"));
+        var checkImagePath = Path.Combine(sourceDirectory, "check-evidence.png");
+        File.Copy(sourceImagePath, checkImagePath);
+        serviceProvider.GetRequiredService<IAttachmentService>().AddAttachment(new AddAttachmentRequest(
+            EntityReferenceType.TestStepResult,
+            check.Id,
+            checkImagePath,
             "tester"));
 
         var report = serviceProvider

@@ -253,6 +253,8 @@ public sealed class MigraDocReportExportService : IReportExportService
             AddNestedList(row.Cells[1], "Fields", check.CustomFields.Select(field => $"{field.Name}: {field.DisplayValue}"));
             AddNestedList(row.Cells[1], "Attachments", check.Attachments.Select(attachment => attachment.OriginalFileName));
         }
+
+        AddCheckImageAttachments(section, checks);
     }
 
     private static void AddCustomFields(Section section, IReadOnlyList<ReportCustomFieldItem> customFields)
@@ -399,6 +401,32 @@ public sealed class MigraDocReportExportService : IReportExportService
         paragraph.Format.Font.Bold = true;
         paragraph.Format.SpaceBefore = Unit.FromPoint(5);
 
+        AddImageAttachmentImages(section, imageAttachments);
+    }
+
+    private static void AddCheckImageAttachments(Section section, IReadOnlyList<ReportCheckItem> checks)
+    {
+        foreach (var check in checks)
+        {
+            var imageAttachments = check.Attachments
+                .Where(attachment => attachment.IsImage)
+                .ToList();
+
+            if (imageAttachments.Count == 0)
+            {
+                continue;
+            }
+
+            var paragraph = section.AddParagraph($"Image evidence for check {check.SortOrder}: {check.Text}");
+            paragraph.Format.Font.Bold = true;
+            paragraph.Format.SpaceBefore = Unit.FromPoint(5);
+
+            AddImageAttachmentImages(section, imageAttachments);
+        }
+    }
+
+    private static void AddImageAttachmentImages(Section section, IReadOnlyList<ReportAttachmentItem> imageAttachments)
+    {
         foreach (var attachment in imageAttachments)
         {
             var caption = section.AddParagraph(attachment.OriginalFileName);

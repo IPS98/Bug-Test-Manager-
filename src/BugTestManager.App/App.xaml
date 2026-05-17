@@ -26,8 +26,9 @@
             <SolidColorBrush x:Key="AppInfoChipBackgroundBrush" Color="#EFF6FF" />
             <SolidColorBrush x:Key="AppInfoChipBorderBrush" Color="#BFDBFE" />
             <SolidColorBrush x:Key="AppInfoChipForegroundBrush" Color="#1D4ED8" />
-            <SolidColorBrush x:Key="AppSurfaceBrush" Color="#FFFFFF" />
-            <SolidColorBrush x:Key="AppSubtleSurfaceBrush" Color="#F8FAFC" />
+            <SolidColorBrush x:Key="AppShellBackgroundBrush" Color="#EAF0F4" />
+            <SolidColorBrush x:Key="AppSurfaceBrush" Color="#FCFCFA" />
+            <SolidColorBrush x:Key="AppSubtleSurfaceBrush" Color="#F2F6F8" />
             <SolidColorBrush x:Key="AppBorderBrush" Color="#E2E8F0" />
             <SolidColorBrush x:Key="AppTextBrush" Color="#172033" />
             <SolidColorBrush x:Key="AppMutedTextBrush" Color="#64748B" />

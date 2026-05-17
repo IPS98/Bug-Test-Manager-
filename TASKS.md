@@ -121,6 +121,8 @@ Status: implementation in progress after approved architecture and skeleton setu
 - Test session reports now include Last Status Change Date for test cases and checks.
 - Report date-only values are formatted without time for cleaner management reports.
 - Test session PDF export can embed image attachments safely when the image file exists.
+- Test session PDF export can embed image attachments from both test cases and checks.
+- Reports preview shows image attachment thumbnails for the selected test case card.
 - Test Sessions page shows a clear empty state when no sessions exist.
 - Linked bug creation in Test Sessions opens in a modal instead of permanently occupying the result details panel.
 - Test case and check result cards show linked bug indicators when bugs already exist.

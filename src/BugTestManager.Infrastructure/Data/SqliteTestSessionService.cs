@@ -425,6 +425,10 @@ public sealed class SqliteTestSessionService(
             testCase.Status = request.Status;
             testCase.LastStatusChangedAt = now;
         }
+        else if (NeedsMissingStatusChangeDate(testCase.Status, testCase.LastStatusChangedAt))
+        {
+            testCase.LastStatusChangedAt = now;
+        }
 
         testCase.Comment = request.Comment.Trim();
 
@@ -435,6 +439,10 @@ public sealed class SqliteTestSessionService(
                 if (step.Status != request.Status)
                 {
                     step.Status = request.Status;
+                    step.LastStatusChangedAt = now;
+                }
+                else if (NeedsMissingStatusChangeDate(step.Status, step.LastStatusChangedAt))
+                {
                     step.LastStatusChangedAt = now;
                 }
             }
@@ -458,6 +466,10 @@ public sealed class SqliteTestSessionService(
             step.Status = request.Status;
             step.LastStatusChangedAt = now;
         }
+        else if (NeedsMissingStatusChangeDate(step.Status, step.LastStatusChangedAt))
+        {
+            step.LastStatusChangedAt = now;
+        }
 
         step.Comment = request.Comment.Trim();
 
@@ -467,6 +479,10 @@ public sealed class SqliteTestSessionService(
         if (testCase.Status != calculatedStatus)
         {
             testCase.Status = calculatedStatus;
+            testCase.LastStatusChangedAt = now;
+        }
+        else if (NeedsMissingStatusChangeDate(testCase.Status, testCase.LastStatusChangedAt))
+        {
             testCase.LastStatusChangedAt = now;
         }
 
@@ -542,6 +558,11 @@ public sealed class SqliteTestSessionService(
         }
 
         return TestResultStatus.NotTested;
+    }
+
+    private static bool NeedsMissingStatusChangeDate(TestResultStatus status, DateTimeOffset? lastStatusChangedAt)
+    {
+        return status != TestResultStatus.NotTested && lastStatusChangedAt is null;
     }
 
     private static string Require(string value, string displayName)
