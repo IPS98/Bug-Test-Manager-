@@ -213,13 +213,9 @@ public sealed partial class TestSessionsViewModel : ObservableObject
     [ObservableProperty]
     private TestSessionSummaryViewModel? copySourceSession;
 
-    public GridLength ResultDetailsColumnWidth => ResultDialogOverlayVisibility == Visibility.Visible
-        ? new(420)
-        : new(0);
+    public GridLength ResultDetailsColumnWidth => new(0);
 
-    public GridLength ResultDetailsGapWidth => ResultDialogOverlayVisibility == Visibility.Visible
-        ? new(16)
-        : new(0);
+    public GridLength ResultDetailsGapWidth => new(0);
 
     [ObservableProperty]
     private TestSectionResultViewModel? selectedSection;

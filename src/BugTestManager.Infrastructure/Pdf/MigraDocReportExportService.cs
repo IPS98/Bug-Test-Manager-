@@ -1,6 +1,7 @@
 using BugTestManager.Application.Abstractions;
 using BugTestManager.Application.ReadModels;
 using BugTestManager.Application.Requests;
+using BugTestManager.Domain.Enums;
 using MigraDoc.DocumentObjectModel;
 using MigraDoc.DocumentObjectModel.Tables;
 using MigraDoc.Rendering;
@@ -181,10 +182,15 @@ public sealed class MigraDocReportExportService : IReportExportService
         var row = table.AddRow();
         row.Cells[0].AddParagraph(summary.Total.ToString());
         row.Cells[1].AddParagraph(summary.Passed.ToString());
+        SetStatusValueCell(row.Cells[1], TestResultStatus.Pass);
         row.Cells[2].AddParagraph(summary.Failed.ToString());
+        SetStatusValueCell(row.Cells[2], TestResultStatus.Fail);
         row.Cells[3].AddParagraph(summary.Blocked.ToString());
+        SetStatusValueCell(row.Cells[3], TestResultStatus.Blocked);
         row.Cells[4].AddParagraph(summary.NotTested.ToString());
+        SetStatusValueCell(row.Cells[4], TestResultStatus.NotTested);
         row.Cells[5].AddParagraph(summary.NotApplicable.ToString());
+        SetStatusValueCell(row.Cells[5], TestResultStatus.NotApplicable);
     }
 
     private static void AddSections(Section documentSection, IReadOnlyList<ReportSectionItem> sections)
@@ -212,8 +218,9 @@ public sealed class MigraDocReportExportService : IReportExportService
         section.AddParagraph($"{testCase.SortOrder}. {testCase.Title}", StyleNames.Heading3);
 
         var table = CreateTable(section, 4.2, 13.6, 3.2, 3.2);
-        AddKeyValueRow(table, "Test details", EmptyAsDash(testCase.ExpectedResult), "Status", StatusText(testCase.Status));
-        AddKeyValueRow(table, "Status changed", testCase.LastStatusChangedDateDisplay, "Attachments", testCase.Attachments.Count.ToString());
+        var statusRow = AddKeyValueRow(table, "Test details", EmptyAsDash(testCase.ExpectedResult), "Status", StatusText(testCase.Status));
+        SetStatusValueCell(statusRow.Cells[3], testCase.Status);
+        AddKeyValueRow(table, "Test date", testCase.LastStatusChangedDateDisplay, "Attachments", testCase.Attachments.Count.ToString());
         AddKeyValueRow(table, "Comment", EmptyAsDash(testCase.Comment), "Checks", testCase.Checks.Count.ToString());
 
         AddCustomFields(section, testCase.CustomFields);
@@ -235,7 +242,7 @@ public sealed class MigraDocReportExportService : IReportExportService
         SetHeaderCell(header.Cells[1], "Check");
         SetHeaderCell(header.Cells[2], "Test details");
         SetHeaderCell(header.Cells[3], "Status");
-        SetHeaderCell(header.Cells[4], "Changed");
+        SetHeaderCell(header.Cells[4], "Test date");
         SetHeaderCell(header.Cells[5], "Comment");
 
         foreach (var check in checks)
@@ -247,6 +254,7 @@ public sealed class MigraDocReportExportService : IReportExportService
             row.Cells[1].AddParagraph(check.Text);
             row.Cells[2].AddParagraph(EmptyAsDash(check.ExpectedResult));
             row.Cells[3].AddParagraph(StatusText(check.Status));
+            SetStatusValueCell(row.Cells[3], check.Status);
             row.Cells[4].AddParagraph(check.LastStatusChangedDateDisplay);
             row.Cells[5].AddParagraph(EmptyAsDash(check.Comment));
 
@@ -263,17 +271,14 @@ public sealed class MigraDocReportExportService : IReportExportService
             return;
         }
 
-        var paragraph = section.AddParagraph("Custom fields");
-        paragraph.Format.Font.Bold = true;
-        paragraph.Format.SpaceBefore = Unit.FromPoint(5);
-
-        var table = CreateTable(section, 7.0, 13.0, 5.0);
+        var table = CreateTable(section, 7.0, 17.0);
         foreach (var field in customFields)
         {
             var row = table.AddRow();
-            row.Cells[0].AddParagraph(field.Name);
-            row.Cells[1].AddParagraph(field.DisplayValue);
-            row.Cells[2].AddParagraph(field.FieldType.ToString());
+            row.TopPadding = Unit.FromPoint(2);
+            row.BottomPadding = Unit.FromPoint(2);
+            SetLabelCell(row.Cells[0], field.Name);
+            row.Cells[1].AddParagraph(EmptyAsDash(field.DisplayValue));
         }
     }
 
@@ -324,6 +329,7 @@ public sealed class MigraDocReportExportService : IReportExportService
             var row = table.AddRow();
             row.Cells[0].AddParagraph(bug.Title);
             row.Cells[1].AddParagraph(bug.Status);
+            SetStatusValueCell(row.Cells[1], bug.Status);
             row.Cells[2].AddParagraph(EmptyAsDash(bug.Severity));
             row.Cells[3].AddParagraph(EmptyAsDash(bug.Priority));
             row.Cells[4].AddParagraph(EmptyAsDash(bug.LinkedEntityDisplayName));
@@ -346,13 +352,14 @@ public sealed class MigraDocReportExportService : IReportExportService
         return table;
     }
 
-    private static void AddKeyValueRow(Table table, string firstKey, string firstValue, string secondKey, string secondValue)
+    private static Row AddKeyValueRow(Table table, string firstKey, string firstValue, string secondKey, string secondValue)
     {
         var row = table.AddRow();
         SetLabelCell(row.Cells[0], firstKey);
         row.Cells[1].AddParagraph(firstValue);
         SetLabelCell(row.Cells[2], secondKey);
         row.Cells[3].AddParagraph(secondValue);
+        return row;
     }
 
     private static void SetHeaderCell(Cell cell, string text)
@@ -367,6 +374,57 @@ public sealed class MigraDocReportExportService : IReportExportService
         cell.Shading.Color = Colors.WhiteSmoke;
         cell.Format.Font.Bold = true;
         cell.AddParagraph(text);
+    }
+
+    private static void SetStatusValueCell(Cell cell, object status)
+    {
+        cell.Shading.Color = StatusBackgroundColor(status);
+        cell.Format.Font.Bold = true;
+        cell.Format.Font.Color = StatusForegroundColor(status);
+    }
+
+    private static Color StatusBackgroundColor(object status)
+    {
+        return status switch
+        {
+            TestResultStatus.Pass => Color.FromRgb(220, 252, 231),
+            TestResultStatus.Fail => Color.FromRgb(254, 226, 226),
+            TestResultStatus.Blocked => Color.FromRgb(254, 243, 199),
+            TestResultStatus.NotApplicable => Color.FromRgb(226, 232, 240),
+            TestResultStatus.NotTested => Color.FromRgb(241, 245, 249),
+            string value when value.Equals("Closed", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("Fixed", StringComparison.OrdinalIgnoreCase) => Color.FromRgb(220, 252, 231),
+            string value when value.Equals("Open", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("Reopened", StringComparison.OrdinalIgnoreCase) => Color.FromRgb(254, 226, 226),
+            string value when value.Equals("In Progress", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("InProgress", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("Ready For Retest", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("ReadyForRetest", StringComparison.OrdinalIgnoreCase) => Color.FromRgb(219, 234, 254),
+            string value when value.Equals("Rejected", StringComparison.OrdinalIgnoreCase) => Color.FromRgb(226, 232, 240),
+            _ => Color.FromRgb(241, 245, 249)
+        };
+    }
+
+    private static Color StatusForegroundColor(object status)
+    {
+        return status switch
+        {
+            TestResultStatus.Pass => Color.FromRgb(22, 101, 52),
+            TestResultStatus.Fail => Color.FromRgb(153, 27, 27),
+            TestResultStatus.Blocked => Color.FromRgb(146, 64, 14),
+            TestResultStatus.NotApplicable => Color.FromRgb(71, 85, 105),
+            TestResultStatus.NotTested => Color.FromRgb(51, 65, 85),
+            string value when value.Equals("Closed", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("Fixed", StringComparison.OrdinalIgnoreCase) => Color.FromRgb(22, 101, 52),
+            string value when value.Equals("Open", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("Reopened", StringComparison.OrdinalIgnoreCase) => Color.FromRgb(153, 27, 27),
+            string value when value.Equals("In Progress", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("InProgress", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("Ready For Retest", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("ReadyForRetest", StringComparison.OrdinalIgnoreCase) => Color.FromRgb(30, 64, 175),
+            string value when value.Equals("Rejected", StringComparison.OrdinalIgnoreCase) => Color.FromRgb(71, 85, 105),
+            _ => Color.FromRgb(51, 65, 85)
+        };
     }
 
     private static void AddNestedList(Cell cell, string title, IEnumerable<string> items)

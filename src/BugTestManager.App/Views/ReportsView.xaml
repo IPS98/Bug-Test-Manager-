@@ -233,7 +233,7 @@
                                                                                TextWrapping="Wrap" />
                                                                     <TextBlock Margin="0,6,0,0"
                                                                                Foreground="{StaticResource AppMutedTextBrush}"
-                                                                               Text="{Binding LastStatusChangedDateDisplay, StringFormat=Status changed: {0}}" />
+                                                                               Text="{Binding LastStatusChangedDateDisplay, StringFormat=Test date: {0}}" />
                                                                     <ItemsControl Margin="0,8,0,0"
                                                                                   ItemsSource="{Binding CustomFields}">
                                                                         <ItemsControl.ItemsPanel>
@@ -309,7 +309,7 @@
                                                                                Text="{Binding Attachments.Count, StringFormat=Attachments: {0}}" />
                                                                     <TextBlock Margin="0,4,0,0"
                                                                                Foreground="{StaticResource AppMutedTextBrush}"
-                                                                               Text="{Binding CustomFields.Count, StringFormat=Custom fields: {0}}" />
+                                                                               Text="{Binding CustomFields.Count, StringFormat=Fields: {0}}" />
                                                                 </StackPanel>
                                                             </Border>
                                                         </DataTemplate>

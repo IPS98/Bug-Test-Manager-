@@ -414,12 +414,16 @@
         </Border>
 
         <Border Panel.ZIndex="20"
-                Background="#660F172A"
+                Background="#990F172A"
                 Visibility="{Binding BugDetailsDrawerVisibility}">
-            <Border Width="620"
-                    Padding="22"
-                    HorizontalAlignment="Right"
-                    Background="White">
+            <Border Width="720"
+                    MaxWidth="820"
+                    MaxHeight="760"
+                    Padding="24"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Background="White"
+                    CornerRadius="8">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -432,7 +436,7 @@
                                 Command="{Binding CloseBugDetailsCommand}"
                                 Content="&#xE8BB;"
                                 Style="{StaticResource IconActionButtonStyle}"
-                                ToolTip="Close bug details" />
+                                ToolTip="Close bug details dialog" />
                         <TextBlock FontSize="22"
                                    FontWeight="SemiBold"
                                    Foreground="#172033"
@@ -606,7 +610,7 @@
                                 Command="{Binding CloseBugDetailsCommand}"
                                 Content="Cancel"
                                 Style="{StaticResource ActionButtonStyle}"
-                                ToolTip="Close bug details without saving" />
+                                ToolTip="Close bug details dialog without saving" />
                         <Button MinWidth="92"
                                 MinHeight="34"
                                 Command="{Binding SaveBugDetailsCommand}"

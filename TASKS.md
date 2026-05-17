@@ -125,6 +125,8 @@ Status: implementation in progress after approved architecture and skeleton setu
 - Reports preview shows image attachment thumbnails for the selected test case card.
 - Report check tables no longer place attachment file names inside the Check column.
 - User-facing test wording now uses Test details instead of Expected result in templates, test sessions, and reports.
+- Report status cells use color cues, check date columns use Test date wording, and custom fields no longer show a type column.
+- Test result and bug detail editing now opens as centered modal dialogs instead of right-side edit panels.
 - Test Sessions page shows a clear empty state when no sessions exist.
 - Linked bug creation in Test Sessions opens in a modal instead of permanently occupying the result details panel.
 - Test case and check result cards show linked bug indicators when bugs already exist.
