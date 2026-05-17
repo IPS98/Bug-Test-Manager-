@@ -225,7 +225,7 @@
                                                                     </DockPanel>
                                                                     <TextBlock Margin="0,6,0,0"
                                                                                Foreground="{StaticResource AppMutedTextBrush}"
-                                                                               Text="{Binding ExpectedResult}"
+                                                                               Text="{Binding ExpectedResult, StringFormat=Test details: {0}}"
                                                                                TextWrapping="Wrap" />
                                                                     <TextBlock Margin="0,6,0,0"
                                                                                Foreground="{StaticResource AppMutedTextBrush}"

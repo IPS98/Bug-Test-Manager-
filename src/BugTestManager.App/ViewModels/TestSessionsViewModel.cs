@@ -649,6 +649,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            errorDialogService.ShowError("Delete Session Error", ex.Message);
             StatusMessage = ex.Message;
         }
     }
@@ -1778,7 +1779,7 @@ public sealed partial class TestSessionsViewModel : ObservableObject
 
         return string.IsNullOrWhiteSpace(expectedResult)
             ? "Created from a test result."
-            : $"Expected result: {expectedResult}";
+            : $"Test details: {expectedResult}";
     }
 
     private static string BuildDefaultTemplateName(TestSessionSummaryViewModel session)

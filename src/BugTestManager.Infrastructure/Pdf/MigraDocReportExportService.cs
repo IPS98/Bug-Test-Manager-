@@ -212,7 +212,7 @@ public sealed class MigraDocReportExportService : IReportExportService
         section.AddParagraph($"{testCase.SortOrder}. {testCase.Title}", StyleNames.Heading3);
 
         var table = CreateTable(section, 4.2, 13.6, 3.2, 3.2);
-        AddKeyValueRow(table, "Expected", EmptyAsDash(testCase.ExpectedResult), "Status", StatusText(testCase.Status));
+        AddKeyValueRow(table, "Test details", EmptyAsDash(testCase.ExpectedResult), "Status", StatusText(testCase.Status));
         AddKeyValueRow(table, "Status changed", testCase.LastStatusChangedDateDisplay, "Attachments", testCase.Attachments.Count.ToString());
         AddKeyValueRow(table, "Comment", EmptyAsDash(testCase.Comment), "Checks", testCase.Checks.Count.ToString());
 
@@ -233,7 +233,7 @@ public sealed class MigraDocReportExportService : IReportExportService
         header.HeadingFormat = true;
         SetHeaderCell(header.Cells[0], "#");
         SetHeaderCell(header.Cells[1], "Check");
-        SetHeaderCell(header.Cells[2], "Expected");
+        SetHeaderCell(header.Cells[2], "Test details");
         SetHeaderCell(header.Cells[3], "Status");
         SetHeaderCell(header.Cells[4], "Changed");
         SetHeaderCell(header.Cells[5], "Comment");
@@ -251,7 +251,6 @@ public sealed class MigraDocReportExportService : IReportExportService
             row.Cells[5].AddParagraph(EmptyAsDash(check.Comment));
 
             AddNestedList(row.Cells[1], "Fields", check.CustomFields.Select(field => $"{field.Name}: {field.DisplayValue}"));
-            AddNestedList(row.Cells[1], "Attachments", check.Attachments.Select(attachment => attachment.OriginalFileName));
         }
 
         AddCheckImageAttachments(section, checks);

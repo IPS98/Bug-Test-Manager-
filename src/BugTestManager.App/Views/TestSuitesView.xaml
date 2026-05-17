@@ -316,7 +316,7 @@
                                                    TextWrapping="Wrap" />
                                         <TextBlock Margin="0,4,0,0"
                                                    Foreground="#64748B"
-                                                   Text="{Binding ExpectedResult}"
+                                                   Text="{Binding ExpectedResult, StringFormat=Test details: {0}}"
                                                    TextWrapping="Wrap" />
                                         <StackPanel Style="{StaticResource RowActionsStyle}">
                                             <Button Command="{Binding DataContext.ShowEditTestCaseDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -392,7 +392,7 @@
                                                        TextWrapping="Wrap" />
                                             <TextBlock Margin="0,4,0,0"
                                                        Foreground="#64748B"
-                                                       Text="{Binding ExpectedResult}"
+                                                       Text="{Binding ExpectedResult, StringFormat=Test details: {0}}"
                                                        TextWrapping="Wrap" />
                                             <StackPanel Style="{StaticResource RowActionsStyle}">
                                                 <Button Command="{Binding DataContext.ShowEditTestStepDialogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -588,7 +588,7 @@
                                      VerticalContentAlignment="Center"
                                      Text="{Binding NewTestCaseTitle, UpdateSourceTrigger=PropertyChanged}" />
 
-                            <TextBlock Foreground="#64748B" Text="Expected result" />
+                            <TextBlock Foreground="#64748B" Text="Test details" />
                             <TextBox Margin="0,6,0,0"
                                      MinHeight="82"
                                      AcceptsReturn="True"
@@ -618,7 +618,7 @@
                                      Text="{Binding NewStepText, UpdateSourceTrigger=PropertyChanged}"
                                      TextWrapping="Wrap" />
 
-                            <TextBlock Foreground="#64748B" Text="Expected result" />
+                            <TextBlock Foreground="#64748B" Text="Test details" />
                             <TextBox Margin="0,6,0,0"
                                      MinHeight="82"
                                      AcceptsReturn="True"
