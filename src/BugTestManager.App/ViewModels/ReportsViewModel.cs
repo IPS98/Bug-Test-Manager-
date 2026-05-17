@@ -17,6 +17,7 @@ public sealed partial class ReportsViewModel : ObservableObject
     private readonly IReportExportService reportExportService;
     private readonly IFilePickerService filePickerService;
     private readonly IFileLauncherService fileLauncherService;
+    private readonly IErrorDialogService errorDialogService;
     private readonly IProjectContext projectContext;
     private readonly IUserContext userContext;
 
@@ -26,6 +27,7 @@ public sealed partial class ReportsViewModel : ObservableObject
         IReportExportService reportExportService,
         IFilePickerService filePickerService,
         IFileLauncherService fileLauncherService,
+        IErrorDialogService errorDialogService,
         IProjectContext projectContext,
         IUserContext userContext)
     {
@@ -34,6 +36,7 @@ public sealed partial class ReportsViewModel : ObservableObject
         this.reportExportService = reportExportService;
         this.filePickerService = filePickerService;
         this.fileLauncherService = fileLauncherService;
+        this.errorDialogService = errorDialogService;
         this.projectContext = projectContext;
         this.userContext = userContext;
         Sessions = [];
@@ -114,7 +117,17 @@ public sealed partial class ReportsViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanLoadReport))]
     private void LoadReport()
     {
-        LoadSelectedReport();
+        try
+        {
+            LoadSelectedReport();
+        }
+        catch (Exception ex)
+        {
+            SelectedReport = null;
+            ExportedReportPath = string.Empty;
+            StatusMessage = ex.Message;
+            errorDialogService.ShowError("Report Preview Error", ex.Message);
+        }
     }
 
     [RelayCommand(CanExecute = nameof(CanExportPdf))]
@@ -151,6 +164,7 @@ public sealed partial class ReportsViewModel : ObservableObject
         catch (Exception ex)
         {
             StatusMessage = ex.Message;
+            errorDialogService.ShowError("Report Export Error", ex.Message);
         }
     }
 

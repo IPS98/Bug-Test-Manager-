@@ -246,9 +246,9 @@
                                                                                 <Border Margin="0,0,8,8"
                                                                                         Style="{StaticResource ReportMetaChipStyle}">
                                                                                     <TextBlock Foreground="{StaticResource AppMutedTextBrush}">
-                                                                                        <Run Text="{Binding Name}" />
+                                                                                        <Run Text="{Binding Name, Mode=OneWay}" />
                                                                                         <Run Text=": " />
-                                                                                        <Run Text="{Binding DisplayValue}" />
+                                                                                        <Run Text="{Binding DisplayValue, Mode=OneWay}" />
                                                                                     </TextBlock>
                                                                                 </Border>
                                                                             </DataTemplate>
