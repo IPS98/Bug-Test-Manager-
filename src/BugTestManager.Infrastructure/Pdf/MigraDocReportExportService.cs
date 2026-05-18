@@ -15,9 +15,10 @@ public sealed class MigraDocReportExportService : IReportExportService
     private const int DefaultReportTokenLength = 24;
     private const int WideReportTokenLength = 22;
     private const int CompactReportTokenLength = 14;
+    private const int CommentReportTokenLength = 28;
     private const int NarrowReportTokenLength = 12;
     private const double ResultTableWidthCentimeters = 26.4;
-    private const double AttachmentThumbnailWidthCentimeters = 2.5;
+    private const double AttachmentThumbnailWidthCentimeters = 2.8;
     private const int MaxAttachmentsPerResultCell = 3;
 
     private static readonly object FontSettingsLock = new();
@@ -244,7 +245,7 @@ public sealed class MigraDocReportExportService : IReportExportService
         row.Cells[1].AddParagraph(ReportCellText(testCase.Title, WideReportTokenLength));
         row.Cells[2].AddParagraph(ReportCellText(testCase.ExpectedResult, WideReportTokenLength));
         row.Cells[3].AddParagraph(ReportCellText(testCase.LastStatusChangedDateDisplay, CompactReportTokenLength));
-        row.Cells[4].AddParagraph(ReportCellText(testCase.Comment, CompactReportTokenLength));
+        row.Cells[4].AddParagraph(ReportCellText(testCase.Comment, CommentReportTokenLength));
         AddAttachmentCell(row.Cells[5], testCase.Attachments);
         AddCustomFieldValues(row, customFieldNames, customFields, startIndex: 6);
         var statusIndex = 6 + customFieldNames.Count;
@@ -281,7 +282,7 @@ public sealed class MigraDocReportExportService : IReportExportService
             row.Cells[1].AddParagraph(ReportCellText(check.Text, WideReportTokenLength));
             row.Cells[2].AddParagraph(ReportCellText(check.ExpectedResult, WideReportTokenLength));
             row.Cells[3].AddParagraph(ReportCellText(check.LastStatusChangedDateDisplay, CompactReportTokenLength));
-            row.Cells[4].AddParagraph(ReportCellText(check.Comment, CompactReportTokenLength));
+            row.Cells[4].AddParagraph(ReportCellText(check.Comment, CommentReportTokenLength));
             AddAttachmentCell(row.Cells[5], check.Attachments);
             AddCustomFieldValues(row, customFieldNames, customFields, startIndex: 6);
             var statusIndex = 6 + customFieldNames.Count;
@@ -363,7 +364,7 @@ public sealed class MigraDocReportExportService : IReportExportService
         };
 
         var customFieldsWidth = customFieldWidth * customFieldCount;
-        var attachmentWidth = 3.1;
+        var attachmentWidth = 3.4;
         var statusWidth = 2.2;
         var commentWidth = ResultTableWidthCentimeters
             - widths.Sum()
@@ -402,6 +403,7 @@ public sealed class MigraDocReportExportService : IReportExportService
 
     private static void AddAttachmentCell(Cell cell, IReadOnlyList<ReportAttachmentItem> attachments)
     {
+        cell.Format.Alignment = ParagraphAlignment.Center;
         if (attachments.Count == 0)
         {
             cell.AddParagraph("-");
@@ -417,6 +419,7 @@ public sealed class MigraDocReportExportService : IReportExportService
             else
             {
                 var paragraph = cell.AddParagraph(ReportCellText(attachment.OriginalFileName, NarrowReportTokenLength));
+                paragraph.Format.Alignment = ParagraphAlignment.Center;
                 paragraph.Format.Font.Size = 7;
                 paragraph.Format.SpaceAfter = Unit.FromPoint(2);
             }
@@ -426,6 +429,7 @@ public sealed class MigraDocReportExportService : IReportExportService
         if (remainingCount > 0)
         {
             var paragraph = cell.AddParagraph($"+{remainingCount} more");
+            paragraph.Format.Alignment = ParagraphAlignment.Center;
             paragraph.Format.Font.Size = 7;
             paragraph.Format.Font.Color = Colors.Gray;
         }
@@ -436,6 +440,7 @@ public sealed class MigraDocReportExportService : IReportExportService
         if (!File.Exists(attachment.AbsolutePath))
         {
             var missing = cell.AddParagraph("Missing image");
+            missing.Format.Alignment = ParagraphAlignment.Center;
             missing.Format.Font.Size = 7;
             missing.Format.Font.Color = Colors.Gray;
             return;
@@ -444,6 +449,7 @@ public sealed class MigraDocReportExportService : IReportExportService
         try
         {
             var paragraph = cell.AddParagraph();
+            paragraph.Format.Alignment = ParagraphAlignment.Center;
             paragraph.Format.SpaceAfter = Unit.FromPoint(2);
             var image = paragraph.AddImage(attachment.AbsolutePath);
             image.LockAspectRatio = true;
@@ -452,6 +458,7 @@ public sealed class MigraDocReportExportService : IReportExportService
         catch (Exception)
         {
             var failed = cell.AddParagraph("Image unavailable");
+            failed.Format.Alignment = ParagraphAlignment.Center;
             failed.Format.Font.Size = 7;
             failed.Format.Font.Color = Colors.Gray;
         }
@@ -463,6 +470,7 @@ public sealed class MigraDocReportExportService : IReportExportService
         table.Borders.Width = 0.25;
         table.Borders.Color = Colors.LightGray;
         table.Rows.LeftIndent = 0;
+        table.Format.Alignment = ParagraphAlignment.Center;
         table.Format.SpaceAfter = Unit.FromPoint(6);
 
         foreach (var width in columnWidths)
@@ -496,6 +504,7 @@ public sealed class MigraDocReportExportService : IReportExportService
     private static void SetHeaderCell(Cell cell, string text)
     {
         cell.Shading.Color = Colors.AliceBlue;
+        cell.Format.Alignment = ParagraphAlignment.Center;
         cell.Format.Font.Bold = true;
         cell.AddParagraph(text);
     }
@@ -503,6 +512,7 @@ public sealed class MigraDocReportExportService : IReportExportService
     private static void SetLabelCell(Cell cell, string text)
     {
         cell.Shading.Color = Colors.WhiteSmoke;
+        cell.Format.Alignment = ParagraphAlignment.Center;
         cell.Format.Font.Bold = true;
         cell.AddParagraph(ReportCellText(text));
     }
@@ -510,6 +520,7 @@ public sealed class MigraDocReportExportService : IReportExportService
     private static void SetStatusValueCell(Cell cell, object status)
     {
         cell.Shading.Color = StatusBackgroundColor(status);
+        cell.Format.Alignment = ParagraphAlignment.Center;
         cell.Format.Font.Bold = true;
         cell.Format.Font.Color = StatusForegroundColor(status);
     }
@@ -618,6 +629,6 @@ public sealed class MigraDocReportExportService : IReportExportService
             chunks.Add(token.Substring(index, length));
         }
 
-        return string.Join("\u200B", chunks);
+        return string.Join(Environment.NewLine, chunks);
     }
 }
