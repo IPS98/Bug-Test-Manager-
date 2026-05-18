@@ -12,6 +12,8 @@ namespace BugTestManager.Infrastructure.Data;
 public sealed class SqliteCustomFieldDefinitionService(IDbContextFactory<BugTestManagerDbContext> dbContextFactory)
     : ICustomFieldDefinitionService
 {
+    private const int MaxResultFieldsPerScope = 3;
+
     public IReadOnlyList<CustomFieldDefinitionItem> GetDefinitions(Guid? projectId = null)
     {
         using var dbContext = dbContextFactory.CreateDbContext();
@@ -57,6 +59,8 @@ public sealed class SqliteCustomFieldDefinitionService(IDbContextFactory<BugTest
         {
             throw new InvalidOperationException($"Field '{name}' already exists for one of the selected targets.");
         }
+
+        EnsureResultFieldScopeLimit(dbContext, projectId, request.TargetEntityType, scopes);
 
         var fieldDefinitionId = Guid.NewGuid();
         dbContext.CustomFieldDefinitions.Add(new CustomFieldDefinitionRecord
@@ -121,6 +125,8 @@ public sealed class SqliteCustomFieldDefinitionService(IDbContextFactory<BugTest
         {
             throw new InvalidOperationException($"Field '{name}' already exists for one of the selected targets.");
         }
+
+        EnsureResultFieldScopeLimit(dbContext, field.ProjectId, request.TargetEntityType, scopes, request.FieldDefinitionId);
 
         field.TargetEntityType = request.TargetEntityType;
         field.Name = name;
@@ -283,6 +289,63 @@ public sealed class SqliteCustomFieldDefinitionService(IDbContextFactory<BugTest
             requestedScopes.Any(requestedScope =>
                 requestedScope.ScopeType == existingScope.ScopeType
                 && requestedScope.ScopeEntityId == existingScope.ScopeEntityId));
+    }
+
+    private static void EnsureResultFieldScopeLimit(
+        BugTestManagerDbContext dbContext,
+        Guid projectId,
+        EntityReferenceType targetEntityType,
+        IReadOnlyCollection<CustomFieldDefinitionScopeRequest> requestedScopes,
+        Guid? ignoredFieldDefinitionId = null)
+    {
+        if (targetEntityType is not (EntityReferenceType.TestCaseResult or EntityReferenceType.TestStepResult))
+        {
+            return;
+        }
+
+        var existingFields = dbContext.CustomFieldDefinitions
+            .AsNoTracking()
+            .Include(field => field.Scopes)
+            .Where(field =>
+                field.ProjectId == projectId
+                && field.TargetEntityType == targetEntityType
+                && field.IsActive
+                && (!ignoredFieldDefinitionId.HasValue || field.Id != ignoredFieldDefinitionId.Value))
+            .ToList();
+
+        foreach (var requestedScope in requestedScopes)
+        {
+            var existingCount = existingFields.Count(field => FieldUsesScope(field, requestedScope));
+            if (existingCount >= MaxResultFieldsPerScope)
+            {
+                throw new InvalidOperationException(
+                    $"A test case or check can have no more than {MaxResultFieldsPerScope} custom fields for the same target.");
+            }
+        }
+    }
+
+    private static bool FieldUsesScope(
+        CustomFieldDefinitionRecord field,
+        CustomFieldDefinitionScopeRequest requestedScope)
+    {
+        var scopes = field.Scopes.Count == 0
+            ?
+            [
+                new CustomFieldDefinitionScopeRequest(
+                    field.ScopeType,
+                    field.ScopeEntityId,
+                    field.ScopeDisplayName)
+            ]
+            : field.Scopes
+                .Select(scope => new CustomFieldDefinitionScopeRequest(
+                    scope.ScopeType,
+                    scope.ScopeEntityId,
+                    scope.ScopeDisplayName))
+                .ToList();
+
+        return scopes.Any(scope =>
+            scope.ScopeType == requestedScope.ScopeType
+            && scope.ScopeEntityId == requestedScope.ScopeEntityId);
     }
 
     private static string NormalizeScopeDisplayName(string scopeDisplayName)

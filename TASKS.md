@@ -130,6 +130,9 @@ Status: implementation in progress after approved architecture and skeleton setu
 - Reports can export linked bugs only when the user explicitly enables Include Linked Bugs in Report.
 - Test case rows in PDF reports now use the same tabular style as checks.
 - Report custom fields have clearer spacing around their table.
+- PDF report table fields now protect against overly long text by wrapping long tokens instead of stretching columns.
+- PDF report case/check status is shown as the last table column.
+- Test case and check result custom fields are limited to 3 fields per selected target.
 - Bug and test chats use a shared modern drawer style with distinct own-message bubbles.
 - Test Sessions page shows a clear empty state when no sessions exist.
 - Linked bug creation in Test Sessions opens in a modal instead of permanently occupying the result details panel.

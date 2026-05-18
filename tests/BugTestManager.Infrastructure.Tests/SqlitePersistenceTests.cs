@@ -747,6 +747,59 @@ public sealed class SqlitePersistenceTests
     }
 
     [Fact]
+    public void FieldDefinitionService_RejectsMoreThanThreeResultFieldsForSameTestCaseTarget()
+    {
+        var databasePath = CreateTempDatabasePath();
+        using var serviceProvider = CreateServiceProvider(databasePath);
+        serviceProvider.GetRequiredService<IDatabaseInitializer>().Initialize();
+
+        var managementService = serviceProvider.GetRequiredService<ITestSuiteManagementService>();
+        var testSuite = managementService.CreateTestSuite(new CreateTestSuiteRequest(
+            "Field Limit Suite",
+            "Used to verify result field limits.",
+            RevisionIsRequired: false,
+            InitialRevisionName: null));
+        var sectionId = managementService.CreateSection(new CreateTemplateSectionRequest(
+            testSuite.TestSuiteId,
+            TestSuiteRevisionId: null,
+            "Power Controls",
+            "UI"));
+        var testCaseTemplateId = managementService.CreateTestCase(new CreateTestCaseTemplateRequest(
+            sectionId,
+            "ON/OFF button",
+            "Button toggles output."));
+
+        var fieldService = serviceProvider.GetRequiredService<ICustomFieldDefinitionService>();
+        for (var index = 1; index <= 3; index++)
+        {
+            fieldService.CreateDefinition(new CreateCustomFieldDefinitionRequest(
+                EntityReferenceType.TestCaseResult,
+                $"Result field {index}",
+                FieldType.Text,
+                IsRequired: false,
+                SortOrder: index,
+                ScopeType: CustomFieldScopeType.TestCaseTemplate,
+                ScopeEntityId: testCaseTemplateId,
+                ScopeDisplayName: "Test case: ON/OFF button",
+                Options: []));
+        }
+
+        var error = Assert.Throws<InvalidOperationException>(() => fieldService.CreateDefinition(
+            new CreateCustomFieldDefinitionRequest(
+                EntityReferenceType.TestCaseResult,
+                "Result field 4",
+                FieldType.Text,
+                IsRequired: false,
+                SortOrder: 4,
+                ScopeType: CustomFieldScopeType.TestCaseTemplate,
+                ScopeEntityId: testCaseTemplateId,
+                ScopeDisplayName: "Test case: ON/OFF button",
+                Options: [])));
+
+        Assert.Contains("no more than 3", error.Message);
+    }
+
+    [Fact]
     public void TestSessionService_CreatesSessionFromTemplate()
     {
         var databasePath = CreateTempDatabasePath();
