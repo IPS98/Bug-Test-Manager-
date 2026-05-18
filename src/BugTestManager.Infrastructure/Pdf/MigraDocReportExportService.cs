@@ -16,7 +16,9 @@ public sealed class MigraDocReportExportService : IReportExportService
     private const int WideReportTokenLength = 22;
     private const int CompactReportTokenLength = 14;
     private const int NarrowReportTokenLength = 12;
-    private const double ResultTableWidthCentimeters = 24.6;
+    private const double ResultTableWidthCentimeters = 26.4;
+    private const double AttachmentThumbnailWidthCentimeters = 2.5;
+    private const int MaxAttachmentsPerResultCell = 3;
 
     private static readonly object FontSettingsLock = new();
     private static bool fontSettingsConfigured;
@@ -243,13 +245,13 @@ public sealed class MigraDocReportExportService : IReportExportService
         row.Cells[2].AddParagraph(ReportCellText(testCase.ExpectedResult, WideReportTokenLength));
         row.Cells[3].AddParagraph(ReportCellText(testCase.LastStatusChangedDateDisplay, CompactReportTokenLength));
         row.Cells[4].AddParagraph(ReportCellText(testCase.Comment, CompactReportTokenLength));
-        AddCustomFieldValues(row, customFieldNames, customFields, startIndex: 5);
-        var statusIndex = 5 + customFieldNames.Count;
+        AddAttachmentCell(row.Cells[5], testCase.Attachments);
+        AddCustomFieldValues(row, customFieldNames, customFields, startIndex: 6);
+        var statusIndex = 6 + customFieldNames.Count;
         row.Cells[statusIndex].AddParagraph(StatusText(testCase.Status));
         SetStatusValueCell(row.Cells[statusIndex], testCase.Status);
         AddNestedList(row.Cells[1], "Meta", [$"{testCase.Checks.Count} checks", $"{testCase.Attachments.Count} attachments"]);
 
-        AddAttachments(section, testCase.Attachments);
         AddChecks(section, testCase.Checks);
     }
 
@@ -280,37 +282,12 @@ public sealed class MigraDocReportExportService : IReportExportService
             row.Cells[2].AddParagraph(ReportCellText(check.ExpectedResult, WideReportTokenLength));
             row.Cells[3].AddParagraph(ReportCellText(check.LastStatusChangedDateDisplay, CompactReportTokenLength));
             row.Cells[4].AddParagraph(ReportCellText(check.Comment, CompactReportTokenLength));
-            AddCustomFieldValues(row, customFieldNames, customFields, startIndex: 5);
-            var statusIndex = 5 + customFieldNames.Count;
+            AddAttachmentCell(row.Cells[5], check.Attachments);
+            AddCustomFieldValues(row, customFieldNames, customFields, startIndex: 6);
+            var statusIndex = 6 + customFieldNames.Count;
             row.Cells[statusIndex].AddParagraph(StatusText(check.Status));
             SetStatusValueCell(row.Cells[statusIndex], check.Status);
         }
-
-        AddCheckImageAttachments(section, checks);
-    }
-
-    private static void AddAttachments(Section section, IReadOnlyList<ReportAttachmentItem> attachments)
-    {
-        if (attachments.Count == 0)
-        {
-            return;
-        }
-
-        var paragraph = section.AddParagraph("Attachments");
-        paragraph.Format.Font.Bold = true;
-        paragraph.Format.SpaceBefore = Unit.FromPoint(5);
-
-        var table = CreateTable(section, 8.0, 5.0, 8.0, 4.0);
-        foreach (var attachment in attachments)
-        {
-            var row = table.AddRow();
-            row.Cells[0].AddParagraph(ReportCellText(attachment.OriginalFileName));
-            row.Cells[1].AddParagraph(ReportCellText(attachment.ContentType));
-            row.Cells[2].AddParagraph(ReportCellText(attachment.UploadedBy));
-            row.Cells[3].AddParagraph(ReportCellText(attachment.UploadedDateDisplay));
-        }
-
-        AddImageAttachments(section, attachments);
     }
 
     private static void AddLinkedBugs(Section section, IReadOnlyList<ReportBugItem> bugs)
@@ -357,13 +334,14 @@ public sealed class MigraDocReportExportService : IReportExportService
         SetHeaderCell(header.Cells[2], "Test details");
         SetHeaderCell(header.Cells[3], "Test date");
         SetHeaderCell(header.Cells[4], "Comment");
+        SetHeaderCell(header.Cells[5], "Attachments");
 
         for (var index = 0; index < customFieldNames.Count; index++)
         {
-            SetHeaderCell(header.Cells[5 + index], ReportCellText(customFieldNames[index], NarrowReportTokenLength));
+            SetHeaderCell(header.Cells[6 + index], ReportCellText(customFieldNames[index], NarrowReportTokenLength));
         }
 
-        SetHeaderCell(header.Cells[5 + customFieldNames.Count], "Status");
+        SetHeaderCell(header.Cells[6 + customFieldNames.Count], "Status");
         return table;
     }
 
@@ -379,18 +357,21 @@ public sealed class MigraDocReportExportService : IReportExportService
         var widths = new List<double>
         {
             1.0,
-            isCaseTable ? 4.4 : 3.6,
-            isCaseTable ? 4.8 : 4.8,
+            isCaseTable ? 4.0 : 3.2,
+            isCaseTable ? 4.4 : 4.2,
             2.6
         };
 
         var customFieldsWidth = customFieldWidth * customFieldCount;
+        var attachmentWidth = 3.1;
         var statusWidth = 2.2;
         var commentWidth = ResultTableWidthCentimeters
             - widths.Sum()
+            - attachmentWidth
             - customFieldsWidth
             - statusWidth;
         widths.Add(Math.Max(2.2, commentWidth));
+        widths.Add(attachmentWidth);
         widths.AddRange(Enumerable.Repeat(customFieldWidth, customFieldCount));
         widths.Add(2.2);
 
@@ -416,6 +397,63 @@ public sealed class MigraDocReportExportService : IReportExportService
             var field = customFields.FirstOrDefault(item =>
                 item.Name.Equals(customFieldNames[index], StringComparison.OrdinalIgnoreCase));
             row.Cells[startIndex + index].AddParagraph(ReportCellText(field?.DisplayValue, NarrowReportTokenLength));
+        }
+    }
+
+    private static void AddAttachmentCell(Cell cell, IReadOnlyList<ReportAttachmentItem> attachments)
+    {
+        if (attachments.Count == 0)
+        {
+            cell.AddParagraph("-");
+            return;
+        }
+
+        foreach (var attachment in attachments.Take(MaxAttachmentsPerResultCell))
+        {
+            if (attachment.IsImage)
+            {
+                AddAttachmentThumbnail(cell, attachment);
+            }
+            else
+            {
+                var paragraph = cell.AddParagraph(ReportCellText(attachment.OriginalFileName, NarrowReportTokenLength));
+                paragraph.Format.Font.Size = 7;
+                paragraph.Format.SpaceAfter = Unit.FromPoint(2);
+            }
+        }
+
+        var remainingCount = attachments.Count - MaxAttachmentsPerResultCell;
+        if (remainingCount > 0)
+        {
+            var paragraph = cell.AddParagraph($"+{remainingCount} more");
+            paragraph.Format.Font.Size = 7;
+            paragraph.Format.Font.Color = Colors.Gray;
+        }
+    }
+
+    private static void AddAttachmentThumbnail(Cell cell, ReportAttachmentItem attachment)
+    {
+        if (!File.Exists(attachment.AbsolutePath))
+        {
+            var missing = cell.AddParagraph("Missing image");
+            missing.Format.Font.Size = 7;
+            missing.Format.Font.Color = Colors.Gray;
+            return;
+        }
+
+        try
+        {
+            var paragraph = cell.AddParagraph();
+            paragraph.Format.SpaceAfter = Unit.FromPoint(2);
+            var image = paragraph.AddImage(attachment.AbsolutePath);
+            image.LockAspectRatio = true;
+            image.Width = Unit.FromCentimeter(AttachmentThumbnailWidthCentimeters);
+        }
+        catch (Exception)
+        {
+            var failed = cell.AddParagraph("Image unavailable");
+            failed.Format.Font.Size = 7;
+            failed.Format.Font.Color = Colors.Gray;
         }
     }
 
@@ -534,73 +572,6 @@ public sealed class MigraDocReportExportService : IReportExportService
         heading.Format.SpaceBefore = Unit.FromPoint(4);
         heading.AddFormattedText($"{title}: ", TextFormat.Bold);
         heading.AddText(string.Join(", ", materializedItems.Select(item => ReportCellText(item))));
-    }
-
-    private static void AddImageAttachments(Section section, IReadOnlyList<ReportAttachmentItem> attachments)
-    {
-        var imageAttachments = attachments
-            .Where(attachment => attachment.IsImage)
-            .ToList();
-
-        if (imageAttachments.Count == 0)
-        {
-            return;
-        }
-
-        var paragraph = section.AddParagraph("Image evidence");
-        paragraph.Format.Font.Bold = true;
-        paragraph.Format.SpaceBefore = Unit.FromPoint(5);
-
-        AddImageAttachmentImages(section, imageAttachments);
-    }
-
-    private static void AddCheckImageAttachments(Section section, IReadOnlyList<ReportCheckItem> checks)
-    {
-        foreach (var check in checks)
-        {
-            var imageAttachments = check.Attachments
-                .Where(attachment => attachment.IsImage)
-                .ToList();
-
-            if (imageAttachments.Count == 0)
-            {
-                continue;
-            }
-
-            var paragraph = section.AddParagraph(ReportCellText($"Image evidence for check {check.SortOrder}: {check.Text}"));
-            paragraph.Format.Font.Bold = true;
-            paragraph.Format.SpaceBefore = Unit.FromPoint(5);
-
-            AddImageAttachmentImages(section, imageAttachments);
-        }
-    }
-
-    private static void AddImageAttachmentImages(Section section, IReadOnlyList<ReportAttachmentItem> imageAttachments)
-    {
-        foreach (var attachment in imageAttachments)
-        {
-            var caption = section.AddParagraph(ReportCellText(attachment.OriginalFileName));
-            caption.Format.Font.Size = 8;
-            caption.Format.Font.Color = Colors.Gray;
-            caption.Format.SpaceBefore = Unit.FromPoint(4);
-
-            if (!File.Exists(attachment.AbsolutePath))
-            {
-                section.AddParagraph("Image file is missing and could not be embedded.");
-                continue;
-            }
-
-            try
-            {
-                var image = section.AddImage(attachment.AbsolutePath);
-                image.LockAspectRatio = true;
-                image.Width = Unit.FromCentimeter(12);
-            }
-            catch (Exception)
-            {
-                section.AddParagraph("Image file could not be embedded safely.");
-            }
-        }
     }
 
     private static string StatusText(object status)

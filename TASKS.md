@@ -135,6 +135,7 @@ Status: implementation in progress after approved architecture and skeleton setu
 - PDF report case/check status is shown as the last table column.
 - PDF report custom fields are shown as columns inside the test case/check tables instead of a separate custom field block.
 - PDF report test case/check tables now use consistent width and include clear table headers.
+- Experimental report branch adds an Attachments column with image thumbnails inside test case/check tables.
 - Test case and check result custom fields are limited to 3 fields per selected target.
 - Bug and test chats use a shared modern drawer style with distinct own-message bubbles.
 - Test Sessions page shows a clear empty state when no sessions exist.
