@@ -16,6 +16,7 @@ public sealed class MigraDocReportExportService : IReportExportService
     private const int WideReportTokenLength = 22;
     private const int CompactReportTokenLength = 14;
     private const int NarrowReportTokenLength = 12;
+    private const double ResultTableWidthCentimeters = 24.6;
 
     private static readonly object FontSettingsLock = new();
     private static bool fontSettingsConfigured;
@@ -230,6 +231,7 @@ public sealed class MigraDocReportExportService : IReportExportService
         var customFieldNames = customFields
             .Select(field => field.Name)
             .ToList();
+        AddReportTableHeader(section, "Test Case");
         var table = CreateResultTable(section, "Test case", customFieldNames, isCaseTable: true);
         table.Format.SpaceAfter = Unit.FromPoint(5);
 
@@ -264,6 +266,7 @@ public sealed class MigraDocReportExportService : IReportExportService
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Take(MaxCustomFieldsPerReportItem)
             .ToList();
+        AddReportTableHeader(section, "Checks");
         var table = CreateResultTable(section, "Check", customFieldNames, isCaseTable: false);
 
         foreach (var check in checks)
@@ -366,21 +369,29 @@ public sealed class MigraDocReportExportService : IReportExportService
 
     private static double[] GetResultColumnWidths(int customFieldCount, bool isCaseTable)
     {
+        var customFieldWidth = customFieldCount switch
+        {
+            0 => 0.0,
+            1 => 3.4,
+            2 => 2.7,
+            _ => 2.1
+        };
         var widths = new List<double>
         {
             1.0,
-            isCaseTable ? 4.8 : 3.8,
+            isCaseTable ? 4.4 : 3.6,
             isCaseTable ? 4.8 : 4.8,
-            2.6,
-            isCaseTable ? 4.4 : 5.3
+            2.6
         };
 
-        widths.AddRange(Enumerable.Repeat(customFieldCount switch
-        {
-            1 => 3.2,
-            2 => 2.7,
-            _ => 2.2
-        }, customFieldCount));
+        var customFieldsWidth = customFieldWidth * customFieldCount;
+        var statusWidth = 2.2;
+        var commentWidth = ResultTableWidthCentimeters
+            - widths.Sum()
+            - customFieldsWidth
+            - statusWidth;
+        widths.Add(Math.Max(2.2, commentWidth));
+        widths.AddRange(Enumerable.Repeat(customFieldWidth, customFieldCount));
         widths.Add(2.2);
 
         return widths.ToArray();
@@ -422,6 +433,16 @@ public sealed class MigraDocReportExportService : IReportExportService
         }
 
         return table;
+    }
+
+    private static void AddReportTableHeader(Section section, string text)
+    {
+        var paragraph = section.AddParagraph(text);
+        paragraph.Format.Font.Bold = true;
+        paragraph.Format.Font.Size = 9;
+        paragraph.Format.Font.Color = Colors.DarkSlateGray;
+        paragraph.Format.SpaceBefore = Unit.FromPoint(5);
+        paragraph.Format.SpaceAfter = Unit.FromPoint(2);
     }
 
     private static Row AddKeyValueRow(Table table, string firstKey, string firstValue, string secondKey, string secondValue)
@@ -626,6 +647,6 @@ public sealed class MigraDocReportExportService : IReportExportService
             chunks.Add(token.Substring(index, length));
         }
 
-        return string.Join(" ", chunks);
+        return string.Join("\u200B", chunks);
     }
 }
