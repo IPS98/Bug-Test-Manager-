@@ -12,7 +12,10 @@ namespace BugTestManager.Infrastructure.Pdf;
 public sealed class MigraDocReportExportService : IReportExportService
 {
     private const int MaxCustomFieldsPerReportItem = 3;
-    private const int MaxReportTokenLength = 36;
+    private const int DefaultReportTokenLength = 24;
+    private const int WideReportTokenLength = 22;
+    private const int CompactReportTokenLength = 14;
+    private const int NarrowReportTokenLength = 12;
 
     private static readonly object FontSettingsLock = new();
     private static bool fontSettingsConfigured;
@@ -223,31 +226,27 @@ public sealed class MigraDocReportExportService : IReportExportService
     {
         section.AddParagraph(ReportCellText($"{testCase.SortOrder}. {testCase.Title}"), StyleNames.Heading3);
 
-        var table = CreateTable(section, 1.1, 7.0, 7.0, 3.0, 4.8, 2.6);
+        var customFields = GetReportCustomFields(testCase.CustomFields);
+        var customFieldNames = customFields
+            .Select(field => field.Name)
+            .ToList();
+        var table = CreateResultTable(section, "Test case", customFieldNames, isCaseTable: true);
         table.Format.SpaceAfter = Unit.FromPoint(5);
-
-        var header = table.AddRow();
-        header.HeadingFormat = true;
-        SetHeaderCell(header.Cells[0], "#");
-        SetHeaderCell(header.Cells[1], "Test case");
-        SetHeaderCell(header.Cells[2], "Test details");
-        SetHeaderCell(header.Cells[3], "Test date");
-        SetHeaderCell(header.Cells[4], "Comment");
-        SetHeaderCell(header.Cells[5], "Status");
 
         var row = table.AddRow();
         row.TopPadding = Unit.FromPoint(3);
         row.BottomPadding = Unit.FromPoint(3);
         row.Cells[0].AddParagraph(testCase.SortOrder.ToString());
-        row.Cells[1].AddParagraph(ReportCellText(testCase.Title));
-        row.Cells[2].AddParagraph(ReportCellText(testCase.ExpectedResult));
-        row.Cells[3].AddParagraph(ReportCellText(testCase.LastStatusChangedDateDisplay));
-        row.Cells[4].AddParagraph(ReportCellText(testCase.Comment));
-        row.Cells[5].AddParagraph(StatusText(testCase.Status));
-        SetStatusValueCell(row.Cells[5], testCase.Status);
+        row.Cells[1].AddParagraph(ReportCellText(testCase.Title, WideReportTokenLength));
+        row.Cells[2].AddParagraph(ReportCellText(testCase.ExpectedResult, WideReportTokenLength));
+        row.Cells[3].AddParagraph(ReportCellText(testCase.LastStatusChangedDateDisplay, CompactReportTokenLength));
+        row.Cells[4].AddParagraph(ReportCellText(testCase.Comment, CompactReportTokenLength));
+        AddCustomFieldValues(row, customFieldNames, customFields, startIndex: 5);
+        var statusIndex = 5 + customFieldNames.Count;
+        row.Cells[statusIndex].AddParagraph(StatusText(testCase.Status));
+        SetStatusValueCell(row.Cells[statusIndex], testCase.Status);
         AddNestedList(row.Cells[1], "Meta", [$"{testCase.Checks.Count} checks", $"{testCase.Attachments.Count} attachments"]);
 
-        AddCustomFields(section, testCase.CustomFields);
         AddAttachments(section, testCase.Attachments);
         AddChecks(section, testCase.Checks);
     }
@@ -259,59 +258,32 @@ public sealed class MigraDocReportExportService : IReportExportService
             return;
         }
 
-        var table = CreateTable(section, 1.1, 7.5, 7.5, 3.0, 3.8, 2.6);
-        var header = table.AddRow();
-        header.HeadingFormat = true;
-        SetHeaderCell(header.Cells[0], "#");
-        SetHeaderCell(header.Cells[1], "Check");
-        SetHeaderCell(header.Cells[2], "Test details");
-        SetHeaderCell(header.Cells[3], "Test date");
-        SetHeaderCell(header.Cells[4], "Comment");
-        SetHeaderCell(header.Cells[5], "Status");
+        var customFieldNames = checks
+            .SelectMany(check => GetReportCustomFields(check.CustomFields))
+            .Select(field => field.Name)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(MaxCustomFieldsPerReportItem)
+            .ToList();
+        var table = CreateResultTable(section, "Check", customFieldNames, isCaseTable: false);
 
         foreach (var check in checks)
         {
+            var customFields = GetReportCustomFields(check.CustomFields);
             var row = table.AddRow();
             row.TopPadding = Unit.FromPoint(3);
             row.BottomPadding = Unit.FromPoint(3);
             row.Cells[0].AddParagraph(check.SortOrder.ToString());
-            row.Cells[1].AddParagraph(ReportCellText(check.Text));
-            row.Cells[2].AddParagraph(ReportCellText(check.ExpectedResult));
-            row.Cells[3].AddParagraph(ReportCellText(check.LastStatusChangedDateDisplay));
-            row.Cells[4].AddParagraph(ReportCellText(check.Comment));
-            row.Cells[5].AddParagraph(StatusText(check.Status));
-            SetStatusValueCell(row.Cells[5], check.Status);
-
-            AddNestedList(
-                row.Cells[1],
-                "Fields",
-                check.CustomFields
-                    .Take(MaxCustomFieldsPerReportItem)
-                    .Select(field => $"{ReportCellText(field.Name)}: {ReportCellText(field.DisplayValue)}"));
+            row.Cells[1].AddParagraph(ReportCellText(check.Text, WideReportTokenLength));
+            row.Cells[2].AddParagraph(ReportCellText(check.ExpectedResult, WideReportTokenLength));
+            row.Cells[3].AddParagraph(ReportCellText(check.LastStatusChangedDateDisplay, CompactReportTokenLength));
+            row.Cells[4].AddParagraph(ReportCellText(check.Comment, CompactReportTokenLength));
+            AddCustomFieldValues(row, customFieldNames, customFields, startIndex: 5);
+            var statusIndex = 5 + customFieldNames.Count;
+            row.Cells[statusIndex].AddParagraph(StatusText(check.Status));
+            SetStatusValueCell(row.Cells[statusIndex], check.Status);
         }
 
         AddCheckImageAttachments(section, checks);
-    }
-
-    private static void AddCustomFields(Section section, IReadOnlyList<ReportCustomFieldItem> customFields)
-    {
-        if (customFields.Count == 0)
-        {
-            return;
-        }
-
-        var table = CreateTable(section, 7.0, 17.0);
-        table.Format.SpaceBefore = Unit.FromPoint(5);
-        table.Format.SpaceAfter = Unit.FromPoint(8);
-
-        foreach (var field in customFields.Take(MaxCustomFieldsPerReportItem))
-        {
-            var row = table.AddRow();
-            row.TopPadding = Unit.FromPoint(3);
-            row.BottomPadding = Unit.FromPoint(3);
-            SetLabelCell(row.Cells[0], field.Name);
-            row.Cells[1].AddParagraph(ReportCellText(field.DisplayValue));
-        }
     }
 
     private static void AddAttachments(Section section, IReadOnlyList<ReportAttachmentItem> attachments)
@@ -365,6 +337,74 @@ public sealed class MigraDocReportExportService : IReportExportService
             row.Cells[2].AddParagraph(ReportCellText(bug.Severity));
             row.Cells[3].AddParagraph(ReportCellText(bug.Priority));
             row.Cells[4].AddParagraph(ReportCellText(bug.LinkedEntityDisplayName));
+        }
+    }
+
+    private static Table CreateResultTable(
+        Section section,
+        string itemHeader,
+        IReadOnlyList<string> customFieldNames,
+        bool isCaseTable)
+    {
+        var table = CreateTable(section, GetResultColumnWidths(customFieldNames.Count, isCaseTable));
+        var header = table.AddRow();
+        header.HeadingFormat = true;
+        SetHeaderCell(header.Cells[0], "#");
+        SetHeaderCell(header.Cells[1], itemHeader);
+        SetHeaderCell(header.Cells[2], "Test details");
+        SetHeaderCell(header.Cells[3], "Test date");
+        SetHeaderCell(header.Cells[4], "Comment");
+
+        for (var index = 0; index < customFieldNames.Count; index++)
+        {
+            SetHeaderCell(header.Cells[5 + index], ReportCellText(customFieldNames[index], NarrowReportTokenLength));
+        }
+
+        SetHeaderCell(header.Cells[5 + customFieldNames.Count], "Status");
+        return table;
+    }
+
+    private static double[] GetResultColumnWidths(int customFieldCount, bool isCaseTable)
+    {
+        var widths = new List<double>
+        {
+            1.0,
+            isCaseTable ? 4.8 : 3.8,
+            isCaseTable ? 4.8 : 4.8,
+            2.6,
+            isCaseTable ? 4.4 : 5.3
+        };
+
+        widths.AddRange(Enumerable.Repeat(customFieldCount switch
+        {
+            1 => 3.2,
+            2 => 2.7,
+            _ => 2.2
+        }, customFieldCount));
+        widths.Add(2.2);
+
+        return widths.ToArray();
+    }
+
+    private static IReadOnlyList<ReportCustomFieldItem> GetReportCustomFields(IReadOnlyList<ReportCustomFieldItem> customFields)
+    {
+        return customFields
+            .Where(field => !string.IsNullOrWhiteSpace(field.Name))
+            .Take(MaxCustomFieldsPerReportItem)
+            .ToList();
+    }
+
+    private static void AddCustomFieldValues(
+        Row row,
+        IReadOnlyList<string> customFieldNames,
+        IReadOnlyList<ReportCustomFieldItem> customFields,
+        int startIndex)
+    {
+        for (var index = 0; index < customFieldNames.Count; index++)
+        {
+            var field = customFields.FirstOrDefault(item =>
+                item.Name.Equals(customFieldNames[index], StringComparison.OrdinalIgnoreCase));
+            row.Cells[startIndex + index].AddParagraph(ReportCellText(field?.DisplayValue, NarrowReportTokenLength));
         }
     }
 
@@ -472,7 +512,7 @@ public sealed class MigraDocReportExportService : IReportExportService
         var heading = cell.AddParagraph();
         heading.Format.SpaceBefore = Unit.FromPoint(4);
         heading.AddFormattedText($"{title}: ", TextFormat.Bold);
-        heading.AddText(string.Join(", ", materializedItems.Select(ReportCellText)));
+        heading.AddText(string.Join(", ", materializedItems.Select(item => ReportCellText(item))));
     }
 
     private static void AddImageAttachments(Section section, IReadOnlyList<ReportAttachmentItem> attachments)
@@ -557,8 +597,9 @@ public sealed class MigraDocReportExportService : IReportExportService
         return string.IsNullOrWhiteSpace(value) ? "-" : value.Trim();
     }
 
-    private static string ReportCellText(string? value)
+    private static string ReportCellText(string? value, int maxTokenLength = DefaultReportTokenLength)
     {
+        maxTokenLength = Math.Max(1, maxTokenLength);
         var text = EmptyAsDash(value);
         if (text == "-")
         {
@@ -568,23 +609,23 @@ public sealed class MigraDocReportExportService : IReportExportService
         return string.Join(
             " ",
             text.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                .Select(WrapLongToken));
+                .Select(token => WrapLongToken(token, maxTokenLength)));
     }
 
-    private static string WrapLongToken(string token)
+    private static string WrapLongToken(string token, int maxTokenLength)
     {
-        if (token.Length <= MaxReportTokenLength)
+        if (token.Length <= maxTokenLength)
         {
             return token;
         }
 
         var chunks = new List<string>();
-        for (var index = 0; index < token.Length; index += MaxReportTokenLength)
+        for (var index = 0; index < token.Length; index += maxTokenLength)
         {
-            var length = Math.Min(MaxReportTokenLength, token.Length - index);
+            var length = Math.Min(maxTokenLength, token.Length - index);
             chunks.Add(token.Substring(index, length));
         }
 
-        return string.Join(Environment.NewLine, chunks);
+        return string.Join(" ", chunks);
     }
 }

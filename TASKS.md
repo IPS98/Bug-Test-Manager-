@@ -132,6 +132,7 @@ Status: implementation in progress after approved architecture and skeleton setu
 - Report custom fields have clearer spacing around their table.
 - PDF report table fields now protect against overly long text by wrapping long tokens instead of stretching columns.
 - PDF report case/check status is shown as the last table column.
+- PDF report custom fields are shown as columns inside the test case/check tables instead of a separate custom field block.
 - Test case and check result custom fields are limited to 3 fields per selected target.
 - Bug and test chats use a shared modern drawer style with distinct own-message bubbles.
 - Test Sessions page shows a clear empty state when no sessions exist.
