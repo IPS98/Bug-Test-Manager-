@@ -85,9 +85,19 @@
                                         <TextBlock Text="Open PDF" />
                                     </StackPanel>
                                 </Button>
-                                <TextBlock Foreground="{StaticResource AppMutedTextBrush}"
-                                           Text="{Binding StatusMessage}"
-                                           TextWrapping="Wrap" />
+                                <StackPanel>
+                                    <CheckBox Content="Include Linked Bugs in Report"
+                                              IsChecked="{Binding IncludeLinkedBugsInReport}"
+                                              ToolTip="When enabled, linked bugs are included in the exported PDF." />
+                                    <TextBlock Margin="0,5,0,0"
+                                               Foreground="{StaticResource AppMutedTextBrush}"
+                                               Text="{Binding LinkedBugsOptionDisplay}"
+                                               TextWrapping="Wrap" />
+                                    <TextBlock Margin="0,6,0,0"
+                                               Foreground="{StaticResource AppMutedTextBrush}"
+                                               Text="{Binding StatusMessage}"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
                             </DockPanel>
                         </Border>
 
@@ -325,7 +335,8 @@
                                        FontSize="16"
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource AppTextBrush}"
-                                       Text="{Binding SelectedReport.LinkedBugs.Count, StringFormat=Linked Bugs: {0}}" />
+                                       Text="{Binding SelectedReport.LinkedBugs.Count, StringFormat=Linked Bugs: {0}}"
+                                       Visibility="{Binding IncludedLinkedBugsPreviewVisibility}" />
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>

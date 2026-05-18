@@ -127,6 +127,10 @@ Status: implementation in progress after approved architecture and skeleton setu
 - User-facing test wording now uses Test details instead of Expected result in templates, test sessions, and reports.
 - Report status cells use color cues, check date columns use Test date wording, and custom fields no longer show a type column.
 - Test result and bug detail editing now opens as centered modal dialogs instead of right-side edit panels.
+- Reports can export linked bugs only when the user explicitly enables Include Linked Bugs in Report.
+- Test case rows in PDF reports now use the same tabular style as checks.
+- Report custom fields have clearer spacing around their table.
+- Bug and test chats use a shared modern drawer style with distinct own-message bubbles.
 - Test Sessions page shows a clear empty state when no sessions exist.
 - Linked bug creation in Test Sessions opens in a modal instead of permanently occupying the result details panel.
 - Test case and check result cards show linked bug indicators when bugs already exist.
@@ -179,6 +183,7 @@ The application must replace the current Excel-based workflow where each applica
 - Reports must include information per test suite, revision, section, application tab/window, sub-tab, button, table, graph, date field, model, firmware, status, comments, images, and other details.
 - PDF report generation is mandatory.
 - PDF reports should start from the current Excel report idea but become cleaner and easier to read.
+- Future report architecture must support additional report types such as Bug Report and Fix Report.
 - Attachments and photos are mandatory.
 - Attachments must support screenshots, photos, videos, text files, logs, scripts, documents, and future file types.
 - Templates, manual sessions, bugs, comments, and results must support attachments/photos/files where useful.

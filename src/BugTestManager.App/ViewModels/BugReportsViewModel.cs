@@ -805,7 +805,7 @@ public sealed partial class BugReportsViewModel : ObservableObject
                 userContext.UserName));
     }
 
-    private static DiscussionCommentItemViewModel MapComment(DiscussionCommentItem comment)
+    private DiscussionCommentItemViewModel MapComment(DiscussionCommentItem comment)
     {
         return new DiscussionCommentItemViewModel(
             comment.Id,
@@ -813,7 +813,8 @@ public sealed partial class BugReportsViewModel : ObservableObject
             comment.CreatedBy,
             comment.CreatedAt,
             comment.UpdatedBy,
-            comment.UpdatedAt);
+            comment.UpdatedAt,
+            string.Equals(comment.CreatedBy, userContext.UserName, StringComparison.OrdinalIgnoreCase));
     }
 
     private static AttachmentItemViewModel MapAttachment(AttachmentItem attachment)

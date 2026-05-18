@@ -625,12 +625,7 @@
         <Border Panel.ZIndex="30"
                 Background="#220F172A"
                 Visibility="{Binding DiscussionDrawerVisibility}">
-            <Border Width="460"
-                    Padding="20"
-                    HorizontalAlignment="Right"
-                    Background="#EEF3F8"
-                    BorderBrush="#CBD5E1"
-                    BorderThickness="1,0,0,0">
+            <Border Style="{StaticResource ChatDrawerSurfaceStyle}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -638,18 +633,26 @@
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <DockPanel Margin="0,0,0,16">
-                        <Button DockPanel.Dock="Right"
-                                Command="{Binding CloseDiscussionCommand}"
-                                Content="&#xE8BB;"
-                                Style="{StaticResource IconActionButtonStyle}"
-                                ToolTip="Close chat" />
-                        <TextBlock FontSize="18"
-                                   FontWeight="SemiBold"
-                                   Foreground="#172033"
-                                   Text="{Binding DiscussionTitle}"
-                                   TextWrapping="Wrap" />
-                    </DockPanel>
+                    <Border Style="{StaticResource ChatHeaderCardStyle}">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right"
+                                    Command="{Binding CloseDiscussionCommand}"
+                                    Content="&#xE8BB;"
+                                    Style="{StaticResource IconActionButtonStyle}"
+                                    ToolTip="Close chat" />
+                            <StackPanel>
+                                <TextBlock FontSize="18"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource AppTextBrush}"
+                                           Text="{Binding DiscussionTitle}"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Margin="0,4,0,0"
+                                           Foreground="{StaticResource AppMutedTextBrush}"
+                                           Text="Discussion history"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
 
                     <ListBox Grid.Row="1"
                              ItemsSource="{Binding DiscussionComments}"
@@ -660,12 +663,7 @@
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Border Margin="0,0,0,10"
-                                        Padding="12"
-                                        Background="White"
-                                        BorderBrush="#D8E1EC"
-                                        BorderThickness="1"
-                                        CornerRadius="12">
+                                <Border Style="{StaticResource ChatMessageBubbleStyle}">
                                     <StackPanel>
                                         <DockPanel LastChildFill="True">
                                             <StackPanel DockPanel.Dock="Right"
@@ -689,11 +687,11 @@
                                             </Border>
                                         </DockPanel>
                                         <TextBlock Margin="0,6,0,0"
-                                                   Foreground="#172033"
+                                                   Foreground="{StaticResource AppTextBrush}"
                                                    Text="{Binding Message}"
                                                    TextWrapping="Wrap" />
                                         <TextBlock Margin="0,5,0,0"
-                                                   Foreground="#94A3B8"
+                                                   Foreground="{StaticResource AppMutedTextBrush}"
                                                    Text="{Binding EditedDisplay}"
                                                    TextWrapping="Wrap" />
                                     </StackPanel>
@@ -703,20 +701,15 @@
                     </ListBox>
 
                     <Border Grid.Row="2"
-                            Margin="0,16,0,0"
-                            Padding="14"
-                            Background="White"
-                            BorderBrush="#D8E1EC"
-                            BorderThickness="1"
-                            CornerRadius="12">
+                            Style="{StaticResource ChatInputCardStyle}">
                         <StackPanel>
                             <TextBlock FontWeight="SemiBold"
-                                       Foreground="#172033"
+                                       Foreground="{StaticResource AppTextBrush}"
                                        Text="{Binding DiscussionEditorTitle}" />
                             <TextBox Margin="0,8,0,10"
                                      MinHeight="82"
                                      AcceptsReturn="True"
-                                     Background="#F8FAFC"
+                                     Background="{StaticResource AppChatInputBackgroundBrush}"
                                      Text="{Binding DiscussionMessage, UpdateSourceTrigger=PropertyChanged}"
                                      TextWrapping="Wrap" />
                             <StackPanel HorizontalAlignment="Right"
@@ -729,9 +722,13 @@
                                         ToolTip="Clear message editor" />
                                 <Button MinWidth="110"
                                         Command="{Binding SaveDiscussionMessageCommand}"
-                                        Content="{Binding DiscussionSaveButtonText}"
                                         Style="{StaticResource PrimaryActionButtonStyle}"
-                                        ToolTip="Save message" />
+                                        ToolTip="Save message">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Style="{StaticResource ActionIconTextStyle}" Text="&#xE724;" />
+                                        <TextBlock Text="{Binding DiscussionSaveButtonText}" />
+                                    </StackPanel>
+                                </Button>
                             </StackPanel>
                         </StackPanel>
                     </Border>

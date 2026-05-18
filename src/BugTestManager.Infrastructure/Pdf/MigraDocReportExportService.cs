@@ -33,7 +33,7 @@ public sealed class MigraDocReportExportService : IReportExportService
             Directory.CreateDirectory(outputDirectory);
         }
 
-        var document = BuildDocument(request.Report, request.GeneratedBy);
+        var document = BuildDocument(request.Report, request.GeneratedBy, request.IncludeLinkedBugs);
         var renderer = new PdfDocumentRenderer
         {
             Document = document
@@ -45,7 +45,7 @@ public sealed class MigraDocReportExportService : IReportExportService
         return new ReportExportResult(request.OutputFilePath, DateTimeOffset.UtcNow);
     }
 
-    private static Document BuildDocument(TestSessionReportItem report, string generatedBy)
+    private static Document BuildDocument(TestSessionReportItem report, string generatedBy, bool includeLinkedBugs)
     {
         var document = new Document();
         document.Info.Title = $"Test Session Report - {report.SessionName}";
@@ -67,7 +67,10 @@ public sealed class MigraDocReportExportService : IReportExportService
         AddSessionMetadata(section, report, generatedBy);
         AddStatusSummary(section, report.Summary);
         AddSections(section, report.Sections);
-        AddLinkedBugs(section, report.LinkedBugs);
+        if (includeLinkedBugs)
+        {
+            AddLinkedBugs(section, report.LinkedBugs);
+        }
 
         return document;
     }
@@ -217,11 +220,29 @@ public sealed class MigraDocReportExportService : IReportExportService
     {
         section.AddParagraph($"{testCase.SortOrder}. {testCase.Title}", StyleNames.Heading3);
 
-        var table = CreateTable(section, 4.2, 13.6, 3.2, 3.2);
-        var statusRow = AddKeyValueRow(table, "Test details", EmptyAsDash(testCase.ExpectedResult), "Status", StatusText(testCase.Status));
-        SetStatusValueCell(statusRow.Cells[3], testCase.Status);
-        AddKeyValueRow(table, "Test date", testCase.LastStatusChangedDateDisplay, "Attachments", testCase.Attachments.Count.ToString());
-        AddKeyValueRow(table, "Comment", EmptyAsDash(testCase.Comment), "Checks", testCase.Checks.Count.ToString());
+        var table = CreateTable(section, 1.1, 7.5, 7.5, 2.6, 3.0, 3.8);
+        table.Format.SpaceAfter = Unit.FromPoint(5);
+
+        var header = table.AddRow();
+        header.HeadingFormat = true;
+        SetHeaderCell(header.Cells[0], "#");
+        SetHeaderCell(header.Cells[1], "Test case");
+        SetHeaderCell(header.Cells[2], "Test details");
+        SetHeaderCell(header.Cells[3], "Status");
+        SetHeaderCell(header.Cells[4], "Test date");
+        SetHeaderCell(header.Cells[5], "Comment");
+
+        var row = table.AddRow();
+        row.TopPadding = Unit.FromPoint(3);
+        row.BottomPadding = Unit.FromPoint(3);
+        row.Cells[0].AddParagraph(testCase.SortOrder.ToString());
+        row.Cells[1].AddParagraph(testCase.Title);
+        row.Cells[2].AddParagraph(EmptyAsDash(testCase.ExpectedResult));
+        row.Cells[3].AddParagraph(StatusText(testCase.Status));
+        SetStatusValueCell(row.Cells[3], testCase.Status);
+        row.Cells[4].AddParagraph(testCase.LastStatusChangedDateDisplay);
+        row.Cells[5].AddParagraph(EmptyAsDash(testCase.Comment));
+        AddNestedList(row.Cells[1], "Meta", [$"{testCase.Checks.Count} checks", $"{testCase.Attachments.Count} attachments"]);
 
         AddCustomFields(section, testCase.CustomFields);
         AddAttachments(section, testCase.Attachments);
@@ -272,11 +293,14 @@ public sealed class MigraDocReportExportService : IReportExportService
         }
 
         var table = CreateTable(section, 7.0, 17.0);
+        table.Format.SpaceBefore = Unit.FromPoint(5);
+        table.Format.SpaceAfter = Unit.FromPoint(8);
+
         foreach (var field in customFields)
         {
             var row = table.AddRow();
-            row.TopPadding = Unit.FromPoint(2);
-            row.BottomPadding = Unit.FromPoint(2);
+            row.TopPadding = Unit.FromPoint(3);
+            row.BottomPadding = Unit.FromPoint(3);
             SetLabelCell(row.Cells[0], field.Name);
             row.Cells[1].AddParagraph(EmptyAsDash(field.DisplayValue));
         }

@@ -8,7 +8,8 @@ public sealed class DiscussionCommentItemViewModel
         string createdBy,
         DateTimeOffset createdAt,
         string updatedBy,
-        DateTimeOffset? updatedAt)
+        DateTimeOffset? updatedAt,
+        bool isOwnMessage)
     {
         Id = id;
         Message = message;
@@ -16,6 +17,7 @@ public sealed class DiscussionCommentItemViewModel
         CreatedAt = createdAt;
         UpdatedBy = updatedBy;
         UpdatedAt = updatedAt;
+        IsOwnMessage = isOwnMessage;
     }
 
     public Guid Id { get; }
@@ -30,7 +32,9 @@ public sealed class DiscussionCommentItemViewModel
 
     public DateTimeOffset? UpdatedAt { get; }
 
-    public string HeaderDisplay => $"{CreatedBy} - {CreatedAt.ToLocalTime():yyyy-MM-dd HH:mm}";
+    public bool IsOwnMessage { get; }
+
+    public string HeaderDisplay => $"{(IsOwnMessage ? "You" : CreatedBy)} - {CreatedAt.ToLocalTime():yyyy-MM-dd HH:mm}";
 
     public string EditedDisplay => UpdatedAt is null
         ? string.Empty

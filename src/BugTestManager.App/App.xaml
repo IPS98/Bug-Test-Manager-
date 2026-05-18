@@ -35,6 +35,13 @@
             <SolidColorBrush x:Key="AppSelectableHoverBrush" Color="#F1F7FF" />
             <SolidColorBrush x:Key="AppSelectableSelectedBrush" Color="#ECFDF5" />
             <SolidColorBrush x:Key="AppSelectableSelectedBorderBrush" Color="#A7F3D0" />
+            <SolidColorBrush x:Key="AppChatPanelBackgroundBrush" Color="#E6EEF5" />
+            <SolidColorBrush x:Key="AppChatHeaderBackgroundBrush" Color="#F8FAFC" />
+            <SolidColorBrush x:Key="AppChatMessageBackgroundBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="AppChatOwnMessageBackgroundBrush" Color="#E7F6EF" />
+            <SolidColorBrush x:Key="AppChatMessageBorderBrush" Color="#D8E1EC" />
+            <SolidColorBrush x:Key="AppChatOwnMessageBorderBrush" Color="#A7F3D0" />
+            <SolidColorBrush x:Key="AppChatInputBackgroundBrush" Color="#F8FAFC" />
 
             <Style x:Key="GreenChipBorderStyle" TargetType="{x:Type Border}">
                 <Setter Property="Padding" Value="8,3" />
@@ -64,6 +71,52 @@
                 <Setter Property="Foreground" Value="{StaticResource AppInfoChipForegroundBrush}" />
                 <Setter Property="FontWeight" Value="SemiBold" />
                 <Setter Property="TextWrapping" Value="Wrap" />
+            </Style>
+
+            <Style x:Key="ChatDrawerSurfaceStyle" TargetType="{x:Type Border}">
+                <Setter Property="Width" Value="480" />
+                <Setter Property="Padding" Value="18" />
+                <Setter Property="HorizontalAlignment" Value="Right" />
+                <Setter Property="Background" Value="{StaticResource AppChatPanelBackgroundBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource AppBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1,0,0,0" />
+            </Style>
+
+            <Style x:Key="ChatHeaderCardStyle" TargetType="{x:Type Border}">
+                <Setter Property="Margin" Value="0,0,0,14" />
+                <Setter Property="Padding" Value="12" />
+                <Setter Property="Background" Value="{StaticResource AppChatHeaderBackgroundBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource AppChatMessageBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="10" />
+            </Style>
+
+            <Style x:Key="ChatMessageBubbleStyle" TargetType="{x:Type Border}">
+                <Setter Property="MaxWidth" Value="350" />
+                <Setter Property="Margin" Value="0,0,54,10" />
+                <Setter Property="Padding" Value="12" />
+                <Setter Property="HorizontalAlignment" Value="Left" />
+                <Setter Property="Background" Value="{StaticResource AppChatMessageBackgroundBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource AppChatMessageBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="12" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsOwnMessage}" Value="True">
+                        <Setter Property="Margin" Value="54,0,0,10" />
+                        <Setter Property="HorizontalAlignment" Value="Right" />
+                        <Setter Property="Background" Value="{StaticResource AppChatOwnMessageBackgroundBrush}" />
+                        <Setter Property="BorderBrush" Value="{StaticResource AppChatOwnMessageBorderBrush}" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="ChatInputCardStyle" TargetType="{x:Type Border}">
+                <Setter Property="Margin" Value="0,16,0,0" />
+                <Setter Property="Padding" Value="14" />
+                <Setter Property="Background" Value="{StaticResource AppChatMessageBackgroundBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource AppChatMessageBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="12" />
             </Style>
 
             <Style x:Key="SelectableCardBorderStyle" TargetType="{x:Type Border}">

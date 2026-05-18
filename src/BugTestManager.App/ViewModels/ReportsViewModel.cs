@@ -66,6 +66,17 @@ public sealed partial class ReportsViewModel : ObservableObject
     [ObservableProperty]
     private string exportedReportPath = string.Empty;
 
+    [ObservableProperty]
+    private bool includeLinkedBugsInReport;
+
+    public Visibility IncludedLinkedBugsPreviewVisibility => IncludeLinkedBugsInReport
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public string LinkedBugsOptionDisplay => IncludeLinkedBugsInReport
+        ? "Linked bugs will be included in the exported PDF."
+        : "Linked bugs will stay out of the exported PDF unless you include them.";
+
     partial void OnSelectedSessionChanged(TestSessionSummaryViewModel? value)
     {
         SelectedReport = null;
@@ -84,6 +95,12 @@ public sealed partial class ReportsViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(ExportedReportVisibility));
         OpenExportedReportCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnIncludeLinkedBugsInReportChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IncludedLinkedBugsPreviewVisibility));
+        OnPropertyChanged(nameof(LinkedBugsOptionDisplay));
     }
 
     public void Refresh()
@@ -156,7 +173,8 @@ public sealed partial class ReportsViewModel : ObservableObject
             var result = reportExportService.ExportTestSessionReport(new ExportTestSessionReportRequest(
                 SelectedReport,
                 outputFilePath,
-                userContext.UserName));
+                userContext.UserName,
+                IncludeLinkedBugsInReport));
 
             ExportedReportPath = result.OutputFilePath;
             StatusMessage = $"PDF report exported: {result.OutputFilePath}";
