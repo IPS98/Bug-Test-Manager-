@@ -19,7 +19,7 @@ public sealed class MigraDocReportExportService : IReportExportService
     private const double ResultTableWidthCentimeters = 26.4;
     private const double AttachmentThumbnailWidthCentimeters = 2.8;
     private const int MaxAttachmentsPerResultCell = 3;
-    private const double ApproximateReportCharactersPerCentimeter = 6.0;
+    private const double ApproximateReportCharactersPerCentimeter = 4.1;
 
     private static readonly object FontSettingsLock = new();
     private static bool fontSettingsConfigured;
@@ -413,7 +413,7 @@ public sealed class MigraDocReportExportService : IReportExportService
         return Math.Clamp(
             (int)Math.Round(commentWidth * ApproximateReportCharactersPerCentimeter),
             min: 18,
-            max: 72);
+            max: 48);
     }
 
     private static IReadOnlyList<ReportCustomFieldItem> GetReportCustomFields(IReadOnlyList<ReportCustomFieldItem> customFields)
