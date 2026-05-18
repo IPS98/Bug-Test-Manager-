@@ -15,11 +15,11 @@ public sealed class MigraDocReportExportService : IReportExportService
     private const int DefaultReportTokenLength = 24;
     private const int WideReportTokenLength = 22;
     private const int CompactReportTokenLength = 14;
-    private const int CommentReportTokenLength = 28;
     private const int NarrowReportTokenLength = 12;
     private const double ResultTableWidthCentimeters = 26.4;
     private const double AttachmentThumbnailWidthCentimeters = 2.8;
     private const int MaxAttachmentsPerResultCell = 3;
+    private const double ApproximateReportCharactersPerCentimeter = 6.0;
 
     private static readonly object FontSettingsLock = new();
     private static bool fontSettingsConfigured;
@@ -234,6 +234,7 @@ public sealed class MigraDocReportExportService : IReportExportService
         var customFieldNames = customFields
             .Select(field => field.Name)
             .ToList();
+        var commentTokenLength = GetCommentTokenLength(customFieldNames.Count, isCaseTable: true);
         AddReportTableHeader(section, "Test Case");
         var table = CreateResultTable(section, "Test case", customFieldNames, isCaseTable: true);
         table.Format.SpaceAfter = Unit.FromPoint(5);
@@ -245,7 +246,7 @@ public sealed class MigraDocReportExportService : IReportExportService
         row.Cells[1].AddParagraph(ReportCellText(testCase.Title, WideReportTokenLength));
         row.Cells[2].AddParagraph(ReportCellText(testCase.ExpectedResult, WideReportTokenLength));
         row.Cells[3].AddParagraph(ReportCellText(testCase.LastStatusChangedDateDisplay, CompactReportTokenLength));
-        row.Cells[4].AddParagraph(ReportCellText(testCase.Comment, CommentReportTokenLength));
+        row.Cells[4].AddParagraph(ReportCellText(testCase.Comment, commentTokenLength));
         AddAttachmentCell(row.Cells[5], testCase.Attachments);
         AddCustomFieldValues(row, customFieldNames, customFields, startIndex: 6);
         var statusIndex = 6 + customFieldNames.Count;
@@ -269,6 +270,7 @@ public sealed class MigraDocReportExportService : IReportExportService
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Take(MaxCustomFieldsPerReportItem)
             .ToList();
+        var commentTokenLength = GetCommentTokenLength(customFieldNames.Count, isCaseTable: false);
         AddReportTableHeader(section, "Checks");
         var table = CreateResultTable(section, "Check", customFieldNames, isCaseTable: false);
 
@@ -282,7 +284,7 @@ public sealed class MigraDocReportExportService : IReportExportService
             row.Cells[1].AddParagraph(ReportCellText(check.Text, WideReportTokenLength));
             row.Cells[2].AddParagraph(ReportCellText(check.ExpectedResult, WideReportTokenLength));
             row.Cells[3].AddParagraph(ReportCellText(check.LastStatusChangedDateDisplay, CompactReportTokenLength));
-            row.Cells[4].AddParagraph(ReportCellText(check.Comment, CommentReportTokenLength));
+            row.Cells[4].AddParagraph(ReportCellText(check.Comment, commentTokenLength));
             AddAttachmentCell(row.Cells[5], check.Attachments);
             AddCustomFieldValues(row, customFieldNames, customFields, startIndex: 6);
             var statusIndex = 6 + customFieldNames.Count;
@@ -348,13 +350,6 @@ public sealed class MigraDocReportExportService : IReportExportService
 
     private static double[] GetResultColumnWidths(int customFieldCount, bool isCaseTable)
     {
-        var customFieldWidth = customFieldCount switch
-        {
-            0 => 0.0,
-            1 => 3.4,
-            2 => 2.7,
-            _ => 2.1
-        };
         var widths = new List<double>
         {
             1.0,
@@ -363,20 +358,62 @@ public sealed class MigraDocReportExportService : IReportExportService
             2.6
         };
 
+        var customFieldWidth = GetCustomFieldColumnWidth(customFieldCount);
         var customFieldsWidth = customFieldWidth * customFieldCount;
         var attachmentWidth = 3.4;
         var statusWidth = 2.2;
-        var commentWidth = ResultTableWidthCentimeters
-            - widths.Sum()
-            - attachmentWidth
-            - customFieldsWidth
-            - statusWidth;
+        var commentWidth = GetCommentColumnWidth(widths.Sum(), attachmentWidth, customFieldsWidth, statusWidth);
         widths.Add(Math.Max(2.2, commentWidth));
         widths.Add(attachmentWidth);
         widths.AddRange(Enumerable.Repeat(customFieldWidth, customFieldCount));
         widths.Add(2.2);
 
         return widths.ToArray();
+    }
+
+    private static double GetCustomFieldColumnWidth(int customFieldCount)
+    {
+        return customFieldCount switch
+        {
+            0 => 0.0,
+            1 => 3.4,
+            2 => 2.7,
+            _ => 2.1
+        };
+    }
+
+    private static double GetCommentColumnWidth(
+        double baseWidth,
+        double attachmentWidth,
+        double customFieldsWidth,
+        double statusWidth)
+    {
+        return ResultTableWidthCentimeters
+            - baseWidth
+            - attachmentWidth
+            - customFieldsWidth
+            - statusWidth;
+    }
+
+    private static int GetCommentTokenLength(int customFieldCount, bool isCaseTable)
+    {
+        var baseWidth = 1.0
+            + (isCaseTable ? 4.0 : 3.2)
+            + (isCaseTable ? 4.4 : 4.2)
+            + 2.6;
+        var customFieldsWidth = GetCustomFieldColumnWidth(customFieldCount) * customFieldCount;
+        var commentWidth = Math.Max(
+            2.2,
+            GetCommentColumnWidth(
+                baseWidth,
+                attachmentWidth: 3.4,
+                customFieldsWidth,
+                statusWidth: 2.2));
+
+        return Math.Clamp(
+            (int)Math.Round(commentWidth * ApproximateReportCharactersPerCentimeter),
+            min: 18,
+            max: 72);
     }
 
     private static IReadOnlyList<ReportCustomFieldItem> GetReportCustomFields(IReadOnlyList<ReportCustomFieldItem> customFields)
